@@ -29,6 +29,7 @@ enum Kind {
     Local,
     Remote,
     Dynamic,
+    RemoteDynamic,
 }
 
 impl TryFrom<Forward> for ForwardSpec {
@@ -48,6 +49,14 @@ impl TryFrom<Forward> for ForwardSpec {
                     return Err("dynamic forward does not accept target".into());
                 }
                 Tunnel::Dynamic {
+                    listen: wire.listen,
+                }
+            }
+            Kind::RemoteDynamic => {
+                if wire.target.is_some() {
+                    return Err("remote dynamic forward does not accept target".into());
+                }
+                Tunnel::RemoteDynamic {
                     listen: wire.listen,
                 }
             }

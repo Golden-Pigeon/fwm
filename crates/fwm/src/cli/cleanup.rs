@@ -12,7 +12,7 @@ pub(super) fn effective(
     let remote_cleanup = match requested_cleanup {
         Some(CleanupMode::Verified) if !tunnel.is_remote() => {
             bail!(
-                "--remote-cleanup verified requires a remote forward; use --remote or --remote-cleanup off"
+                "--remote-cleanup verified requires a remote forward; use --remote, --remote-dynamic or --remote-cleanup off"
             );
         }
         Some(CleanupMode::Verified) => RemoteCleanup::Verified,

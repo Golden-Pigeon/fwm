@@ -99,6 +99,7 @@ fn edit_fields(existing: &ForwardSpec, args: &EditArgs) -> Result<ForwardSpec> {
         args.local.as_deref(),
         args.remote.as_deref(),
         args.dynamic.as_deref(),
+        args.remote_dynamic.as_deref(),
         &args.ports,
         Some(&forward.tunnel),
     )?;

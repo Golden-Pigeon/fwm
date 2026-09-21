@@ -254,6 +254,10 @@ impl Fixture {
     }
 
     fn route(&self, target: Endpoint, limit: usize) -> RemoteRoute {
+        self.remote_route(Some(target), limit)
+    }
+
+    fn remote_route(&self, target: Option<Endpoint>, limit: usize) -> RemoteRoute {
         let route = RemoteRoute {
             rule: test_rule(),
             target,
@@ -311,7 +315,7 @@ async fn retired_remote_worker_cannot_reserve_a_new_recovery_generation() {
             fixture.handle.clone(),
             fixture.routes.clone(),
             listen,
-            target,
+            Some(target),
             RetryPolicy::default(),
             worker_cancel,
             session,
@@ -348,7 +352,7 @@ async fn established_listener_detects_helper_exit_and_requests_only_its_session_
         fixture.handle.clone(),
         fixture.routes.clone(),
         listen,
-        target,
+        Some(target),
         RetryPolicy::default(),
         CancellationToken::new(),
         session,
@@ -528,6 +532,9 @@ async fn cancelled_direct_open_closes_late_channel_and_holds_capacity_until_conf
 #[path = "failure_tests.rs"]
 mod failure_tests;
 
+#[path = "remote_dynamic_tests.rs"]
+mod remote_dynamic_tests;
+
 fn remote_rule(id: &str, listen: &str) -> Rule {
     let mut rule = test_rule();
     rule.spec.id = id.into();
@@ -560,7 +567,7 @@ async fn remote_route_is_unavailable_until_listener_request_is_confirmed() {
         fixture.handle.clone(),
         fixture.routes.clone(),
         rule.spec.tunnel.listen(),
-        rule.spec.tunnel.target().unwrap().clone(),
+        rule.spec.tunnel.target().cloned(),
         RetryPolicy::default(),
         cancel.clone(),
         session,

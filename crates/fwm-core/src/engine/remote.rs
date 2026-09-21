@@ -21,7 +21,7 @@ pub(super) async fn run(
     handle: SshHandle,
     routes: RemoteRoutes,
     listen: SocketAddr,
-    target: Endpoint,
+    target: Option<Endpoint>,
     policy: RetryPolicy,
     cancel: CancellationToken,
     session: SessionControl,

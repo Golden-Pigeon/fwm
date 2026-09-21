@@ -20,6 +20,7 @@ pub async fn run(paths: &Paths, args: AddArgs, json_output: bool) -> Result<()> 
         args.local.as_deref(),
         args.remote.as_deref(),
         args.dynamic.as_deref(),
+        args.remote_dynamic.as_deref(),
         &args.ports,
         None,
     )?;
@@ -186,6 +187,7 @@ mod tests {
             args.local.as_deref(),
             args.remote.as_deref(),
             args.dynamic.as_deref(),
+            args.remote_dynamic.as_deref(),
             &args.ports,
             None,
         )?;
@@ -309,6 +311,34 @@ mod tests {
                 .unwrap()
                 .to_string();
             assert!(error.contains("requires a remote forward"));
+        }
+    }
+
+    #[test]
+    fn remote_dynamic_defaults_to_verified_cleanup_and_supports_explicit_off() {
+        for (flags, cleanup, mode) in [
+            (vec![], RemoteCleanup::Verified, ConnectionMode::Dedicated),
+            (
+                vec!["--connection-mode", "shared"],
+                RemoteCleanup::Verified,
+                ConnectionMode::Dedicated,
+            ),
+            (
+                vec!["--remote-cleanup", "off"],
+                RemoteCleanup::Off,
+                ConnectionMode::Shared,
+            ),
+        ] {
+            let mut arguments = vec!["--server", "dev", "--remote-dynamic", "7897"];
+            arguments.extend(flags);
+            let batch = create(&Config::default(), &arguments).unwrap();
+            let forward = &batch.forwards[0];
+            assert!(matches!(forward.tunnel, Tunnel::RemoteDynamic { .. }));
+            assert_eq!(forward.tunnel.listen().to_string(), "127.0.0.1:7897");
+            assert_eq!(forward.remote_cleanup, cleanup);
+            assert_eq!(forward.connection_mode, mode);
+            assert_word(&forward.name);
+            assert!(forward.group.is_none());
         }
     }
 

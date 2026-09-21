@@ -186,7 +186,8 @@ fn status_line(cells: &[String; 6], widths: &[usize; 6]) -> String {
 }
 
 fn mapping(forward: &ForwardStatus) -> String {
-    let (source_side, target_side) = if forward.kind == "remote" {
+    let (source_side, target_side) = if matches!(forward.kind.as_str(), "remote" | "remote_dynamic")
+    {
         ("remote", "local")
     } else {
         ("local", "remote")
@@ -319,6 +320,11 @@ mod tests {
         assert_eq!(
             mapping(&forward),
             "local [::1]:17890 -> remote SOCKS5 destinations"
+        );
+        forward.kind = "remote_dynamic".into();
+        assert_eq!(
+            mapping(&forward),
+            "remote [::1]:17890 -> local SOCKS5 destinations"
         );
     }
 }

@@ -28,7 +28,8 @@ pub(super) type RemoteRoutes = Arc<Mutex<HashMap<(String, u32), RemoteRoute>>>;
 #[derive(Clone)]
 pub(super) struct RemoteRoute {
     pub rule: Rule,
-    pub target: Endpoint,
+    /// No fixed target means SOCKS5 requests select a destination on this client.
+    pub target: Option<Endpoint>,
     pub cancel: CancellationToken,
     pub limit: Arc<Semaphore>,
     pub timeout: Duration,
@@ -49,9 +50,19 @@ pub(super) async fn run(
         Tunnel::Dynamic { listen } => local(rule, handle, listen, None, policy, cancel).await,
         Tunnel::Remote { listen, target } => {
             remote::run(
-                rule, handle, routes, listen, target, policy, cancel, session,
+                rule,
+                handle,
+                routes,
+                listen,
+                Some(target),
+                policy,
+                cancel,
+                session,
             )
             .await
+        }
+        Tunnel::RemoteDynamic { listen } => {
+            remote::run(rule, handle, routes, listen, None, policy, cancel, session).await
         }
     }
 }
@@ -178,16 +189,55 @@ async fn serve_local(
 pub(super) async fn serve_remote(mut channel: ChannelStream<client::Msg>, route: RemoteRoute) {
     let _active = route.rule.connection_opened();
     let result = async {
-        let mut stream = tokio::time::timeout(
+        let dynamic = route.target.is_none();
+        let target = match &route.target {
+            Some(target) => target.clone(),
+            None => tokio::time::timeout(route.timeout, socks::handshake(&mut channel))
+                .await
+                .context("SOCKS5 handshake timed out")??,
+        };
+        // Domain requests resolve here, on the fwm client, just as connections
+        // to fixed reverse-forward targets do.
+        let connected = tokio::time::timeout(
             route.timeout,
-            TcpStream::connect((route.target.host.as_str(), route.target.port)),
+            TcpStream::connect((target.host.as_str(), target.port)),
         )
         .await
-        .context("local target connect timed out")??;
+        .unwrap_or_else(|_| {
+            Err(std::io::Error::new(
+                std::io::ErrorKind::TimedOut,
+                "local target connect timed out",
+            ))
+        });
+        let mut stream = match connected {
+            Ok(stream) => stream,
+            Err(error) => {
+                if dynamic {
+                    use std::io::ErrorKind;
+                    let status = match error.kind() {
+                        ErrorKind::PermissionDenied => 2,
+                        ErrorKind::NetworkUnreachable => 3,
+                        ErrorKind::HostUnreachable => 4,
+                        ErrorKind::ConnectionRefused => 5,
+                        ErrorKind::TimedOut => 6,
+                        _ => 1,
+                    };
+                    let _ = tokio::time::timeout(route.timeout, socks::reply(&mut channel, status))
+                        .await;
+                }
+                return Err(error.into());
+            }
+        };
+        if dynamic {
+            tokio::time::timeout(route.timeout, socks::reply(&mut channel, 0))
+                .await
+                .context("SOCKS5 response timed out")??;
+        }
         copy_bidirectional(&mut stream, &mut channel).await?;
         Ok::<_, anyhow::Error>(())
     };
     tokio::select! {
+        biased;
         _ = route.cancel.cancelled() => {},
         result = result => if let Err(error) = result { route.rule.connection_error(error); },
     }

@@ -194,9 +194,9 @@ pub enum ServerField {
 
 #[derive(Debug, Args)]
 #[command(
-    group(ArgGroup::new("tunnel").required(true).args(["local", "remote", "dynamic"])),
-    override_usage = "fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src PORTS --tgt PORT\n       fwm add --server SERVER [OPTIONS] --dynamic PORT",
-    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n\nNames default to a random English word. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or a random English word by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
+    group(ArgGroup::new("tunnel").required(true).args(["local", "remote", "dynamic", "remote_dynamic"])),
+    override_usage = "fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src PORTS --tgt PORT\n       fwm add --server SERVER [OPTIONS] --dynamic|--remote-dynamic [bind:]PORT",
+    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n  fwm add --server example-cluster --remote-dynamic 127.0.0.1:7897\n\nNames default to a random English word. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or a random English word by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
 )]
 pub struct AddArgs {
     /// Optional legacy positional name; --name is preferred.
@@ -220,9 +220,12 @@ pub struct AddArgs {
     /// Listen remotely; use --port/--src, or --remote=[bind:]port:host:port.
     #[arg(long, short = 'R', num_args = 0..=1, default_missing_value = "", require_equals = true, value_name = "SPEC")]
     pub remote: Option<String>,
-    /// [bind_address:]port for a SOCKS5 CONNECT proxy.
+    /// Local SOCKS5 CONNECT proxy at [bind_address:]port, with remote egress.
     #[arg(long, short = 'D')]
     pub dynamic: Option<String>,
+    /// Remote SOCKS5 CONNECT proxy at [bind_address:]port, with local egress.
+    #[arg(long, value_name = "SPEC")]
+    pub remote_dynamic: Option<String>,
     #[command(flatten)]
     pub ports: PortArgs,
     #[arg(long)]
@@ -246,7 +249,7 @@ pub enum Mode {
     Dedicated,
 }
 
-const REMOTE_CLEANUP_HELP: &str = "Reclaim only stale SSH sessions registered by fwm for this remote forwarding rule. Remote forwards default to verified; local and dynamic forwards use off. Verified cleanup always uses a dedicated SSH connection, including when --connection-mode shared is requested. It requires Python 3 and command execution on the remote Linux/macOS server, without sudo. Use off for restricted SSH servers which cannot run the helper; fwm never silently disables verified cleanup.";
+const REMOTE_CLEANUP_HELP: &str = "Reclaim only stale SSH sessions registered by fwm for this remote forwarding rule. Remote forwards, including remote dynamic SOCKS, default to verified; local forwards and local dynamic SOCKS use off. Verified cleanup always uses a dedicated SSH connection, including when --connection-mode shared is requested. It requires Python 3 and command execution on the remote Linux/macOS server, without sudo. Use off for restricted SSH servers which cannot run the helper; fwm never silently disables verified cleanup.";
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum CleanupMode {
@@ -257,26 +260,26 @@ pub enum CleanupMode {
 #[derive(Clone, Debug, Default, Args)]
 pub struct PortArgs {
     /// Forward each port to localhost at the same port (e.g. 3000-3003,8080).
-    #[arg(long, value_name = "PORTS", conflicts_with_all = ["src", "tgt", "dynamic"])]
+    #[arg(long, value_name = "PORTS", conflicts_with_all = ["src", "tgt", "dynamic", "remote_dynamic"])]
     pub port: Option<String>,
     /// Listen on these ports and forward all of them to --tgt (e.g. 5000-5003,6000).
-    #[arg(long, value_name = "PORTS", requires = "tgt", conflicts_with_all = ["port", "dynamic"])]
+    #[arg(long, value_name = "PORTS", requires = "tgt", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub src: Option<String>,
     /// One localhost destination port for all --src ports.
-    #[arg(long, value_name = "PORT", requires = "src", conflicts_with_all = ["port", "dynamic"])]
+    #[arg(long, value_name = "PORT", requires = "src", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub tgt: Option<String>,
 }
 
 #[derive(Debug, Default, Args)]
 pub struct EditPortArgs {
     /// Replace listen and destination ports with the same port.
-    #[arg(long, value_name = "PORT", conflicts_with_all = ["src", "tgt", "dynamic"])]
+    #[arg(long, value_name = "PORT", conflicts_with_all = ["src", "tgt", "dynamic", "remote_dynamic"])]
     pub port: Option<String>,
     /// Change only the listening port; preserve bind address and destination.
-    #[arg(long, value_name = "PORT", conflicts_with_all = ["port", "dynamic"])]
+    #[arg(long, value_name = "PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub src: Option<String>,
     /// Change only the destination port; preserve its host and listening address.
-    #[arg(long, value_name = "PORT", conflicts_with_all = ["port", "dynamic"])]
+    #[arg(long, value_name = "PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub tgt: Option<String>,
 }
 
@@ -299,7 +302,7 @@ impl PortOptions for EditPortArgs {
 }
 
 #[derive(Debug, Args)]
-#[command(group(ArgGroup::new("tunnel").args(["local", "remote", "dynamic"])))]
+#[command(group(ArgGroup::new("tunnel").args(["local", "remote", "dynamic", "remote_dynamic"])))]
 pub struct EditArgs {
     /// Existing forward name, ID, or group.
     pub name: String,
@@ -324,9 +327,12 @@ pub struct EditArgs {
     /// Switch to remote forwarding, preserving unspecified addresses and ports.
     #[arg(long, short = 'R', num_args = 0..=1, default_missing_value = "", require_equals = true, value_name = "SPEC")]
     pub remote: Option<String>,
-    /// Replace with a SOCKS5 CONNECT proxy at [bind_address:]port.
+    /// Replace with a local SOCKS5 CONNECT proxy at [bind_address:]port.
     #[arg(long, short = 'D')]
     pub dynamic: Option<String>,
+    /// Remote SOCKS5 CONNECT proxy at [bind_address:]port, with local egress.
+    #[arg(long, value_name = "SPEC")]
+    pub remote_dynamic: Option<String>,
     #[command(flatten)]
     pub ports: EditPortArgs,
     /// SSH connection sharing; verified remote cleanup always uses dedicated.
@@ -663,9 +669,15 @@ mod tests {
             let Command::Add(args) = Cli::try_parse_from(arguments).unwrap().command else {
                 unreachable!()
             };
-            let tunnels =
-                super::super::parse::tunnels(None, args.remote.as_deref(), None, &args.ports, None)
-                    .unwrap();
+            let tunnels = super::super::parse::tunnels(
+                None,
+                args.remote.as_deref(),
+                None,
+                None,
+                &args.ports,
+                None,
+            )
+            .unwrap();
             assert_eq!(
                 tunnels
                     .iter()
@@ -733,6 +745,34 @@ mod tests {
             let mut arguments = vec!["fwm", "add", "web", "--server", "dev"];
             arguments.extend(flags);
             assert!(Cli::try_parse_from(&arguments).is_err(), "{arguments:?}");
+        }
+    }
+
+    #[test]
+    fn remote_dynamic_accepts_listen_specs_and_rejects_conflicting_tunnel_options() {
+        for command in ["add", "edit"] {
+            let mut base = vec!["fwm", command, "socks"];
+            if command == "add" {
+                base.extend(["--server", "dev"]);
+            }
+            for spec in ["7897", "127.0.0.2:7897", "[::1]:7897"] {
+                let mut arguments = base.clone();
+                arguments.extend(["--remote-dynamic", spec]);
+                assert!(Cli::try_parse_from(arguments).is_ok());
+            }
+            for conflict in [
+                vec!["--local=8080"],
+                vec!["--remote=8080"],
+                vec!["--dynamic", "1080"],
+                vec!["--port", "8080"],
+                vec!["--src", "8080"],
+                vec!["--tgt", "8080"],
+            ] {
+                let mut arguments = base.clone();
+                arguments.extend(["--remote-dynamic", "7897"]);
+                arguments.extend(conflict);
+                assert!(Cli::try_parse_from(&arguments).is_err(), "{arguments:?}");
+            }
         }
     }
     #[test]

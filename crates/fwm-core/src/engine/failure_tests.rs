@@ -26,7 +26,7 @@ fn cleanup(fixture: &Fixture) -> CleanupContext {
 fn claim_reply(request: &Value) -> Value {
     json!({"protocol":1,"op":"claim","ok":true,"session_id":request["session_id"],"generation":request["generation"],"session_pid":123,"reclaimed":true})
 }
-async fn wait_state(rule: &crate::engine::state::Rule, expected: RuntimeState) {
+pub(super) async fn wait_state(rule: &crate::engine::state::Rule, expected: RuntimeState) {
     tokio::time::timeout(Duration::from_secs(4), async {
         loop {
             if rule.statuses.lock().unwrap()["rule"].status.state == expected {
@@ -359,7 +359,7 @@ async fn refused_remote_listener_retries_and_failed_cancel_keeps_stopping_until_
         fixture.handle.clone(),
         fixture.routes.clone(),
         listen,
-        target,
+        Some(target),
         RetryPolicy::default(),
         cancel.clone(),
         session,
@@ -399,7 +399,7 @@ async fn rejected_ownership_confirmation_cancels_the_listener_before_attention()
             fixture.handle.clone(),
             fixture.routes.clone(),
             listen,
-            target,
+            Some(target),
             RetryPolicy::default(),
             cancel.clone(),
             session,
@@ -461,7 +461,7 @@ async fn verified_listener_permission_refusal_stops_after_three_attempts_and_rel
         fixture.handle.clone(),
         fixture.routes.clone(),
         listen,
-        target,
+        Some(target),
         RetryPolicy::default(),
         cancel.clone(),
         session,

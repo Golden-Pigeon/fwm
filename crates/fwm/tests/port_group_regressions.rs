@@ -1,6 +1,6 @@
 //! CLI regressions for partial shorthand edits and persistent groups. Rules are
 //! disabled and each test owns a temporary configuration and daemon instance.
-use fwm_core::model::{Config, DesiredState};
+use fwm_core::model::{Config, ConnectionMode, DesiredState, RemoteCleanup, Tunnel};
 use serde_json::Value;
 use std::{
     fs,
@@ -79,6 +79,109 @@ impl Drop for Fixture {
     fn drop(&mut self) {
         let _ = self.output(&["daemon", "stop"]);
     }
+}
+
+#[test]
+fn remote_dynamic_persists_exports_and_edits_without_losing_rule_identity() {
+    let cli = Fixture::new();
+    cli.add(&[
+        "--name",
+        "school-socks",
+        "--group",
+        "proxies",
+        "--remote-dynamic",
+        "127.0.0.1:7897",
+    ]);
+    let config = cli.config();
+    let original = config.forward("school-socks").unwrap();
+    assert!(matches!(original.tunnel, Tunnel::RemoteDynamic { .. }));
+    assert_eq!(original.tunnel.listen().to_string(), "127.0.0.1:7897");
+    assert_eq!(original.remote_cleanup, RemoteCleanup::Verified);
+    assert_eq!(original.connection_mode, ConnectionMode::Dedicated);
+    let exported = cli.ok(&["config", "export"]);
+    assert_eq!(exported["forwards"][0]["kind"], "remote_dynamic");
+    assert!(exported["forwards"][0].get("target").is_none());
+    let durable: Config =
+        toml::from_str(&fs::read_to_string(cli.0.path().join("config.toml")).unwrap()).unwrap();
+    assert_eq!(durable, config);
+
+    cli.ok(&["edit", "school-socks", "--remote-dynamic", "[::1]:7898"]);
+    let changed = cli.config().forward("school-socks").unwrap().clone();
+    assert_eq!(changed.id, original.id);
+    assert_eq!(changed.group, original.group);
+    assert_eq!(changed.desired_state, DesiredState::Stopped);
+    assert_eq!(changed.tunnel.listen().to_string(), "[::1]:7898");
+    cli.reject_unchanged(&["edit", "school-socks", "--remote"], "requires --tgt");
+    cli.ok(&["edit", "school-socks", "--remote", "--tgt", "8080"]);
+    let fixed = cli.config().forward("school-socks").unwrap().clone();
+    assert!(matches!(fixed.tunnel, Tunnel::Remote { .. }));
+    assert_eq!(fixed.tunnel.listen(), changed.tunnel.listen());
+    assert_eq!(fixed.tunnel.target().unwrap().to_string(), "localhost:8080");
+
+    cli.ok(&[
+        "edit",
+        "school-socks",
+        "--remote-dynamic",
+        "7897",
+        "--remote-cleanup",
+        "off",
+        "--connection-mode",
+        "shared",
+    ]);
+    let shared = cli.config().forward("school-socks").unwrap().clone();
+    assert_eq!(shared.remote_cleanup, RemoteCleanup::Off);
+    assert_eq!(shared.connection_mode, ConnectionMode::Shared);
+    cli.ok(&["edit", "school-socks", "--remote=7899"]);
+    let fixed = cli.config().forward("school-socks").unwrap().clone();
+    assert_eq!(fixed.remote_cleanup, RemoteCleanup::Off);
+    assert_eq!(fixed.tunnel.target().unwrap().to_string(), "localhost:7899");
+    cli.ok(&["edit", "school-socks", "--dynamic", "1080"]);
+    cli.ok(&["edit", "school-socks", "--remote-dynamic", "7897"]);
+    let remote = cli.config().forward("school-socks").unwrap().clone();
+    assert_eq!(remote.remote_cleanup, RemoteCleanup::Verified);
+    assert_eq!(remote.connection_mode, ConnectionMode::Dedicated);
+    cli.ok(&["edit", "school-socks", "--dynamic", "1080"]);
+    assert_eq!(
+        cli.config().forward("school-socks").unwrap().remote_cleanup,
+        RemoteCleanup::Off
+    );
+}
+
+#[test]
+fn remote_dynamic_listener_validation_is_atomic_and_remote_shorthand_stays_fixed() {
+    let cli = Fixture::new();
+    cli.add(&["--name", "fixed", "--remote", "7897"]);
+    let config = cli.config();
+    let fixed = config.forward("fixed").unwrap();
+    assert!(matches!(fixed.tunnel, Tunnel::Remote { .. }));
+    assert_eq!(fixed.tunnel.target().unwrap().to_string(), "localhost:7897");
+    cli.reject_unchanged(
+        &["edit", "fixed", "--remote=127.0.0.1:7897"],
+        "use --remote-dynamic",
+    );
+    for spec in [
+        "0",
+        "65536",
+        "7897-7898",
+        "7897,7898",
+        "localhost:7897",
+        "[::1:7897",
+    ] {
+        cli.reject_unchanged(&["edit", "fixed", "--remote-dynamic", spec], "listen");
+    }
+    cli.reject_unchanged(
+        &[
+            "add",
+            "--server",
+            "dev",
+            "--name",
+            "invalid",
+            "--remote-dynamic",
+            "0",
+            "--disabled",
+        ],
+        "listen port",
+    );
 }
 
 #[test]

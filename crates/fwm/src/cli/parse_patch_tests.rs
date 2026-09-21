@@ -22,6 +22,7 @@ fn direction_port_shorthand_matches_port_patch_for_every_direction_and_address_f
                         (!remote).then_some(port),
                         remote.then_some(port),
                         None,
+                        None,
                         &EditPortArgs::default(),
                         Some(&previous),
                     )
@@ -29,6 +30,7 @@ fn direction_port_shorthand_matches_port_patch_for_every_direction_and_address_f
                     let patch = tunnels(
                         (!remote).then_some(""),
                         remote.then_some(""),
+                        None,
                         None,
                         &EditPortArgs {
                             port: Some(port.into()),
@@ -62,6 +64,7 @@ fn shorthand_edit_rejects_ranges_lists_and_invalid_ports_without_mutating_input(
                     (!remote).then_some(value),
                     remote.then_some(value),
                     None,
+                    None,
                     &EditPortArgs::default(),
                     Some(&previous),
                 )
@@ -79,6 +82,7 @@ fn shorthand_create_still_defaults_to_loopback_and_expands_port_lists() {
         let rules = tunnels(
             (!remote).then_some("3000-3001,8080"),
             remote.then_some("3000-3001,8080"),
+            None,
             None,
             &PortArgs::default(),
             None,
@@ -102,6 +106,7 @@ fn explicit_spec_still_replaces_both_addresses_on_edit() {
         None,
         Some("127.0.0.3:5000:new.internal:8080"),
         None,
+        None,
         &EditPortArgs::default(),
         Some(&previous),
     )
@@ -118,6 +123,7 @@ fn full_mapping_edits_without_bind_preserve_the_original_ip_for_both_directions(
             let changed = tunnels(
                 (!remote).then_some("3001:new.internal:8081"),
                 remote.then_some("3001:new.internal:8081"),
+                None,
                 None,
                 &EditPortArgs::default(),
                 Some(&existing),
@@ -144,6 +150,7 @@ fn direction_port_shorthand_converts_dynamic_using_existing_bind_and_default_tar
             (!remote).then_some("8080"),
             remote.then_some("8080"),
             None,
+            None,
             &EditPortArgs::default(),
             Some(&previous),
         )
@@ -151,5 +158,37 @@ fn direction_port_shorthand_converts_dynamic_using_existing_bind_and_default_tar
         assert_eq!(rules[0].listen().to_string(), "[::1]:8080");
         assert_eq!(rules[0].target().unwrap().to_string(), "localhost:8080");
         assert_eq!(rules[0].is_remote(), remote);
+    }
+}
+
+#[test]
+fn remote_dynamic_requires_one_valid_listen_address_without_a_destination() {
+    for (spec, expected) in [
+        ("7897", "127.0.0.1:7897"),
+        ("127.0.0.2:7897", "127.0.0.2:7897"),
+        ("[::1]:7897", "[::1]:7897"),
+    ] {
+        let rules = tunnels(None, None, None, Some(spec), &PortArgs::default(), None).unwrap();
+        assert_eq!(rules.len(), 1);
+        assert!(matches!(rules[0], Tunnel::RemoteDynamic { .. }));
+        assert_eq!(rules[0].listen().to_string(), expected);
+        assert!(rules[0].target().is_none());
+    }
+    for spec in [
+        "",
+        "0",
+        "65536",
+        "7897-7898",
+        "7897,7898",
+        "localhost:7897",
+        "::1:7897",
+        "[::1:7897",
+        "7897:localhost:8080",
+        "127.0.0.1:0",
+    ] {
+        assert!(
+            tunnels(None, None, None, Some(spec), &PortArgs::default(), None).is_err(),
+            "{spec}"
+        );
     }
 }

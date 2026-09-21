@@ -18,6 +18,7 @@
 | 生命周期与弱网 | `engine/`、`tests/smoke.py`、`tests/ux_live.py` | 重连、黑洞、远端取消迟到、共享连接隔离、规则/组重启、退避上限 |
 | 远端残留回收 | `cleanup/test_*.py`、`tests/remote_recovery.py` | 身份与代次核验、PID 复用、陌生进程保护、helper 崩溃、取消竞争 |
 | 数据通道和 SOCKS | `engine/channel_tests.rs`、`engine/failure_tests.rs`、`engine/socks_protocol_tests.rs` | 本地端口占用后恢复/取消、目标通道拒绝和超时回复、拒绝和取消、容量释放、IPv4/IPv6/DNS、协议错误回复、分片、截断、双向半关闭 |
+| 反向动态 SOCKS5 | `tests/remote_dynamic.py`、`tests/smoke.py` | 真实 sshd 远端监听和身份租约、IPv4/域名 CONNECT、大流量半关闭、目标拒绝回复、停止释放监听与租约、规则重启隔离、黑洞重连及后台重启恢复 |
 | helper 客户端与远端失败 | `engine/failure_tests.rs` | exec 拒绝、Python 不可用、断开/超时、超长/错误 JSON/版本/操作/身份/PID；确认失败补偿取消、释放失败、三次监听拒绝、迟到通道关闭、空闲异常输出 |
 | 管理 API | `fwm-api/tests/` | 帧边界、截断、坏 JSON/UTF-8、版本与请求 ID、写失败不污染流、命令版本保护分类 |
 | 输出与输入契约 | `cli/contracts_tests.rs`、`tests/cli_contracts.rs`、`tests/ux_commands.rs` | JSON 最终结果、退出码、时间单位与溢出、帮助零副作用、保存和就绪区分 |

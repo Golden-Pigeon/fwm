@@ -2,7 +2,7 @@
 
 创建：2026-09-18；更新：2026-09-20。状态：已实现基于 russh 的首个 CLI 版本；本文同时保留后续增强的设计。已交付功能、运行方法和明确边界以 [README.md](README.md) 为准。
 
-当前实现包括模块化 workspace、L/R/SOCKS5、共享/独占连接、后台与 IPC、重连、配置恢复、原生跳板、主机校验、CLI 和三平台服务适配。Remote 默认启用 verified 回收，包含持久登记、旧会话身份核验、主动终止、重新绑定和 helper 生命周期监督。Linux/macOS 远端均进行真实 OpenSSH 验收；Windows 客户端仍需原生平台运行验收，不能将交叉编译视作运行验证。
+当前实现包括模块化 workspace、L/R/本地与反向 SOCKS5、共享/独占连接、后台与 IPC、重连、配置恢复、原生跳板、主机校验、CLI 和三平台服务适配。Remote 和 RemoteDynamic 默认启用 verified 回收，包含持久登记、旧会话身份核验、主动终止、重新绑定和 helper 生命周期监督。Linux/macOS 远端均进行真实 OpenSSH 验收；Windows 客户端仍需原生平台运行验收，不能将交叉编译视作运行验证。
 
 用户已确认：使用 Rust 和 russh；第一版为 CLI；同时支持 macOS、Linux、Windows；为 TUI、Web UI、Desktop 保留接口。本文的命令名 `fwm` 为暂定名。
 
@@ -17,6 +17,7 @@
 | 本地访问远程 Web、数据库、Jupyter | Local / `-L` | 本地监听 → SSH → 从远端连接目标 |
 | 远程服务器访问本地代理、API、开发服务 | Remote / `-R` | 远端监听 → SSH → 从本地连接目标 |
 | 本地通过某服务器访问其可达网络 | Dynamic / `-D` | 本地 SOCKS → SSH → 远端连接请求的目标 |
+| 远端通过本机网络访问 SOCKS 请求的目标 | RemoteDynamic / 无固定目标的 `-R` | 远端 SOCKS → SSH → 本机解析并连接请求的目标 |
 
 目标地址不限于 SSH 服务器或本机的 localhost，也可以是对应一侧可达的内网地址。Local 的目标主机名在远端解析；Remote 的目标主机名在本地解析。SOCKS 是否把域名交给远端解析还取决于调用方用法。SSH 转发语义见 [OpenSSH ssh 手册](https://man.openbsd.org/ssh)。
 
@@ -110,8 +111,9 @@ core 内部按 `model / engine / backend / storage` 分模块。未来界面通�
 | Local | Tokio 绑定本地监听；每个接受的 TCP 连接调用 `channel_open_direct_tcpip` 并双向搬运 | 关闭该规则监听及其活动通道 |
 | Remote | 调用 `tcpip_forward`，由 `server_channel_open_forwarded_tcpip` 回调接收远端连接，并连接本地 target | 调用 `cancel_tcpip_forward` 确认取消，同时关闭该规则活动通道 |
 | Dynamic | 绑定本地 SOCKS5 入口，完成 SOCKS CONNECT 协商后按请求目标创建 direct-tcpip 通道 | 关闭该规则 SOCKS 监听及其活动通道 |
+| RemoteDynamic | 复用 Remote 的监听与回收流程，在 forwarded-tcpip 通道上完成 SOCKS5 协商，再从本机连接请求目标 | 与 Remote 相同，并取消该规则未完成的 SOCKS 协商及活动通道 |
 
-首版 SOCKS 仅实现 TCP CONNECT；域名请求交由远端解析，IP 请求保持调用方指定的地址。不承诺 SOCKS UDP ASSOCIATE 或 BIND。
+SOCKS5 仅实现 TCP CONNECT；Dynamic 的域名请求交由远端解析，RemoteDynamic 的域名请求由本机解析，IP 请求保持调用方指定的地址。不支持 SOCKS4、SOCKS UDP ASSOCIATE 或 BIND。RemoteDynamic 使用 `--remote-dynamic [bind:]PORT`；现有 `--remote PORT` 继续表示固定目标的同端口转发。
 
 Local/Dynamic 的 Established 要求本地监听成功且 SSH 已认证；Remote 要求 SSH 已认证且服务端确认监听注册成功。协议确认不等于目标应用健康，也不证明 Remote 的实际暴露范围。Local/Dynamic 在传输重连期间可保留本地监听以避免端口被抢占，但应快速拒绝新业务连接并显示恢复中，不无限缓存或假报可用。
 
@@ -160,7 +162,7 @@ russh 的最小验证项是三平台编译与认证、多规则双向并发、�
 | --- | --- |
 | `ServerProfile` | 稳定 ID、名称、SSH alias 或显式地址、配置文件路径、标签、连接策略 |
 | `ConnectionRuntime` | ConnectionKey、connection_generation、连接/认证状态、引用规则、心跳、连接级退避 |
-| `ForwardSpec` | 稳定 ID、名称、group、server_id、Local/Remote/Dynamic、监听地址、目标地址、desired_state、connection_mode、remote_cleanup |
+| `ForwardSpec` | 稳定 ID、名称、group、server_id、Local/Remote/Dynamic/RemoteDynamic、监听地址、固定转发的目标地址、desired_state、connection_mode、remote_cleanup |
 | `RetryPolicy` | 心跳、连接超时、重试基数、最大间隔、稳定期、并发限制 |
 | `ForwardRuntime` | observed_state、rule_generation、关联连接代、监听注册/取消状态、通道集合、最后错误、规则级退避、时间戳 |
 | `HealthStatus` | unknown/healthy/unhealthy、探测方式、检测时间；与连接状态独立 |

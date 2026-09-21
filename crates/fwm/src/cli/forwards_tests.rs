@@ -37,7 +37,7 @@ fn config() -> Config {
 
 fn create(config: &Config, name: &str, ports: &str) -> Result<Vec<ForwardSpec>> {
     let args = arguments(name, ports);
-    let tunnels = parse::tunnels(args.local.as_deref(), None, None, &args.ports, None)?;
+    let tunnels = parse::tunnels(args.local.as_deref(), None, None, None, &args.ports, None)?;
     Ok(add::plan(config, &args, tunnels)?.forwards)
 }
 

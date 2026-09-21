@@ -142,7 +142,12 @@ fwm add local-proxy --server dev --remote 17890:127.0.0.1:7890 --wait
 
 # 本地 SOCKS5 1080，通过服务器访问请求的目标
 fwm add dev-socks --server dev --dynamic 1080
+
+# 远端 SOCKS5 7897，通过本机网络访问请求的目标
+fwm add school-socks --server example-cluster --remote-dynamic 127.0.0.1:7897
 ```
+
+`--remote-dynamic [bind:]PORT` 在远端创建 SOCKS5 CONNECT 代理，请求的目标由运行 fwm 的本机连接、解析域名，无需本机另开 SOCKS 服务。它对应 `ssh -R 127.0.0.1:7897 example-cluster` 的反向动态转发用途；远端程序可使用 `socks5h://127.0.0.1:7897`。省略 bind 时使用 `127.0.0.1`，IPv6 写为 `[::1]:7897`。它与 `--local`、`--remote`、`--dynamic` 和端口简写参数互斥；`--remote 7897` 仍表示固定转发到本机 `localhost:7897`。
 
 Local 和 Remote 都支持单端口、闭区间和逗号列表简写：
 
@@ -179,17 +184,17 @@ fwm edit backend --group another-group  # 明确把整组成员移入另一组
 
 整个批次先统一校验，一次保存；名称或配置内的监听冲突会使整个批次失败，已有规则不会被覆盖。同一组的成员即使已停止，也不能保存重复监听地址；不同组的停用备选规则可以复用端口，启用时再检查运行冲突。双栈校验区分 IPv4 与 IPv6 地址，并识别 IPv4-mapped IPv6 的同一监听；IPv6 通配地址可能同时覆盖 IPv4，按重叠处理。实际网络连接独立建立，外部进程占用端口等运行错误由对应规则报告。`--wait` 在同一超时时间内等待本批全部规则建立。
 
-也可直接写 `--local 3000` 或 `--remote 3000-3003,8080`。`--port` 与 `--src/--tgt` 二选一，添加时 `--src` 和 `--tgt` 必须同时提供，`--tgt` 只接受单个端口；不能与完整映射或 SOCKS 的 `--dynamic` 混用。
+也可直接写 `--local 3000` 或 `--remote 3000-3003,8080`。`--port` 与 `--src/--tgt` 二选一，添加时 `--src` 和 `--tgt` 必须同时提供，`--tgt` 只接受单个端口；不能与完整映射或 SOCKS 的 `--dynamic` / `--remote-dynamic` 混用。
 
 推荐用 `--name NAME` 自定义名称，旧的位置名称仍可用。使用 `--port` 或 `--src/--tgt` 时，`--local`/`--remote` 仅表示方向，不会吞掉后面的位置名称。完整映射可写 `--remote=12222:localhost:22`，也兼容旧的空格写法。数字规则名可用于 `edit --remote 1234`；编辑时若方向选项本身要携带一个端口，使用 `edit 1234 --remote=3000` 或 `--remote --port 3000` 可以直接表达意图。
 
-编辑只修改给出的字段：`edit web --tgt 8080` 保留监听及目标主机；`edit web --src 3001` 保留绑定 IP 和目标；`edit web --remote` 保留端口与地址并切换方向。`--port 3001` 同时修改两个端口，保留现有地址，`--local=3001` / `--remote=3001` 的端口修改行为相同。完整映射 `edit web --local=3001:new.internal:8081` 没写 bind 时也保留原绑定 IP；显式填写 bind 才会替换它。`--dynamic [bind:]PORT` 表示替换 SOCKS 监听规格。
+编辑只修改给出的字段：`edit web --tgt 8080` 保留监听及目标主机；`edit web --src 3001` 保留绑定 IP 和目标；`edit web --remote` 保留端口与地址并切换方向。`--port 3001` 同时修改两个端口，保留现有地址，`--local=3001` / `--remote=3001` 的端口修改行为相同。完整映射 `edit web --local=3001:new.internal:8081` 没写 bind 时也保留原绑定 IP；显式填写 bind 才会替换它。`--dynamic [bind:]PORT` 和 `--remote-dynamic [bind:]PORT` 分别替换为本地、远端 SOCKS 监听规格；从 SOCKS 切换到固定转发时需提供目标端口，例如 `edit school-socks --remote --tgt 8080`。
 
 组编辑对每个成员应用相同变更并一次提交，不会把编辑变成新增监听；统一源端口导致组内冲突时整次拒绝。需要扩展端口数量时使用 `add --group`。`edit web --server another-alias` 可直接移到新的 SSH 别名，与新服务器记录原子保存，规则 ID、组归属和启停意图保留。
 
 创建时省略监听地址默认绑定 `127.0.0.1`；Local/Remote 编辑则保留未指定的绑定地址。可显式指定地址，例如 `127.0.0.1:3000:10.0.0.2:3000`；IPv6 使用括号，例如 `[::1]:3000:[::1]:3000`。目标可带 scope，如 `[fe80::1%lo0]:8080` 或 `[fe80::1%3]:8080`，scope 由目标所在侧解释。无效的 IPv6 字面量会在保存前被拒绝。
 
-目标地址由转发方向决定：Local 的 target 从远端访问，Remote 的 target 从本地访问。SOCKS5 支持 CONNECT，包括由远端解析的域名请求；UDP ASSOCIATE 和 BIND 不受支持。
+目标地址由转发方向决定：Local 的 target 从远端访问，Remote 的 target 从本地访问。SOCKS5 支持 CONNECT；`--dynamic` 的目标连接和域名解析在远端，`--remote-dynamic` 则在本机。UDP ASSOCIATE 和 BIND 不受支持。
 
 ```sh
 fwm status
@@ -215,7 +220,7 @@ fwm down --all
 fwm remove another-name
 ```
 
-`add` 默认保存并启动，`--disabled` 只保存。Local/SOCKS 默认共享同一服务器 profile 的 SSH 连接；Remote 默认启用 verified 回收并使用独占连接，保证清理旧会话时不影响其他规则。规则改名不重连；修改转发端点会关闭该规则的旧数据连接，其他规则继续工作。
+`add` 默认保存并启动，`--disabled` 只保存。Local 和本地 SOCKS 默认共享同一服务器 profile 的 SSH 连接；Remote 和远端 SOCKS 默认启用 verified 回收并使用独占连接，保证清理旧会话时不影响其他规则。受限 SSH 服务器无法运行回收助手时，可显式使用 `--remote-cleanup off`。规则改名不重连；修改转发端点会关闭该规则的旧数据连接，其他规则继续工作。
 
 `restart NAME` / `restart --group GROUP` 重建选中规则，已停止的规则会启动；共享连接中未选中的规则保持运行。`restart --server dev` 会重新解析 SSH 配置并强制刷新该服务器的 SSH 连接，适合切换 SSH 端点、密钥或 agent；它也会启动该服务器上选中的停止规则。在线 `config reload` 会重新读取 SSH 连接配置，只刷新解析结果变化的服务器，并保留规则启停意图。更换密钥文件内容或需要强制重建连接时使用服务器级 restart。
 
@@ -327,7 +332,7 @@ state/daemon.log        启动错误和运行诊断，单文件最多 2 MiB，�
 
 手写配置省略 ID 时，按对象类别和名称生成稳定初始 ID；读取不会改写文件。显式 ID 始终保留，成功修改后 ID 随配置保存，之后重命名不改变 ID。名称不能占用另一同类对象的 ID，组名不能与规则名称或 ID 冲突；旧配置出现歧义时，错误会指出双方对象，修复名称即可，勿改动 ID。
 
-服务器和转发配置拒绝未知字段；例如 `usr` 或 `desired_sate` 的拼写错误会使校验失败。手写或导入的 remote 规则省略 `remote_cleanup` 时也默认使用 verified/dedicated，与 CLI 一致；显式 `remote_cleanup = "off"` 会保留。
+服务器和转发配置拒绝未知字段；例如 `usr` 或 `desired_sate` 的拼写错误会使校验失败。手写或导入的 `remote` / `remote_dynamic` 规则省略 `remote_cleanup` 时也默认使用 verified/dedicated，与 CLI 一致；显式 `remote_cleanup = "off"` 会保留。反向 SOCKS 规则使用 `kind = "remote_dynamic"` 和 `listen = "127.0.0.1:7897"`，不填写 `target`。
 
 ```sh
 fwm config export

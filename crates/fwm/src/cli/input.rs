@@ -110,6 +110,7 @@ fn takes_value(argument: &str) -> bool {
         "--remote-cleanup",
         "--rename",
         "--dynamic",
+        "--remote-dynamic",
         "-D",
     ]
     .contains(&argument)

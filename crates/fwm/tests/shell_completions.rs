@@ -345,6 +345,12 @@ fn command_options_and_enums_complete_in_context() {
         &fixture.complete(&["add", "--s"]),
         &["--server", "--ssh-config", "--src"],
     );
+    for command in ["add", "edit"] {
+        assert_contains(
+            &fixture.complete(&[command, "--remote-d"]),
+            &["--remote-dynamic"],
+        );
+    }
     let top_level = fixture.complete(&[""]);
     assert!(top_level.iter().all(|candidate| candidate != "__complete"));
     assert_contains(&top_level, &["completions"]);

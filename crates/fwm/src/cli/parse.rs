@@ -19,9 +19,18 @@ pub fn tunnels(
     local: Option<&str>,
     remote: Option<&str>,
     dynamic: Option<&str>,
+    remote_dynamic: Option<&str>,
     ports: &impl PortOptions,
     existing: Option<&Tunnel>,
 ) -> Result<Vec<Tunnel>> {
+    if [local, remote, dynamic, remote_dynamic]
+        .into_iter()
+        .flatten()
+        .count()
+        > 1
+    {
+        bail!("choose only one of --local, --remote, --dynamic and --remote-dynamic");
+    }
     let ports = ports.values();
     let has_ports = ports.port.is_some() || ports.src.is_some() || ports.tgt.is_some();
     if ports.port.is_some() && (ports.src.is_some() || ports.tgt.is_some()) {
@@ -30,12 +39,15 @@ pub fn tunnels(
     if existing.is_none() && ports.src.is_some() != ports.tgt.is_some() {
         bail!("--src and --tgt must be supplied together");
     }
-    if let Some(value) = dynamic {
+    if let Some(value) = dynamic.or(remote_dynamic) {
         if has_ports {
             bail!("--port, --src and --tgt only support local or remote forwarding");
         }
-        return Ok(vec![Tunnel::Dynamic {
-            listen: listening(value)?,
+        let listen = listening(value)?;
+        return Ok(vec![if remote_dynamic.is_some() {
+            Tunnel::RemoteDynamic { listen }
+        } else {
+            Tunnel::Dynamic { listen }
         }]);
     }
     let (value, is_remote) = match (local, remote) {
@@ -55,6 +67,11 @@ pub fn tunnels(
         );
     }
     if value.contains(':') {
+        if is_remote && split_brackets(value)?.len() == 2 {
+            bail!(
+                "--remote requires a fixed target; use --remote-dynamic {value} for a reverse SOCKS proxy"
+            );
+        }
         let (mut listen, target) = forwarding(value)?;
         if let Some(previous) = existing
             && split_brackets(value)?.len() == 3
@@ -148,7 +165,12 @@ fn directed(is_remote: bool, listen: SocketAddr, target: Endpoint) -> Tunnel {
 
 fn listening(value: &str) -> Result<SocketAddr> {
     let address = if !value.contains(':') {
-        SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), value.parse()?)
+        SocketAddr::new(
+            IpAddr::V4(Ipv4Addr::LOCALHOST),
+            value.parse().map_err(|_| {
+                anyhow!("invalid listen port {value:?}; choose an integer between 1 and 65535")
+            })?,
+        )
     } else {
         value.parse().map_err(|_| {
             anyhow!("invalid listen address {value:?}; use an IP address and brackets around IPv6")
@@ -218,7 +240,7 @@ mod tests {
             port: Some("8080".into()),
             ..Default::default()
         };
-        let changed = tunnels(None, None, None, &ports, Some(&existing)).unwrap();
+        let changed = tunnels(None, None, None, None, &ports, Some(&existing)).unwrap();
         assert_eq!(changed[0].listen().to_string(), "[::1]:8080");
         assert_eq!(
             changed[0].target().unwrap().to_string(),
@@ -239,7 +261,7 @@ mod tests {
             tgt: Some("8081".into()),
             ..Default::default()
         };
-        let changed = tunnels(None, None, None, &target_only, Some(&original))
+        let changed = tunnels(None, None, None, None, &target_only, Some(&original))
             .unwrap()
             .remove(0);
         assert_eq!(changed.listen(), original.listen());
@@ -251,7 +273,7 @@ mod tests {
             src: Some("12346".into()),
             ..Default::default()
         };
-        let changed = tunnels(None, None, None, &source_only, Some(&original))
+        let changed = tunnels(None, None, None, None, &source_only, Some(&original))
             .unwrap()
             .remove(0);
         assert_eq!(changed.listen().to_string(), "[::1]:12346");
@@ -259,6 +281,7 @@ mod tests {
         let changed = tunnels(
             None,
             Some(""),
+            None,
             None,
             &EditPortArgs::default(),
             Some(&original),
@@ -272,12 +295,12 @@ mod tests {
             src: Some("3000-3001".into()),
             ..Default::default()
         };
-        assert!(tunnels(None, None, None, &invalid, Some(&original)).is_err());
+        assert!(tunnels(None, None, None, None, &invalid, Some(&original)).is_err());
         let invalid = EditPortArgs {
             tgt: Some("0".into()),
             ..Default::default()
         };
-        assert!(tunnels(None, None, None, &invalid, Some(&original)).is_err());
+        assert!(tunnels(None, None, None, None, &invalid, Some(&original)).is_err());
     }
 
     #[test]
@@ -290,6 +313,7 @@ mod tests {
                 Some(""),
                 None,
                 None,
+                None,
                 &EditPortArgs::default(),
                 Some(&original)
             )
@@ -299,7 +323,7 @@ mod tests {
             tgt: Some("80".into()),
             ..Default::default()
         };
-        let changed = tunnels(Some(""), None, None, &ports, Some(&original))
+        let changed = tunnels(Some(""), None, None, None, &ports, Some(&original))
             .unwrap()
             .remove(0);
         assert_eq!(changed.listen(), original.listen());
@@ -313,7 +337,7 @@ mod tests {
             ..Default::default()
         };
         for (local, remote) in [(Some(""), None), (None, Some(""))] {
-            let rules = tunnels(local, remote, None, &ports, None).unwrap();
+            let rules = tunnels(local, remote, None, None, &ports, None).unwrap();
             assert_eq!(
                 rules
                     .iter()
@@ -329,7 +353,7 @@ mod tests {
                 assert_eq!(target.port, rule.listen().port());
             }
         }
-        let direct = tunnels(Some("3000"), None, None, &PortArgs::default(), None).unwrap();
+        let direct = tunnels(Some("3000"), None, None, None, &PortArgs::default(), None).unwrap();
         assert_eq!(direct[0].target().unwrap().to_string(), "localhost:3000");
     }
 
@@ -340,7 +364,7 @@ mod tests {
             tgt: Some("3000".into()),
             ..Default::default()
         };
-        let rules = tunnels(None, Some(""), None, &ports, None).unwrap();
+        let rules = tunnels(None, Some(""), None, None, &ports, None).unwrap();
         assert_eq!(
             rules
                 .iter()
@@ -362,15 +386,15 @@ mod tests {
             port: Some("3000".into()),
             ..Default::default()
         };
-        assert!(tunnels(Some("3001:localhost:3001"), None, None, &ports, None).is_err());
-        assert!(tunnels(None, Some("3001"), None, &ports, None).is_err());
-        assert!(tunnels(Some(""), None, None, &PortArgs::default(), None).is_err());
+        assert!(tunnels(Some("3001:localhost:3001"), None, None, None, &ports, None).is_err());
+        assert!(tunnels(None, Some("3001"), None, None, &ports, None).is_err());
+        assert!(tunnels(Some(""), None, None, None, &PortArgs::default(), None).is_err());
         let invalid_target = PortArgs {
             src: Some("3000".into()),
             tgt: Some("3001-3002".into()),
             ..Default::default()
         };
-        assert!(tunnels(Some(""), None, None, &invalid_target, None).is_err());
+        assert!(tunnels(Some(""), None, None, None, &invalid_target, None).is_err());
     }
 
     #[test]
@@ -378,6 +402,7 @@ mod tests {
         let original = tunnels(
             None,
             Some("4000:host:4001"),
+            None,
             None,
             &PortArgs::default(),
             None,
@@ -388,18 +413,25 @@ mod tests {
             port: Some("3000".into()),
             ..Default::default()
         };
-        let edited = tunnels(None, None, None, &ports, Some(&original)).unwrap();
+        let edited = tunnels(None, None, None, None, &ports, Some(&original)).unwrap();
         assert!(edited[0].is_remote());
         assert_eq!(edited[0].target().unwrap().to_string(), "host:3000");
         assert!(
-            tunnels(None, None, None, &PortArgs::default(), Some(&original))
-                .unwrap()
-                .is_empty()
+            tunnels(
+                None,
+                None,
+                None,
+                None,
+                &PortArgs::default(),
+                Some(&original)
+            )
+            .unwrap()
+            .is_empty()
         );
         let dynamic = Tunnel::Dynamic {
             listen: "127.0.0.1:1080".parse().unwrap(),
         };
-        assert!(tunnels(None, None, None, &ports, Some(&dynamic)).is_err());
+        assert!(tunnels(None, None, None, None, &ports, Some(&dynamic)).is_err());
     }
     #[test]
     fn defaults_to_loopback_and_preserves_remote_dns() {

@@ -3,7 +3,7 @@ use serde_json::{Value, json};
 
 fn wire(kind: &str) -> Value {
     let mut value = json!({"id":"rule-id","name":"web","server_id":"server-id","kind":kind,"listen":"127.0.0.1:3000","desired_state":"stopped"});
-    if kind != "dynamic" {
+    if !matches!(kind, "dynamic" | "remote_dynamic") {
         value["target"] = json!("db.internal:8080");
     }
     value
@@ -59,9 +59,12 @@ fn server_typos_and_tunnel_incompatible_fields_are_rejected_in_json_and_toml() {
             .to_string()
             .contains("usr")
     );
-    let mut dynamic = wire("dynamic");
-    dynamic["target"] = json!("localhost:80");
-    assert!(serde_json::from_value::<ForwardSpec>(dynamic).is_err());
+    for kind in ["dynamic", "remote_dynamic"] {
+        let mut dynamic = wire(kind);
+        dynamic["target"] = json!("localhost:80");
+        assert!(serde_json::from_value::<ForwardSpec>(dynamic.clone()).is_err());
+        assert!(toml::from_str::<ForwardSpec>(&toml::to_string(&dynamic).unwrap()).is_err());
+    }
     for kind in ["local", "remote"] {
         let mut direct = wire(kind);
         direct.as_object_mut().unwrap().remove("target");
@@ -71,11 +74,11 @@ fn server_typos_and_tunnel_incompatible_fields_are_rejected_in_json_and_toml() {
 
 #[test]
 fn direction_defaults_match_cli_and_explicit_cleanup_off_is_retained() {
-    for kind in ["local", "remote", "dynamic"] {
+    for kind in ["local", "remote", "dynamic", "remote_dynamic"] {
         let rule: ForwardSpec = serde_json::from_value(wire(kind)).unwrap();
         assert_eq!(
             rule.remote_cleanup,
-            if kind == "remote" {
+            if matches!(kind, "remote" | "remote_dynamic") {
                 RemoteCleanup::Verified
             } else {
                 RemoteCleanup::Off
@@ -83,7 +86,7 @@ fn direction_defaults_match_cli_and_explicit_cleanup_off_is_retained() {
         );
         assert_eq!(
             rule.connection_mode,
-            if kind == "remote" {
+            if matches!(kind, "remote" | "remote_dynamic") {
                 ConnectionMode::Dedicated
             } else {
                 ConnectionMode::Shared
@@ -99,31 +102,33 @@ fn direction_defaults_match_cli_and_explicit_cleanup_off_is_retained() {
             rule
         );
     }
-    for mode in [None, Some("shared"), Some("dedicated")] {
-        let mut value = wire("remote");
-        value["remote_cleanup"] = json!("off");
-        if let Some(mode) = mode {
-            value["connection_mode"] = json!(mode);
-        }
-        let rule: ForwardSpec = serde_json::from_value(value).unwrap();
-        assert_eq!(rule.remote_cleanup, RemoteCleanup::Off);
-        assert_eq!(
-            rule.connection_mode,
-            if mode == Some("dedicated") {
-                ConnectionMode::Dedicated
-            } else {
-                ConnectionMode::Shared
+    for kind in ["remote", "remote_dynamic"] {
+        for mode in [None, Some("shared"), Some("dedicated")] {
+            let mut value = wire(kind);
+            value["remote_cleanup"] = json!("off");
+            if let Some(mode) = mode {
+                value["connection_mode"] = json!(mode);
             }
+            let rule: ForwardSpec = serde_json::from_value(value).unwrap();
+            assert_eq!(rule.remote_cleanup, RemoteCleanup::Off);
+            assert_eq!(
+                rule.connection_mode,
+                if mode == Some("dedicated") {
+                    ConnectionMode::Dedicated
+                } else {
+                    ConnectionMode::Shared
+                }
+            );
+        }
+        let mut value = wire(kind);
+        value["connection_mode"] = json!("shared");
+        assert_eq!(
+            serde_json::from_value::<ForwardSpec>(value)
+                .unwrap()
+                .connection_mode,
+            ConnectionMode::Dedicated
         );
     }
-    let mut value = wire("remote");
-    value["connection_mode"] = json!("shared");
-    assert_eq!(
-        serde_json::from_value::<ForwardSpec>(value)
-            .unwrap()
-            .connection_mode,
-        ConnectionMode::Dedicated
-    );
 }
 
 #[test]

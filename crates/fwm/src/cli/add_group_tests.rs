@@ -11,6 +11,7 @@ fn create(config: &Config, flags: &[&str]) -> Result<AddPlan> {
         args.local.as_deref(),
         args.remote.as_deref(),
         args.dynamic.as_deref(),
+        args.remote_dynamic.as_deref(),
         &args.ports,
         None,
     )?;

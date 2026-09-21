@@ -109,14 +109,18 @@ pub enum Tunnel {
     Dynamic {
         listen: SocketAddr,
     },
+    RemoteDynamic {
+        listen: SocketAddr,
+    },
 }
 
 impl Tunnel {
     pub fn listen(&self) -> SocketAddr {
         match self {
-            Self::Local { listen, .. } | Self::Remote { listen, .. } | Self::Dynamic { listen } => {
-                *listen
-            }
+            Self::Local { listen, .. }
+            | Self::Remote { listen, .. }
+            | Self::Dynamic { listen }
+            | Self::RemoteDynamic { listen } => *listen,
         }
     }
     pub fn target(&self) -> Option<&Endpoint> {
@@ -130,10 +134,11 @@ impl Tunnel {
             Self::Local { .. } => "local",
             Self::Remote { .. } => "remote",
             Self::Dynamic { .. } => "dynamic",
+            Self::RemoteDynamic { .. } => "remote_dynamic",
         }
     }
     pub fn is_remote(&self) -> bool {
-        matches!(self, Self::Remote { .. })
+        matches!(self, Self::Remote { .. } | Self::RemoteDynamic { .. })
     }
 }
 

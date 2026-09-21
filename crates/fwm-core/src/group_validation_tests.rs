@@ -114,3 +114,60 @@ fn dynamic_and_local_members_share_the_same_local_listener_namespace() {
             .contains("conflict within group")
     );
 }
+
+#[test]
+fn remote_dynamic_conflicts_with_remote_listeners_on_the_same_server() {
+    for (first, second) in [
+        ("127.0.0.1:7897", "127.0.0.1:7897"),
+        ("0.0.0.0:7897", "127.0.0.1:7897"),
+        ("[::]:7897", "[::1]:7897"),
+    ] {
+        for dynamic_pair in [false, true] {
+            let mut config = pair(true, first, second);
+            config.forwards[1].tunnel = Tunnel::RemoteDynamic {
+                listen: second.parse().unwrap(),
+            };
+            if dynamic_pair {
+                config.forwards[0].tunnel = Tunnel::RemoteDynamic {
+                    listen: first.parse().unwrap(),
+                };
+            }
+            assert!(
+                config
+                    .validate()
+                    .unwrap_err()
+                    .contains("conflict within group")
+            );
+            for rule in &mut config.forwards {
+                rule.group = None;
+                rule.desired_state = DesiredState::Running;
+            }
+            assert!(
+                config
+                    .validate()
+                    .unwrap_err()
+                    .contains("listen addresses conflict")
+            );
+        }
+    }
+}
+
+#[test]
+fn remote_dynamic_can_reuse_local_ports_and_other_servers_remote_ports() {
+    let mut config = pair(false, "127.0.0.1:7897", "127.0.0.1:7897");
+    config.forwards[1].tunnel = Tunnel::RemoteDynamic {
+        listen: "127.0.0.1:7897".parse().unwrap(),
+    };
+    config.validate().unwrap();
+    config.forwards[0].tunnel = Tunnel::Dynamic {
+        listen: "127.0.0.1:7897".parse().unwrap(),
+    };
+    config.validate().unwrap();
+
+    let mut server = ServerProfile::new("other");
+    server.ssh_alias = Some("other".into());
+    config.forwards[0].server_id = server.id.clone();
+    config.forwards[0].tunnel = config.forwards[1].tunnel.clone();
+    config.servers.push(server);
+    config.validate().unwrap();
+}

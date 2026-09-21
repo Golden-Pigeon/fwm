@@ -27,6 +27,7 @@ from ux_live import check_live_controls
 from trust_recovery import check_trust_recovery
 from trust_interactive import check_interactive_trust
 from ssh_refresh import check_ssh_refresh
+from remote_dynamic import check_remote_dynamic, socks_echo
 
 
 def free_port():
@@ -82,7 +83,7 @@ async def run(binary):
         client_config.write_text("Host *\n IdentityAgent none\n GlobalKnownHostsFile none\n")
         logs = root / "logs"
         logs.mkdir()
-        server_port, proxy_port, echo_port, local_port, remote_port, socks_port = [free_port() for _ in range(6)]
+        server_port, proxy_port, echo_port, local_port, remote_port, socks_port, remote_socks_port = [free_port() for _ in range(7)]
         key, host_key = root / "identity", root / "host_key"
         for path in [key, host_key]:
             subprocess.run([keygen, "-q", "-t", "ed25519", "-N", "", "-f", str(path)], check=True)
@@ -270,6 +271,9 @@ LogLevel VERBOSE
             writer.close()
             print("PASS real OpenSSH: local / remote / SOCKS5 forwarding", flush=True)
 
+            await check_remote_dynamic(cli, rpc, status, eventually, remote_state,
+                                       remote_socks_port, echo_port, local_port)
+
             await check_live_controls(cli, rpc, echo_test, local_port, remote_port, echo_port)
             await check_trust_recovery(cli, rpc, eventually, root, proxy_port, ssh_user,
                                        key, fingerprint, echo_port, local_port, binary, server_port)
@@ -331,9 +335,10 @@ LogLevel VERBOSE
             detection_time = time.monotonic() - started
             await cli("remove", "remote")
             blocked = False
-            await eventually(lambda: all_ready(["renamed", "socks", "extra-reused"]), timeout=45, description="automatic recovery")
+            await eventually(lambda: all_ready(["renamed", "socks", "remote-socks", "extra-reused"]), timeout=45, description="automatic recovery")
             await echo_test(local_port)
             await echo_test(extra_port)
+            await socks_echo(remote_socks_port, echo_port)
             assert "remote" not in await status()
             print(f"PASS blackhole recovery; detected after {detection_time:.1f}s; deleted rule stays deleted", flush=True)
 
@@ -346,7 +351,8 @@ LogLevel VERBOSE
             (config_dir / "config.toml").write_text(applied)
             await cli("down", "renamed")
             await cli("daemon", "restart")
-            await eventually(lambda: all_ready(["socks"]), description="restart restores running rules")
+            await eventually(lambda: all_ready(["socks", "remote-socks"]), description="restart restores running rules")
+            await socks_echo(remote_socks_port, echo_port)
             assert (await status())["renamed"]["state"] == "stopped"
             await cli("up", "renamed", "--wait", "--timeout", "15s")
             await echo_test(local_port)

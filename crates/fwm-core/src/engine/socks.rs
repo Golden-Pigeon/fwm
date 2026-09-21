@@ -5,7 +5,8 @@ use tokio::io::{AsyncRead, AsyncReadExt, AsyncWrite, AsyncWriteExt};
 
 use crate::model::Endpoint;
 
-/// SOCKS5 CONNECT with remote DNS. The caller imposes a handshake timeout.
+/// SOCKS5 CONNECT preserving hostnames for the caller's destination connection.
+/// The caller imposes a handshake timeout.
 pub(super) async fn handshake<S: AsyncRead + AsyncWrite + Unpin>(
     stream: &mut S,
 ) -> Result<Endpoint> {
