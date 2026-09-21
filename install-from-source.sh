@@ -8,6 +8,7 @@ Usage: ./install-from-source.sh [--root PATH] [--offline] [--shell bash|zsh|none
                               [--rc-file PATH]
 
 Build fwm from this source checkout in release mode and install or update it.
+Then start or restart the default profile's daemon using the installed binary.
 Requires Rust/Cargo 1.90+ and a platform C compiler.
 
 Options:
@@ -114,6 +115,16 @@ cargo "${install_args[@]}" "--root=$install_root" --path "$source_dir/crates/fwm
 install_root=$(CDPATH= cd -- "$install_root" && pwd -P)
 source "$source_dir/scripts/install-shell-completions.sh"
 install_shell_completions "$install_root" "$completion_shell" "$completion_rc"
+
+printf '\nStarting or restarting the fwm daemon...\n'
+if "$install_root/bin/fwm" daemon restart; then
+    printf 'Daemon is running with the installed fwm.\n'
+else
+    daemon_exit_code=$?
+    printf 'error: fwm was installed, but daemon startup/restart failed.\n' >&2
+    printf 'Retry with: %q daemon restart\n' "$install_root/bin/fwm" >&2
+    exit "$daemon_exit_code"
+fi
 
 printf '\nInstalled fwm from source. Add %s/bin to PATH if needed.\n' "$install_root"
 printf 'Verify with: fwm --version\n'

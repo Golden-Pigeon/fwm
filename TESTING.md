@@ -24,7 +24,7 @@
 | 输出与输入契约 | `cli/contracts_tests.rs`、`tests/cli_contracts.rs`、`tests/ux_commands.rs` | JSON 最终结果、退出码、时间单位与溢出、帮助零副作用、保存和就绪区分 |
 | 持续查询 | `tests/cli_streaming.rs` | 真实 CLI watch/follow 子进程、规则/服务器重命名和删除、空组与新增成员、后台启停、轮转后旧名关联、警告去重、草稿修复、Ctrl-C |
 | 动态 Shell 补全 | `tests/shell_completions.rs`、`tests/shell_completion_scripts.py` | 官方 clap_complete 协议及生成脚本，本地服务器/规则/组、ID、独立配置目录、坏草稿与无配置、零写入、路径和枚举；真实 Bash/Zsh Tab 和安全引用；上游已知兼容边界单独标记 expectedFailure |
-| 源码安装及补全启用 | `tests/install_from_source.py` | 临时安装目录及启动文件、补全文件落盘、幂等加载块、原文件备份、构建失败保护、路径引用、安装后真实 Bash/Zsh Tab 补全 |
+| 源码安装、后台更新及补全启用 | `tests/install_from_source.py` | 临时安装目录及启动文件、补全文件落盘、幂等加载块、原文件备份、安装后用新二进制启动/重启后台、构建/补全失败不重启、后台失败退出码和恢复提示、路径引用、安装后真实 Bash/Zsh Tab 补全 |
 | 历史日志 | `history/`、`tests/history_cli.rs` | 重命名/删除后查询、轮转、有界存储、UTC、跨后台去重、离线读取；超大文件/元数据、UTF-8 截断、读/定位/写失败、部分写后恢复 |
 | 配置提交故障 | `store/failure_tests.rs`、`store/io.rs` | 注入部分写、文件同步、原子替换、目录同步失败；提交前保持双文件不变，提交后报告已保存并保留停止保护；不会真实填满磁盘 |
 | IPC 与启动故障 | `client_failure_tests.rs`、`cli/completion_tests.rs` | 测试私有 IPC 对端返回坏数据/断开/缺少错误/超时；虚拟时钟验证超时上限；启动失败保留 saved:true，等待失败保留最近快照 |

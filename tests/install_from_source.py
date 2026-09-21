@@ -1,10 +1,11 @@
 #!/usr/bin/env python3
-"""Check source installation and real generated completion without a daemon.
+"""Check source installation, daemon restart and real generated completion.
 
 Cargo installs a proxy that delegates script generation and completion requests
 unchanged to the built fwm binary. Only ordinary command execution is intercepted.
-All installation roots, saved profiles and startup files are temporary; HOME is
-never replaced. Build first with `cargo build --locked -p fwm`.
+Daemon calls are recorded without starting a real daemon. All installation roots,
+saved profiles and startup files are temporary; HOME is never replaced. Build
+first with `cargo build --locked -p fwm`.
 """
 
 import json
@@ -89,11 +90,19 @@ class InstallFromSource(unittest.TestCase):
         self.root = self.directory / "install root"
         self.rc = self.directory / "shell rc"
         self.log = self.directory / "fwm-calls.jsonl"
+        self.daemon_log = self.directory / "daemon-calls.jsonl"
         self.cargo_log = self.directory / "cargo-calls.jsonl"
         self.fake_bin = self.directory / "fake-bin"
         self.fake_bin.mkdir()
         fake_fwm = self.directory / "fake-fwm"
         write_proxy(fake_fwm)
+        with fake_fwm.open("a") as stream:
+            stream.write(
+                "if args == ['daemon', 'restart']:\n"
+                "    with open(os.environ['FWM_INSTALL_TEST_DAEMON_LOG'], 'a') as stream:\n"
+                "        stream.write(json.dumps(os.path.realpath(sys.argv[0])) + '\\n')\n"
+                "    sys.exit(int(os.environ.get('FWM_INSTALL_TEST_FAIL_DAEMON', '0')))\n"
+            )
         write_config(self.directory / "profile", names=("orient",))
         cargo = self.fake_bin / "cargo"
         cargo.write_text(
@@ -116,6 +125,7 @@ class InstallFromSource(unittest.TestCase):
         self.env.update({
             "PATH": str(self.fake_bin) + os.pathsep + os.environ.get("PATH", ""),
             "FWM_COMPLETION_LOG": str(self.log),
+            "FWM_INSTALL_TEST_DAEMON_LOG": str(self.daemon_log),
             "FWM_INSTALL_TEST_CARGO_LOG": str(self.cargo_log),
             "FWM_INSTALL_TEST_BINARY": str(fake_fwm),
             # If compinit writes a dump, keep that dump inside this fixture.
@@ -136,6 +146,9 @@ class InstallFromSource(unittest.TestCase):
 
     def calls(self):
         return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
+
+    def daemon_calls(self):
+        return [json.loads(line) for line in self.daemon_log.read_text().splitlines()] if self.daemon_log.exists() else []
 
     def run_shell(self, kind, program):
         executable = shutil.which(kind)
@@ -160,12 +173,15 @@ class InstallFromSource(unittest.TestCase):
         for kind in ["bash", "zsh"]:
             self.assertTrue((self.root / f"share/fwm/shell-init.{kind}").is_file())
 
-    def test_installs_both_completion_scripts_without_daemon(self):
+    def test_installs_completion_scripts_then_restarts_installed_daemon(self):
         self.install(extra=["--offline"])
         self.assert_installed_files()
-        self.assertCountEqual(self.calls(), [
-            {"args": ["completions", kind], "complete": None} for kind in ["bash", "zsh"]
+        self.assertEqual(self.calls(), [
+            {"args": ["completions", "zsh"], "complete": None},
+            {"args": ["completions", "bash"], "complete": None},
+            {"args": ["daemon", "restart"], "complete": None},
         ])
+        self.assertEqual(self.daemon_calls(), [str(self.root / "bin/fwm")])
         cargo_args = json.loads(self.cargo_log.read_text().splitlines()[0])
         for argument in ["install", "--locked", "--force", "--offline"]:
             self.assertIn(argument, cargo_args)
@@ -181,6 +197,7 @@ class InstallFromSource(unittest.TestCase):
         self.assertTrue(any(path.is_file() and path.read_text() == original for path in backups), backups)
         self.install()
         self.assertEqual(self.rc.read_text(), first)
+        self.assertEqual(self.daemon_calls(), [str(self.root / "bin/fwm")] * 2)
         self.assertEqual(first.count("# >>> fwm shell completion >>>"), 1)
         result = self.run_shell("bash", f"source {shlex.quote(str(self.rc))}; printf '%s' \"$FWM_INSTALL_KEEP\"")
         self.assertEqual(result.stdout, "retained")
@@ -206,7 +223,32 @@ class InstallFromSource(unittest.TestCase):
         self.assertNotEqual(result.returncode, 0)
         self.assertEqual(self.rc.read_text(), original)
         self.assertFalse(self.log.exists())
+        self.assertEqual(self.daemon_calls(), [])
         self.assertFalse((self.root / "share").exists())
+        self.assertNotIn("Installed fwm from source.", result.stdout)
+
+    def test_completion_setup_failure_does_not_restart_daemon(self):
+        self.root.mkdir()
+        (self.root / "share").write_text("blocks completion installation\n")
+        result = self.install(check=False)
+        self.assertNotEqual(result.returncode, 0)
+        self.assertTrue((self.root / "bin/fwm").is_file())
+        self.assertEqual(self.daemon_calls(), [])
+        self.assertNotIn("Installed fwm from source.", result.stdout)
+
+    def test_daemon_failure_preserves_exit_code_and_reports_installed_binary(self):
+        self.env["FWM_INSTALL_TEST_FAIL_DAEMON"] = "41"
+        result = self.install(check=False)
+        self.assertEqual(result.returncode, 41, result.stdout + result.stderr)
+        self.assertEqual(self.daemon_calls(), [str(self.root / "bin/fwm")])
+        self.assertTrue((self.root / "bin/fwm").is_file())
+        self.assert_installed_files()
+        self.assertIn("installed", result.stderr.lower())
+        self.assertIn("daemon startup/restart failed", result.stderr.lower())
+        retry = next(line.removeprefix("Retry with: ") for line in result.stderr.splitlines()
+                     if line.startswith("Retry with: "))
+        self.assertEqual(shlex.split(retry), [str(self.root / "bin/fwm"), "daemon", "restart"])
+        self.assertNotIn("Installed fwm from source.", result.stdout)
 
     def test_none_leaves_startup_file_untouched(self):
         original = "# do not automatically enable completion\n"
@@ -215,6 +257,7 @@ class InstallFromSource(unittest.TestCase):
         self.assertEqual(self.rc.read_text(), original)
         self.assert_installed_files()
         self.assertFalse((self.directory / ".zshrc").exists())
+        self.assertEqual(self.daemon_calls(), [str(self.root / "bin/fwm")])
 
     def test_none_with_rc_override_is_rejected_before_cargo(self):
         result = self.install(kind="none", extra=["--rc-file", str(self.rc)], check=False)
@@ -230,6 +273,7 @@ class InstallFromSource(unittest.TestCase):
         self.assertEqual(result.returncode, 0, result.stdout + result.stderr)
         self.assertIn("Usage:", result.stdout)
         self.assertFalse(self.cargo_log.exists())
+        self.assertEqual(self.daemon_calls(), [])
 
     def test_unset_or_unknown_shell_installs_files_without_startup(self):
         for shell in [None, "/not-installed/fish"]:
@@ -287,6 +331,8 @@ class InstallFromSource(unittest.TestCase):
                 self.assertIn("startup file was preserved", result.stderr)
                 self.assertEqual(list(self.directory.glob(".fwm-shell-rc.*")), [])
                 self.assertEqual(list(self.directory.glob(self.rc.name + ".fwm-backup.*")), [])
+                self.assertEqual(self.daemon_calls(), [])
+                self.assertNotIn("Installed fwm from source.", result.stdout)
 
     def test_bash_loader_registers_completion_and_deduplicates_path(self):
         self.install()
@@ -316,6 +362,20 @@ class InstallFromSource(unittest.TestCase):
                 self.assertEqual(after, str(self.root / "bin/fwm"))
                 self.assertEqual(path.split(os.pathsep)[0], str(self.root / "bin"))
                 self.assertEqual(path.split(os.pathsep).count(str(self.root / "bin")), 1)
+
+    def test_install_and_reinstall_restart_fresh_binary_despite_stale_path(self):
+        stale_fwm = self.fake_bin / "fwm"
+        stale_fwm.write_text("#!/bin/sh\nexit 92\n")
+        stale_fwm.chmod(0o755)
+        self.env["PATH"] += os.pathsep + str(self.root / "bin")
+        self.install(kind="none")
+        # Cargo must replace an old executable at the destination on reinstall.
+        shutil.copy2(stale_fwm, self.root / "bin/fwm")
+        self.install(kind="none")
+        self.assertEqual(self.daemon_calls(), [str(self.root / "bin/fwm")] * 2)
+        self.assertEqual([call["args"] for call in self.calls()],
+                         [["completions", "zsh"], ["completions", "bash"],
+                          ["daemon", "restart"]] * 2)
 
     def test_zsh_loader_initializes_completion_when_needed(self):
         self.install(kind="zsh")
