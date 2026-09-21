@@ -249,7 +249,7 @@ pub enum Mode {
     Dedicated,
 }
 
-const REMOTE_CLEANUP_HELP: &str = "Reclaim only stale SSH sessions registered by fwm for this remote forwarding rule. Remote forwards, including remote dynamic SOCKS, default to verified; local forwards and local dynamic SOCKS use off. Verified cleanup always uses a dedicated SSH connection, including when --connection-mode shared is requested. It requires Python 3 and command execution on the remote Linux/macOS server, without sudo. Use off for restricted SSH servers which cannot run the helper; fwm never silently disables verified cleanup.";
+const REMOTE_CLEANUP_HELP: &str = "Reclaim only stale SSH sessions registered by fwm for this remote forwarding rule. Remote forwards, including remote dynamic SOCKS, default to verified; local forwards and local dynamic SOCKS use off. Verified cleanup always uses a dedicated SSH connection, including when --connection-mode shared is requested. It requires command execution on a supported Linux, macOS, or Windows server, without sudo. Use off for restricted SSH servers which cannot run the helper; fwm never silently disables verified cleanup.";
 
 #[derive(Clone, Copy, Debug, ValueEnum)]
 pub enum CleanupMode {

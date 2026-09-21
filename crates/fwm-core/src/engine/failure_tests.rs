@@ -93,7 +93,10 @@ async fn unmanaged_port_conflict_keeps_retrying_without_requesting_a_listener() 
 async fn helper_startup_denial_missing_python_disconnect_and_timeout_are_actionable() {
     for (mode, needle) in [
         (ExecMode::Reject, "exec_denied"),
-        (ExecMode::Exit, "python3 not found"),
+        (
+            ExecMode::Exit,
+            "native recovery helper exited with status 127",
+        ),
         (ExecMode::Close, "helper_unavailable"),
         (ExecMode::Silent, "helper startup"),
     ] {

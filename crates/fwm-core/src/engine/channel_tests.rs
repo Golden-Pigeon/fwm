@@ -82,7 +82,7 @@ impl server::Handler for TestServer {
             ExecMode::Success => session.channel_success(channel)?,
             ExecMode::Reject => session.channel_failure(channel)?,
             ExecMode::Exit => {
-                session.extended_data(channel, 1, b"python3 not found".as_slice())?;
+                session.extended_data(channel, 1, b"native helper unavailable".as_slice())?;
                 session.exit_status_request(channel, 127)?;
             }
             ExecMode::Close => session.close(channel)?,

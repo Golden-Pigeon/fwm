@@ -2,7 +2,7 @@
 
 创建：2026-09-18；更新：2026-09-20。状态：已实现基于 russh 的首个 CLI 版本；本文同时保留后续增强的设计。已交付功能、运行方法和明确边界以 [README.md](README.md) 为准。
 
-当前实现包括模块化 workspace、L/R/本地与反向 SOCKS5、共享/独占连接、后台与 IPC、重连、配置恢复、原生跳板、主机校验、CLI 和三平台服务适配。Remote 和 RemoteDynamic 默认启用 verified 回收，包含持久登记、旧会话身份核验、主动终止、重新绑定和 helper 生命周期监督。Linux/macOS 远端均进行真实 OpenSSH 验收；Windows 客户端仍需原生平台运行验收，不能将交叉编译视作运行验证。
+当前实现包括模块化 workspace、L/R/本地与反向 SOCKS5、共享/独占连接、后台与 IPC、重连、配置恢复、原生跳板、主机校验、CLI 和三平台服务适配。Remote 和 RemoteDynamic 默认启用 verified 回收，包含持久登记、旧会话身份核验、主动终止、重新绑定和 helper 生命周期监督。verified native helper 覆盖 Linux x86_64、macOS universal 和 Windows x86_64 远端；其他架构仍需对应 helper artifact，不能将交叉编译视作运行验证。
 
 用户已确认：使用 Rust 和 russh；第一版为 CLI；同时支持 macOS、Linux、Windows；为 TUI、Web UI、Desktop 保留接口。本文的命令名 `fwm` 为暂定名。
 
@@ -21,7 +21,7 @@
 
 目标地址不限于 SSH 服务器或本机的 localhost，也可以是对应一侧可达的内网地址。Local 的目标主机名在远端解析；Remote 的目标主机名在本地解析。SOCKS 是否把域名交给远端解析还取决于调用方用法。SSH 转发语义见 [OpenSSH ssh 手册](https://man.openbsd.org/ssh)。
 
-管理 TCP 转发；不承诺 UDP、VPN、应用协议代理或已有 TCP 会话的跨断线续传。远端需要可用且允许转发的 SSH 服务；默认 Remote 主动恢复还需 Python 3 和第 6.3 节的平台能力，不要求安装本产品或系统服务、不要求 root。SSH 隧道外侧的最终一段连接是否加密由应用协议决定。
+管理 TCP 转发；不承诺 UDP、VPN、应用协议代理或已有 TCP 会话的跨断线续传。远端需要可用且允许转发的 SSH 服务；默认 Remote 主动恢复还需 fwm 自带的静态 native helper 和第 6.3 节的平台能力，不要求安装本产品、Python、编译器或系统服务、不要求 root。SSH 隧道外侧的最终一段连接是否加密由应用协议决定。
 
 autossh 实际监督一个 SSH 进程，该 SSH 进程可以包含多条转发；其不足主要在于跨服务器、逐规则的持久化管理和统一诊断。我们的差异应落在这些管理能力上。[autossh 官方 README](https://github.com/Autossh/autossh/blob/main/README)
 
@@ -270,15 +270,15 @@ Remote 特别边界：旧 sshd 会话可能在客户端已断线后继续持有�
 
 新 SSH 已可连接、但旧反向转发仍占监听端口时，主动终止旧会话可以缩短恢复时间。目标是持有监听的旧 SSH 会话进程，不能误杀 SSH 主服务、目标应用或其他用户会话。终止会话会中断其全部通道，因此只对已确认独占该规则的会话自动执行。[OpenSSH 服务端会话模型](https://man.openbsd.org/sshd)
 
-提供 `off / verified` 策略；新反向规则默认 verified，旧版本反向规则也会迁移启用。verified 需要远端允许执行受控命令并通过平台和权限探测，实际始终使用 dedicated 连接。注册/helper session 也在同一独占连接上建立。实现 Linux 和 macOS 远端适配；不支持的远端返回明确错误，用户可显式选 off。只有关闭主动回收的规则才可共享连接。
+提供 `off / verified` 策略；新反向规则默认 verified，旧版本反向规则也会迁移启用。verified 需要远端允许执行受控命令并通过平台和权限探测，实际始终使用 dedicated 连接。注册/helper session 也在同一独占连接上建立。Linux x86_64、macOS universal 和 Windows x86_64 远端分别使用对应的静态 native helper；不支持的远端返回明确错误，用户可显式选 off。只有关闭主动回收的规则才可共享连接。
 
 1. 建立正常转发时注册所属设备/管理器 ID、规则 ID、运行代与随机会话标识，关联远端用户、主机启动身份、实际会话进程及其创建时间。仅知道端口、进程名或 PID 不足以证明归属。
 2. 本地确认旧实例已停且不再重试，通过不申请该冲突端口的新 SSH 管理连接检查远端记录与实际监听归属。
-3. 对同一规则串行回收，确认目标仍为旧运行代，并在发信号时防止 PID 复用竞态；Linux 可评估 pidfd 等进程身份机制。已启动的新实例或另一设备的规则不得被旧任务回收。
+3. 对同一规则串行回收，确认目标仍为旧运行代，并在发信号时防止 PID 复用竞态；Linux native helper 使用经验证的进程引用机制，不要求 pidfd。已启动的新实例或另一设备的规则不得被旧任务回收。
 4. 先请求旧会话退出或发送 TERM；限定等待后仍未释放时，只有继续确认同一目标和权限才允许 KILL。等待监听实际释放，再重建并注册新实例。
 5. 没有本规则归属记录且端口被占用时，不终止占用者，报告冲突并退避；身份不符、权限不足或能力不支持时进入 NeedsAttention。禁止按端口强杀或自动提升权限。
 
-russh 在转发所在的独占 SSH 连接上另开 session channel 执行内置 Python helper，通过 claim→SSH 监听确认→confirm 建立可信归属记录，按需运行且不安装系统服务。Linux 用 pidfd 固定信号目标；对于降权 sshd 的不可读 fd，使用原受信 exec 的祖先关系、出生身份和传输 inode 证明已登记会话，不能以同 UID 代替归属。监听 inode 来自同一连接转发请求成功后的确认；若 confirm 回复丢失，claim 已登记的专用会话仍可验证并关闭，随后独立检查端口。helper 意外退出由引擎监督并触发独占连接恢复。
+russh 在转发所在的独占 SSH 连接上另开 session channel 上传并执行静态 native helper，通过 claim→SSH 监听确认→confirm 建立可信归属记录，按需运行且不安装系统服务。Linux helper 使用 F_SETOWN/F_SETSIG/O_ASYNC，macOS helper 使用 libproc/socket fd 身份，Windows helper 使用进程句柄和原生 TCP 表固定并复核目标；不能以同 UID 代替归属。监听 inode/句柄来自同一连接转发请求成功后的确认；若 confirm 回复丢失，claim 已登记的专用会话仍可验证并关闭，随后独立检查端口。helper 意外退出由引擎监督并触发独占连接恢复。
 
 只结束远端 shell/helper 不保证释放转发；SSH 转发通道独立于 shell session。回收必须确保实际持有监听的旧连接终止并验证端口释放。新连接的取消转发请求也不能用来接管或取消另一条旧连接的监听。[SSH 连接协议 RFC 4254](https://www.rfc-editor.org/rfc/rfc4254.html#section-7)
 

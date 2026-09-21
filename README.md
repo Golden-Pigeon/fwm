@@ -296,9 +296,11 @@ IPC 鉴权以操作系统账户为边界。Unix 客户端与后台都核验内�
 fwm add --server example-cluster --remote --src 12222 --tgt 22 --wait
 ```
 
-建立前通过这条独占 SSH 连接执行内置 Python 辅助脚本，登记管理器身份、规则、代次、会话进程出生身份及 SSH 连接信息；SSH 确认监听成功后再核对并记录监听证据。脚本按需运行，无需另装常驻服务。远端支持 Linux（Python 3.9+、支持 pidfd 的内核）和 macOS（Python 3、系统 libproc/lsof），需要允许该 SSH 用户执行命令及终止自己的会话。
+建立前通过这条独占 SSH 连接上传并执行 fwm 自带的静态 native 辅助程序，登记管理器身份、规则、代次、会话进程出生身份及 SSH 连接信息；SSH 确认监听成功后再核对并记录监听证据。程序按需运行，启动后删除临时文件，无需远端 Python、编译器、包管理器、pidfd 或常驻服务。当前提供 Linux x86_64、macOS universal 和 Windows x86_64 helper，分别使用 Linux proc/fasync、macOS libproc 和 Windows 原生进程/TCP API；不满足这些条件时返回明确的 unsupported/needs_attention，不静默降级。
 
-断线后，新连接先核对旧登记和实际进程身份，只终止同一管理器、同一规则的旧独占会话；先 TERM，仍未退出才 KILL，再确认监听可重新绑定。Linux 使用 pidfd 固定目标进程；正常 OpenSSH 降权导致普通用户无法读取 `/proc/PID/fd` 时，使用原 SSH exec 的祖先证明、进程出生身份、传输 inode 和监听确认记录进行核验，仍无需 sudo。macOS 在每次发送信号前重新核验 libproc 出生身份。
+Windows helper 已在可登录的 `windows-fixture`（Windows 11 AMD64、OpenSSH）上验证 claim/release 和旧 SSH 会话 generation 回收；macOS helper 已完成 universal 编译和 libproc/socket API 验证，完整端到端验收仍需对应 macOS SSH 环境。
+
+断线后，新连接先核对旧登记和实际进程身份，只终止同一管理器、同一规则的旧独占会话；先 TERM，仍未退出才 KILL，再确认监听可重新绑定。Linux helper 使用旧内核也具备的 `F_SETOWN`/`F_SETSIG`/`O_ASYNC` 进程引用，并通过原始 `/proc` 目录、传输 inode、监听 inode 和代次记录复核身份；不按端口或裸 PID 强杀，也不要求 sudo。
 
 新旧操作通过单调递增的持久代次隔离；旧任务不能删除新登记。正常 down/remove 会取消监听并释放自己的登记；连接异常中断保留登记供恢复。helper 意外退出也会触发该独占连接的恢复，避免留下无人监督的监听。
 

@@ -55,6 +55,12 @@ python3 tests/install_from_source.py -v
 python3 tests/smoke.py target/release/fwm
 ```
 
+When a native helper changes, regenerate the checked-in artifacts with
+`./scripts/build-native-remote-helper.sh`,
+`./scripts/build-native-remote-helper-macos.sh`, and
+`./scripts/build-native-remote-helper-windows.sh`; these require Zig and the
+corresponding SDK/target support.
+
 真实 SSH 测试仅使用临时密钥、临时配置和回环监听。要求 Unix、sshd 和 ssh-keygen；macOS 的嵌套沙箱可能阻止 sshd 初始化，需在允许该测试的环境执行。测试清理其创建的后台和 SSH 服务，不读取或更改默认 fwm 配置。
 
 Linux CI 另以 `sudo python3 tests/ipc_auth.py target/debug/fwm` 执行三项真实跨 UID IPC 回归。脚本只将子进程切换到未使用的临时数字 UID，不创建系统账户，所有配置和 socket 均属于独占测试目录；非 Linux 或非 root 运行会明确跳过。Windows 的管道所有者/DACL 回归由 Windows Rust 测试执行；交叉编译只验证类型和平台 API，不能替代原生测试。
