@@ -8,6 +8,25 @@ pub trait AsyncStream: AsyncRead + AsyncWrite + Send {}
 impl<T: AsyncRead + AsyncWrite + Send> AsyncStream for T {}
 pub type Stream = Pin<Box<dyn AsyncStream>>;
 
+#[derive(Debug)]
+struct AuthenticationError(String);
+
+impl std::fmt::Display for AuthenticationError {
+    fn fmt(&self, formatter: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        write!(formatter, "IPC authentication failed: {}", self.0)
+    }
+}
+
+impl std::error::Error for AuthenticationError {}
+
+pub(super) fn auth_error(message: impl Into<String>) -> anyhow::Error {
+    AuthenticationError(message.into()).into()
+}
+
+pub fn is_authentication_error(error: &anyhow::Error) -> bool {
+    error.downcast_ref::<AuthenticationError>().is_some()
+}
+
 #[cfg(unix)]
 #[path = "ipc_unix.rs"]
 mod implementation;

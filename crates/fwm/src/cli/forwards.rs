@@ -203,7 +203,7 @@ pub async fn remove(paths: &Paths, args: SelectionArgs, json_output: bool) -> Re
 }
 
 pub async fn retry(paths: &Paths, args: SelectionArgs, json_output: bool) -> Result<()> {
-    if !client::running(paths).await {
+    if !client::running(paths).await? {
         bail!("daemon is stopped; use daemon start or up to enable forwarding");
     }
     let response = client::request(

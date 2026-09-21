@@ -324,3 +324,17 @@ fn service_runtime_failures_and_timeouts_keep_distinct_exit_codes_through_contex
     });
     assert_eq!(super::error_code(&error), ("daemon_unresponsive", 5));
 }
+
+#[cfg(unix)]
+#[tokio::test]
+async fn authentication_failure_rejects_saved_config_fallback_and_has_an_operational_exit_code() {
+    let (_directory, paths) = crate::test_support::untrusted_ipc_paths();
+    fwm_core::store::Store::new(paths.clone())
+        .commit(&Config::default())
+        .unwrap();
+
+    let error = super::get_config(&paths, false).await.unwrap_err();
+    assert!(crate::platform::ipc::is_authentication_error(&error));
+    let error = error.context("loading command configuration");
+    assert_eq!(error_code(&error), ("ipc_authentication_failed", 5));
+}

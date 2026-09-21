@@ -28,6 +28,7 @@
 | 历史日志 | `history/`、`tests/history_cli.rs` | 重命名/删除后查询、轮转、有界存储、UTC、跨后台去重、离线读取；超大文件/元数据、UTF-8 截断、读/定位/写失败、部分写后恢复 |
 | 配置提交故障 | `store/failure_tests.rs`、`store/io.rs` | 注入部分写、文件同步、原子替换、目录同步失败；提交前保持双文件不变，提交后报告已保存并保留停止保护；不会真实填满磁盘 |
 | IPC 与启动故障 | `client_failure_tests.rs`、`cli/completion_tests.rs` | 测试私有 IPC 对端返回坏数据/断开/缺少错误/超时；虚拟时钟验证超时上限；启动失败保留 saved:true，等待失败保留最近快照 |
+| IPC 身份鉴权 | `platform/ipc_unix_auth_tests.rs`、`platform/ipc_windows.rs`、`tests/ipc_auth.py` | 收发请求前核验账户身份；拒绝不可信目录、符号链接及管道 ACL；鉴权失败不启动后台、不回退离线写入；Linux 独立 UID 伪后台与越权 Shutdown 回归 |
 | 后台及平台适配 | `tests/daemon_restart.rs`、`platform/service_tests.rs`、`cli/service_lifecycle.rs`、`fwm-core/tests/paths.rs` | 配置隔离、实例替换、路径权限；三平台服务命令参数/顺序/重复安装/卸载/失败回滚、已安装服务与残留非托管后台接管；系统执行器使用模拟对象 |
 | 分组与身份歧义回归 | `tests/audited_cli.rs`、`tests/port_group_regressions.rs`、`model.rs`、`store/migration_tests.rs` | 组改名保留成员名、拒绝隐式合并、显式入组退组、UUID 名称冲突、随机短名称与批次组不冲突、旧分组迁移不制造 ID 冲突 |
 | SSH 路径、认证与刷新回归 | `ssh/path_options.rs`、`ssh/config_override_tests.rs`、`ssh/auth_tests.rs`、`tests/ssh_refresh.py` | 相对路径基准、配置符号链接切换、OpenSSH 布尔值、公钥选择 agent 身份、显式缺失私钥；CLI 服务器重启和 reload 读取新端点，同时保留其他服务器长连接 |
@@ -55,6 +56,8 @@ python3 tests/smoke.py target/release/fwm
 ```
 
 真实 SSH 测试仅使用临时密钥、临时配置和回环监听。要求 Unix、sshd 和 ssh-keygen；macOS 的嵌套沙箱可能阻止 sshd 初始化，需在允许该测试的环境执行。测试清理其创建的后台和 SSH 服务，不读取或更改默认 fwm 配置。
+
+Linux CI 另以 `sudo python3 tests/ipc_auth.py target/debug/fwm` 执行三项真实跨 UID IPC 回归。脚本只将子进程切换到未使用的临时数字 UID，不创建系统账户，所有配置和 socket 均属于独占测试目录；非 Linux 或非 root 运行会明确跳过。Windows 的管道所有者/DACL 回归由 Windows Rust 测试执行；交叉编译只验证类型和平台 API，不能替代原生测试。
 
 ## 覆盖率
 
@@ -89,3 +92,5 @@ CI 配置为在 macOS、Linux、Windows 分别运行格式、严格 Clippy 和 R
 真实登录/注销、系统休眠与 VPN 切换，以及 Windows 服务和 ACL 的原生运行验收仍需相应环境。常规测试不修改开发者的真实登录服务。
 
 2026-09-21 复审修复验证：497 项 Rust 测试全部通过（0 忽略）、28 项 Python helper 测试、3 项 CLI/IPC 集成测试和17项真实 OpenSSH/PTY 检查全部通过；Release 构建、格式和全 workspace 严格 Clippy 通过。最后的 watch Ctrl-C 订阅调整另以14项 streaming/state-workflow及Release CLI测试复核。新增查询测试覆盖初次 IPC 失联的8种选择器组合、拒绝混合revision以及512条失败规则的全量/单条状态。验证日志与逐项边界见[复审修复记录](audits/2026-09-20-postfix/FIXES.md)。此前的覆盖率数字未重新测量，不代表这次修改后的覆盖率。
+
+2026-09-21 IPC 鉴权修复验证：macOS 上 560 项 Rust 测试、33 项 Python helper 测试、21 项安装测试和 18 项真实 OpenSSH/PTY 检查全部通过；Release 构建、格式检查、本机和 Windows GNU 目标的严格 Clippy 通过。新增 Linux 三项跨 UID 回归已接入 CI，本机明确跳过；Windows 管道和目录鉴权测试已交叉编译，尚未在本机原生执行。安全边界与审查结论见 [SECURITY.md](SECURITY.md)。

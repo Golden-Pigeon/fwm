@@ -74,3 +74,22 @@ impl Drop for Peer {
         self.task.abort();
     }
 }
+
+/// Keep rejected endpoints outside the config tree so ensure_dirs cannot repair
+/// the fixture, and keep paths short so tests never use the shared fallback.
+#[cfg(unix)]
+pub fn untrusted_ipc_paths() -> (tempfile::TempDir, Paths) {
+    use std::os::unix::{ffi::OsStrExt, fs::PermissionsExt};
+
+    let directory = tempfile::Builder::new()
+        .prefix("fwm-auth-")
+        .tempdir_in("/tmp")
+        .unwrap();
+    let mut paths = Paths::new(Some(directory.path().join("profile"))).unwrap();
+    let endpoint_dir = directory.path().join("ipc");
+    std::fs::create_dir(&endpoint_dir).unwrap();
+    std::fs::set_permissions(&endpoint_dir, std::fs::Permissions::from_mode(0o777)).unwrap();
+    paths.ipc_path = endpoint_dir.join("daemon.sock");
+    assert!(paths.ipc_path.as_os_str().as_bytes().len() < 104);
+    (directory, paths)
+}

@@ -147,11 +147,14 @@ pub fn decode<T: DeserializeOwned>(response: Response) -> Result<T> {
     serde_json::from_value(response.data).context("invalid daemon response payload")
 }
 
-pub async fn running(paths: &Paths) -> bool {
-    matches!(
-        tokio::time::timeout(Duration::from_secs(1), request(paths, Command::Ping)).await,
-        Ok(Ok(_))
-    )
+pub async fn running(paths: &Paths) -> Result<bool> {
+    match tokio::time::timeout(Duration::from_secs(1), request(paths, Command::Ping)).await {
+        Ok(Ok(_)) => Ok(true),
+        // An untrusted endpoint is not an absent daemon. Propagate the error
+        // before a caller can fall back to offline writes or start a process.
+        Ok(Err(error)) if ipc::is_authentication_error(&error) => Err(error),
+        _ => Ok(false),
+    }
 }
 
 #[derive(Clone, Copy, Debug, PartialEq, Eq)]
@@ -162,7 +165,7 @@ pub enum DaemonPresence {
 }
 
 pub async fn presence(paths: &Paths) -> Result<DaemonPresence> {
-    if running(paths).await {
+    if running(paths).await? {
         return Ok(DaemonPresence::Running);
     }
     if instance_lock_held(paths)? {
@@ -170,11 +173,10 @@ pub async fn presence(paths: &Paths) -> Result<DaemonPresence> {
     }
     // A listening peer with an incompatible or broken protocol is still an
     // owner, not permission to launch another instance over its socket.
-    if matches!(
-        tokio::time::timeout(Duration::from_millis(100), ipc::connect(paths)).await,
-        Ok(Ok(_))
-    ) {
-        return Ok(DaemonPresence::Unresponsive);
+    match tokio::time::timeout(Duration::from_millis(100), ipc::connect(paths)).await {
+        Ok(Ok(_)) => return Ok(DaemonPresence::Unresponsive),
+        Ok(Err(error)) if ipc::is_authentication_error(&error) => return Err(error),
+        _ => {}
     }
     Ok(DaemonPresence::Stopped)
 }
@@ -244,7 +246,7 @@ pub async fn ensure_running(paths: &Paths) -> Result<()> {
 pub(crate) async fn wait_running(paths: &Paths, timeout: Duration) -> Result<()> {
     let deadline = tokio::time::Instant::now() + timeout;
     while tokio::time::Instant::now() < deadline {
-        if running(paths).await {
+        if running(paths).await? {
             return Ok(());
         }
         tokio::time::sleep(Duration::from_millis(50)).await;

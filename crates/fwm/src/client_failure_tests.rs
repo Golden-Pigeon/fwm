@@ -97,7 +97,7 @@ async fn startup_failure_does_not_spawn_when_diagnostic_log_cannot_be_opened() {
     std::fs::create_dir(&paths.log_file).unwrap();
     let error = ensure_running(&paths).await.unwrap_err();
     assert!(format!("{error:#}").contains("opening daemon log"));
-    assert!(!running(&paths).await);
+    assert!(!running(&paths).await.unwrap());
 }
 
 #[tokio::test]
@@ -139,4 +139,32 @@ async fn supported_atomic_status_view_is_sent_with_its_selection() {
     ));
     assert!(matches!(peer.received.recv().await.unwrap().command,
         Command::StatusView { selection: Some(fwm_api::protocol::Selection::Forward(id)) } if id == "chosen"));
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn authentication_failure_cannot_be_treated_as_a_stopped_or_ready_daemon() {
+    use std::os::unix::fs::PermissionsExt;
+
+    let (_directory, paths) = crate::test_support::untrusted_ipc_paths();
+    for error in [
+        running(&paths).await.unwrap_err(),
+        presence(&paths).await.unwrap_err(),
+        ensure_running(&paths).await.unwrap_err(),
+        wait_running(&paths, Duration::from_secs(5))
+            .await
+            .unwrap_err(),
+    ] {
+        assert!(ipc::is_authentication_error(&error), "{error:#}");
+    }
+    assert!(!paths.config_dir.exists(), "no daemon may be launched");
+    assert_eq!(
+        std::fs::metadata(paths.ipc_path.parent().unwrap())
+            .unwrap()
+            .permissions()
+            .mode()
+            & 0o777,
+        0o777,
+        "readiness checks must not change directory permissions"
+    );
 }

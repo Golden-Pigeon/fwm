@@ -142,9 +142,10 @@ fn private_dir(path: &Path) -> anyhow::Result<()> {
             path.display()
         );
     }
+    #[cfg(not(windows))]
     std::fs::create_dir_all(path)?;
     #[cfg(windows)]
-    windows::restrict_directory(path)?;
+    windows::ensure_private_directory(path)?;
     #[cfg(unix)]
     {
         use std::os::unix::fs::PermissionsExt;

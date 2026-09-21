@@ -44,7 +44,7 @@ pub async fn mutate(paths: &Paths, command: Command, revision: Option<u64>) -> R
     let deadline = tokio::time::Instant::now() + Duration::from_secs(5);
     paths.ensure_dirs()?;
     loop {
-        if client::running(paths).await {
+        if client::running(paths).await? {
             return client::send(paths, command, revision).await;
         }
         if std::fs::symlink_metadata(&paths.lock_file).is_ok_and(|m| m.file_type().is_symlink()) {

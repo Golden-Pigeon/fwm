@@ -25,6 +25,9 @@ jobs:
         if: runner.os != 'Windows'
         run: python3 -m unittest discover -s crates/fwm-core/src/cleanup -p 'test_*.py' -v
       - run: cargo build --locked
+      - name: Cross-user IPC authentication regressions (Linux)
+        if: runner.os == 'Linux'
+        run: sudo python3 tests/ipc_auth.py "$PWD/target/debug/fwm"
       - name: Status, watch and IPC budget regressions
         if: runner.os != 'Windows'
         run: python3 tests/postfix_queries.py target/debug/fwm

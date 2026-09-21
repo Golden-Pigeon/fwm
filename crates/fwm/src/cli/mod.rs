@@ -74,7 +74,7 @@ pub async fn run(args: Cli) -> Result<()> {
 }
 
 async fn get_config(paths: &Paths, online: bool) -> Result<Config> {
-    if online || client::running(paths).await {
+    if online || client::running(paths).await? {
         let config: Config = client::decode(client::request(paths, Rpc::GetConfig).await?)?;
         if config.schema_version != fwm_core::model::SCHEMA_VERSION {
             return Err(client::ClientError {
@@ -130,7 +130,7 @@ async fn config(paths: &Paths, command: ConfigCommand, json_output: bool) -> Res
             if json_output {
                 output::json_value(&serde_json::to_value(config)?)?;
             } else {
-                if !client::running(paths).await
+                if !client::running(paths).await?
                     && let Some(warning) = Store::new(paths.clone()).load()?.warning
                 {
                     eprintln!("warning: {warning}");
@@ -143,6 +143,9 @@ async fn config(paths: &Paths, command: ConfigCommand, json_output: bool) -> Res
 }
 
 pub fn error_code(error: &anyhow::Error) -> (&str, u8) {
+    if crate::platform::ipc::is_authentication_error(error) {
+        return ("ipc_authentication_failed", 5);
+    }
     if let Some(service) = error.downcast_ref::<crate::platform::service::ServiceError>() {
         return (
             &service.code,

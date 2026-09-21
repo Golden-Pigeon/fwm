@@ -2,6 +2,8 @@
 
 使用 Rust、Tokio 和 russh 管理多台服务器的 SSH 转发。CLI 提交配置，用户级后台持续维护连接；远端使用现有 OpenSSH 服务，无需安装 fwm。
 
+项目采用 [MIT 许可证](LICENSE)。第三方依赖和内置词表保留各自的许可证。
+
 当前实现支持 macOS、Linux、Windows 的条件编译与平台适配。macOS 已进行真实 OpenSSH 端到端测试；Linux 和 Windows 已通过交叉编译检查，原生运行测试由 CI 和对应平台验收补充。
 
 ## 从源码构建与安装
@@ -272,6 +274,8 @@ fwm service uninstall          # 停止本实例后台及转发，再移除登�
 更新可执行文件或更换安装路径后，执行 `fwm daemon restart`。托管后台会刷新服务定义中的可执行文件和规范化配置路径，保留原登录 enabled 策略；单个旧注册沿用原服务 ID。已保存规则及启停状态保留；后台原本未运行时，restart 会启动它。
 
 重启会等到旧后台的 IPC 关闭、清理完成并释放实例锁后再启动。实例仍持锁但不回应时，`daemon status` 报 `unresponsive`，`daemon start` 返回 `daemon_unresponsive`；`daemon stop` 仍尝试 Shutdown 并等待释放锁，无法确认则报明实际失败阶段。restart 不会在停止结果未确认时启动替代实例。系统服务管理器不可用且没有服务定义时，普通独立后台仍可启动；已有托管定义则会明确报告服务问题。
+
+IPC 鉴权以操作系统账户为边界。Unix 客户端与后台都核验内核提供的对端 UID；客户端还拒绝其他用户拥有、可被其他用户写入或通过符号链接替换的 socket 目录。Windows 客户端核验所连接管道的所有者与当前用户专属 DACL。鉴权失败返回 `ipc_authentication_failed`（退出码 5），不会把伪造对端当作已启动后台，也不会自动回退到离线配置写入。同一账户运行的其他程序仍可管理该账户的 fwm 实例；详细边界见 [安全说明](SECURITY.md)。
 
 ## 状态与恢复
 

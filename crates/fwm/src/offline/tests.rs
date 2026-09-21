@@ -84,7 +84,7 @@ async fn log_write_failure_does_not_undo_a_successful_config_commit() {
             .server("saved-despite-log-failure")
             .is_some()
     );
-    assert!(!client::running(&paths).await);
+    assert!(!client::running(&paths).await.unwrap());
 }
 
 #[cfg(unix)]
@@ -204,4 +204,26 @@ async fn restart_keeps_its_command_when_daemon_becomes_online_while_waiting_for_
     daemon.await.unwrap();
     FileExt::unlock(&lock).unwrap();
     assert_eq!(Store::new(paths.clone()).load().unwrap().config.revision, 0);
+}
+
+#[cfg(unix)]
+#[tokio::test]
+async fn authentication_failure_does_not_fall_back_to_offline_mutation() {
+    let (_directory, paths) = crate::test_support::untrusted_ipc_paths();
+    Store::new(paths.clone())
+        .commit(&Config::default())
+        .unwrap();
+    let candidate = std::fs::read(&paths.config_file).unwrap();
+    let applied = std::fs::read(paths.state_dir.join("applied.toml")).unwrap();
+
+    let error = mutate(&paths, add("must-not-be-saved"), None)
+        .await
+        .unwrap_err();
+    assert!(crate::platform::ipc::is_authentication_error(&error));
+    assert_eq!(std::fs::read(&paths.config_file).unwrap(), candidate);
+    assert_eq!(
+        std::fs::read(paths.state_dir.join("applied.toml")).unwrap(),
+        applied
+    );
+    assert!(!paths.lock_file.exists());
 }

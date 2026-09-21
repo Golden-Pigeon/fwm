@@ -1,14 +1,19 @@
-use super::Stream;
+use super::{Stream, auth_error};
 use anyhow::{Context, Result, bail};
 use fwm_core::paths::Paths;
 use std::os::unix::ffi::OsStrExt;
 use std::os::unix::fs::{DirBuilderExt, FileTypeExt, MetadataExt, PermissionsExt};
-use std::path::PathBuf;
+use std::path::{Path, PathBuf};
 use tokio::net::{UnixListener, UnixStream};
 
 pub struct Listener {
     socket: UnixListener,
     path: PathBuf,
+}
+
+fn current_uid() -> libc::uid_t {
+    // SAFETY: geteuid is side-effect free and has no preconditions.
+    unsafe { libc::geteuid() }
 }
 
 fn socket_path(paths: &Paths) -> PathBuf {
@@ -20,8 +25,7 @@ fn socket_path(paths: &Paths) -> PathBuf {
     for byte in paths.config_dir.as_os_str().as_bytes() {
         hash = (hash ^ u64::from(*byte)).wrapping_mul(0x100000001b3);
     }
-    // SAFETY: geteuid is side-effect free and has no preconditions.
-    let uid = unsafe { libc::geteuid() };
+    let uid = current_uid();
     PathBuf::from(format!("/tmp/fwm-{uid}/{hash:016x}.sock"))
 }
 
@@ -32,13 +36,56 @@ fn private_socket_directory(path: &std::path::Path) -> Result<()> {
     let metadata = std::fs::symlink_metadata(path)?;
     // The short endpoint lives under a shared temporary directory. Never
     // follow a pre-existing symlink or change another user's directory.
-    if !metadata.is_dir() || metadata.uid() != unsafe { libc::geteuid() } {
+    if !metadata.is_dir() || metadata.uid() != current_uid() {
         bail!(
             "IPC runtime directory is not a directory owned by this user: {}",
             path.display()
         );
     }
     std::fs::set_permissions(path, std::fs::Permissions::from_mode(0o700))?;
+    Ok(())
+}
+
+fn validate_socket_directory(path: &Path, uid: libc::uid_t) -> Result<()> {
+    let metadata = socket_metadata(path)?;
+    if !metadata.is_dir() || metadata.uid() != uid {
+        return Err(auth_error(format!(
+            "socket directory is not a directory owned by this user: {}",
+            path.display()
+        )));
+    }
+    if metadata.permissions().mode() & 0o022 != 0 {
+        return Err(auth_error(format!(
+            "socket directory is writable by another user: {}",
+            path.display()
+        )));
+    }
+    Ok(())
+}
+
+fn socket_metadata(path: &Path) -> Result<std::fs::Metadata> {
+    std::fs::symlink_metadata(path).map_err(|error| {
+        if error.kind() == std::io::ErrorKind::NotFound {
+            error.into()
+        } else {
+            auth_error(format!(
+                "cannot verify socket path {}: {error}",
+                path.display()
+            ))
+        }
+    })
+}
+
+fn authenticate_peer(stream: &UnixStream, uid: libc::uid_t) -> Result<()> {
+    let peer = stream.peer_cred().map_err(|error| {
+        auth_error(format!("cannot determine socket peer credentials: {error}"))
+    })?;
+    if peer.uid() != uid {
+        return Err(auth_error(format!(
+            "socket peer UID {} does not match current user UID {uid}",
+            peer.uid()
+        )));
+    }
     Ok(())
 }
 
@@ -50,6 +97,9 @@ pub fn bind(paths: &Paths) -> Result<Listener> {
     if let Ok(metadata) = std::fs::symlink_metadata(path) {
         if !metadata.file_type().is_socket() {
             bail!("refusing to replace non-socket IPC path {}", path.display());
+        }
+        if metadata.uid() != current_uid() {
+            return Err(auth_error("refusing to replace another user's IPC socket"));
         }
         if std::os::unix::net::UnixStream::connect(path).is_ok() {
             bail!("another daemon is already listening on {}", path.display());
@@ -66,8 +116,17 @@ pub fn bind(paths: &Paths) -> Result<Listener> {
 
 impl Listener {
     pub async fn accept(&self) -> Result<Stream> {
-        let (stream, _) = self.socket.accept().await?;
-        Ok(Box::pin(stream))
+        loop {
+            let (stream, _) = self.socket.accept().await?;
+            // Directory permissions are not sufficient on every Unix. Check
+            // kernel peer credentials before the daemon reads any request.
+            if authenticate_peer(&stream, current_uid()).is_ok() {
+                return Ok(Box::pin(stream));
+            }
+            drop(stream);
+            // A rejected peer must not stop the daemon or starve shutdown.
+            tokio::task::yield_now().await;
+        }
     }
 }
 
@@ -78,8 +137,31 @@ impl Drop for Listener {
 }
 
 pub async fn connect(paths: &Paths) -> Result<Stream> {
-    Ok(Box::pin(UnixStream::connect(socket_path(paths)).await?))
+    connect_socket(&socket_path(paths)).await
 }
+
+async fn connect_socket(path: &Path) -> Result<Stream> {
+    // This path is also used by read-only commands: never create or chmod the
+    // runtime directory while deciding whether a daemon is already running.
+    let uid = current_uid();
+    validate_socket_directory(path.parent().context("IPC path has no parent")?, uid)?;
+    let metadata = socket_metadata(path)?;
+    if !metadata.file_type().is_socket() || metadata.uid() != uid {
+        return Err(auth_error(format!(
+            "endpoint is not a socket owned by this user: {}",
+            path.display()
+        )));
+    }
+    let stream = UnixStream::connect(path).await?;
+    // Authenticate the connected handle, not only its pathname: a filesystem
+    // check alone cannot establish who actually accepted the connection.
+    authenticate_peer(&stream, uid)?;
+    Ok(Box::pin(stream))
+}
+
+#[cfg(test)]
+#[path = "ipc_unix_auth_tests.rs"]
+mod auth_tests;
 
 #[cfg(test)]
 mod tests {
