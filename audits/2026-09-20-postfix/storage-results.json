@@ -1,0 +1,3719 @@
+{
+  "binary": "/workspace/fwm/target/release/fwm",
+  "sha256": "4b7e78e32fcdfc0b4b9cb55b3b4a8dca38b6f2b1059f972f3ca5b56b44d6b6db",
+  "cases": [
+    {
+      "case": "control-name-fallback-remove",
+      "expected_untouched_id": "1d9d68b6-a979-43e5-8b81-7465d755df91",
+      "expected_state": "stopped",
+      "actual_state": null,
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "dd11a512-edc9-4207-8816-6167e6b54ffd"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "one",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31101",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "7b15d4e3-6733-4cd0-a000-dbeeec0ff1de",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "target": "localhost:31101"
+                  }
+                ],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 2,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "535504ff-289b-4e9d-891b-9bf88b9b4764"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "two",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31102",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "7b15d4e3-6733-4cd0-a000-dbeeec0ff1de",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "1d9d68b6-a979-43e5-8b81-7465d755df91",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "two",
+                    "remote_cleanup": "off",
+                    "server_id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 3,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 3,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "2fc011c6-d8a0-4b11-b8e5-0eb4fcb12515"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "7b15d4e3-6733-4cd0-a000-dbeeec0ff1de",
+                "kind": "local",
+                "listen": "127.0.0.1:31101",
+                "name": "one",
+                "remote_cleanup": "off",
+                "server_id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                "target": "localhost:31101"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "1d9d68b6-a979-43e5-8b81-7465d755df91",
+                "kind": "local",
+                "listen": "127.0.0.1:31102",
+                "name": "two",
+                "remote_cleanup": "off",
+                "server_id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                "target": "localhost:31102"
+              }
+            ],
+            "revision": 3,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "config",
+            "validate"
+          ],
+          "exit": 0,
+          "result": {
+            "revision": 3,
+            "valid": true
+          }
+        },
+        {
+          "args": [
+            "remove",
+            "one"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "1d9d68b6-a979-43e5-8b81-7465d755df91",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "two",
+                    "remote_cleanup": "off",
+                    "server_id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) removed; daemon remains stopped. config.toml has pending edits and was preserved; selected start/stop/delete intent is saved and will also be preserved when that draft is reloaded",
+              "revision": 4
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "88080b65-c46a-4d57-a95a-5b7bf0b67c7e"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 5,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 5
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "1026481a-53ce-4ce7-bcf2-2de83bac2880"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [],
+            "revision": 5,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "6be70adf-3064-4fda-b0c3-fade41d0173e",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-remove/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case": "control-name-fallback-down",
+      "expected_untouched_id": "e56f265c-b8ff-4e80-81ec-4ba063ed920b",
+      "expected_state": "running",
+      "actual_state": "stopped",
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "8f760d01-ff77-4053-a280-e12a6c5e6e25"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "one",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31101",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "b1cb4ec2-9808-403e-9031-154285019e21",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31101"
+                  }
+                ],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 2,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "10372334-9559-4e24-8298-b0e745ca2e17"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "two",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31102",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "b1cb4ec2-9808-403e-9031-154285019e21",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "e56f265c-b8ff-4e80-81ec-4ba063ed920b",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "two",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 3,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 3,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "97652221-2f5b-4c2e-a74a-704842bac563"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "b1cb4ec2-9808-403e-9031-154285019e21",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "e56f265c-b8ff-4e80-81ec-4ba063ed920b",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "two",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 4
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "d27fa845-3ddf-44e5-aab0-d62d21355473"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "b1cb4ec2-9808-403e-9031-154285019e21",
+                "kind": "local",
+                "listen": "127.0.0.1:31101",
+                "name": "one",
+                "remote_cleanup": "off",
+                "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                "target": "localhost:31101"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "id": "e56f265c-b8ff-4e80-81ec-4ba063ed920b",
+                "kind": "local",
+                "listen": "127.0.0.1:31102",
+                "name": "two",
+                "remote_cleanup": "off",
+                "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                "target": "localhost:31102"
+              }
+            ],
+            "revision": 4,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "config",
+            "validate"
+          ],
+          "exit": 0,
+          "result": {
+            "revision": 4,
+            "valid": true
+          }
+        },
+        {
+          "args": [
+            "down",
+            "one"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "b1cb4ec2-9808-403e-9031-154285019e21",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "e56f265c-b8ff-4e80-81ec-4ba063ed920b",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "two",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 5,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "Stop requested for 1 forward(s); daemon remains stopped. config.toml has pending edits and was preserved; selected start/stop/delete intent is saved and will also be preserved when that draft is reloaded",
+              "revision": 5
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "40dcd8ac-7a25-4584-b650-0aa96b7099ff"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "b1cb4ec2-9808-403e-9031-154285019e21",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "three",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "e56f265c-b8ff-4e80-81ec-4ba063ed920b",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 6,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 6
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "5769bda7-8a0a-4668-8c03-a5461dea7919"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "b1cb4ec2-9808-403e-9031-154285019e21",
+                "kind": "local",
+                "listen": "127.0.0.1:31101",
+                "name": "three",
+                "remote_cleanup": "off",
+                "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                "target": "localhost:31101"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "e56f265c-b8ff-4e80-81ec-4ba063ed920b",
+                "kind": "local",
+                "listen": "127.0.0.1:31102",
+                "name": "one",
+                "remote_cleanup": "off",
+                "server_id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                "target": "localhost:31102"
+              }
+            ],
+            "revision": 6,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "25386959-51e0-4163-b67a-efc5844c73e4",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-down/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case": "control-name-fallback-up",
+      "expected_untouched_id": "0eaf187d-b1d9-4fb3-96aa-5f0559423e6d",
+      "expected_state": "stopped",
+      "actual_state": "running",
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "6687bc6f-9566-4f35-b652-bb01848c9a9a"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "one",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31101",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "68706ffa-81e8-4c1a-9991-537844606c11",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "target": "localhost:31101"
+                  }
+                ],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 2,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "5d4addb2-2f93-4fa8-a87a-d588e1ab4c81"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "two",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31102",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "68706ffa-81e8-4c1a-9991-537844606c11",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "0eaf187d-b1d9-4fb3-96aa-5f0559423e6d",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "two",
+                    "remote_cleanup": "off",
+                    "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 3,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 3,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "2ffa3a6a-4a4b-4b0c-94dc-ab3826b65435"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "68706ffa-81e8-4c1a-9991-537844606c11",
+                "kind": "local",
+                "listen": "127.0.0.1:31101",
+                "name": "one",
+                "remote_cleanup": "off",
+                "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                "target": "localhost:31101"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "0eaf187d-b1d9-4fb3-96aa-5f0559423e6d",
+                "kind": "local",
+                "listen": "127.0.0.1:31102",
+                "name": "two",
+                "remote_cleanup": "off",
+                "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                "target": "localhost:31102"
+              }
+            ],
+            "revision": 3,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "config",
+            "validate"
+          ],
+          "exit": 0,
+          "result": {
+            "revision": 3,
+            "valid": true
+          }
+        },
+        {
+          "args": [
+            "up",
+            "one"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "68706ffa-81e8-4c1a-9991-537844606c11",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "0eaf187d-b1d9-4fb3-96aa-5f0559423e6d",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "two",
+                    "remote_cleanup": "off",
+                    "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "Start requested for 1 forward(s); daemon is running. config.toml has pending edits and was preserved; selected start/stop/delete intent is saved and will also be preserved when that draft is reloaded",
+              "ready": null,
+              "revision": 4,
+              "saved": true,
+              "state": "saved"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "f1136439-af4a-4cb2-9c72-0a37b25a74c1"
+          }
+        },
+        {
+          "args": [
+            "daemon",
+            "stop"
+          ],
+          "exit": 0,
+          "result": {
+            "message": "Daemon stopped; forward running intent is preserved.",
+            "ok": true
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "68706ffa-81e8-4c1a-9991-537844606c11",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31101",
+                    "name": "three",
+                    "remote_cleanup": "off",
+                    "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "target": "localhost:31101"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "0eaf187d-b1d9-4fb3-96aa-5f0559423e6d",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31102",
+                    "name": "one",
+                    "remote_cleanup": "off",
+                    "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "target": "localhost:31102"
+                  }
+                ],
+                "revision": 5,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 5
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "8a633e47-3b22-417b-b6c0-be42da2c029f"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "id": "68706ffa-81e8-4c1a-9991-537844606c11",
+                "kind": "local",
+                "listen": "127.0.0.1:31101",
+                "name": "three",
+                "remote_cleanup": "off",
+                "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                "target": "localhost:31101"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "id": "0eaf187d-b1d9-4fb3-96aa-5f0559423e6d",
+                "kind": "local",
+                "listen": "127.0.0.1:31102",
+                "name": "one",
+                "remote_cleanup": "off",
+                "server_id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                "target": "localhost:31102"
+              }
+            ],
+            "revision": 5,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "ab8116d8-3b2b-45df-a110-4682c49575f8",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/control-up/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        }
+      ]
+    },
+    {
+      "case": "recovery-reuses-stale-cas-revision",
+      "before_revision": 4,
+      "recovered_revision": 1,
+      "stale_request_accepted": true,
+      "before_port": 4,
+      "after_stale_port": 1,
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "d73c4912-9422-4778-acc4-0c8bdba81a23"
+          }
+        },
+        {
+          "args": [
+            "server",
+            "edit",
+            "dev",
+            "--port",
+            "2"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 2,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 2
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "31585590-5b0b-4792-9582-8c484a672136"
+          }
+        },
+        {
+          "args": [
+            "server",
+            "edit",
+            "dev",
+            "--port",
+            "3"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 3,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 3,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 3
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "2adcddaa-59e0-476a-904a-9a50d1e91306"
+          }
+        },
+        {
+          "args": [
+            "server",
+            "edit",
+            "dev",
+            "--port",
+            "4"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 4,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 4
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "0e45f764-20c6-4830-bf33-d6792f289824"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [],
+            "revision": 4,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 4,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "config",
+            "recover",
+            "--from-candidate"
+          ],
+          "exit": 0,
+          "result": {
+            "daemon_running": false,
+            "data": {
+              "backup_directory": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/state/recovery-backups/38213121-b98d-4ffe-b31a-b16d8d91b1f5",
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 4,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "warning": null
+            },
+            "message": "Configuration recovered; all rules are stopped. Use up to start selected rules.",
+            "ok": true,
+            "saved": true
+          }
+        },
+        {
+          "args": [
+            "daemon",
+            "start"
+          ],
+          "exit": 0,
+          "result": {
+            "message": "Daemon is running.",
+            "ok": true
+          }
+        },
+        {
+          "rpc": {
+            "api_version": 1,
+            "request_id": "c88a9e10-ee5a-4291-bb8d-67786c0b22e3",
+            "expected_revision": 1,
+            "command": {
+              "method": "put_server",
+              "params": {
+                "server": {
+                  "host": "127.0.0.1",
+                  "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                  "identity_files": [],
+                  "known_hosts": null,
+                  "name": "dev",
+                  "port": 1,
+                  "proxy_jump": [],
+                  "ssh_alias": null,
+                  "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                  "user": "stale-client-change"
+                }
+              }
+            }
+          },
+          "response": {
+            "api_version": 1,
+            "request_id": "c88a9e10-ee5a-4291-bb8d-67786c0b22e3",
+            "ok": true,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "4532c9d5-6669-48c7-b333-96bb44bae28f",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/revision/ssh.conf",
+                    "user": "stale-client-change"
+                  }
+                ]
+              },
+              "message": "server saved",
+              "revision": 2
+            },
+            "error": null
+          }
+        }
+      ]
+    },
+    {
+      "case": "ssh-path-enotdir-blocks-control-plane",
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/path/ssh.conf",
+            "--identity",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/keys/sub/id"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "c42bb236-dc8f-4ef8-b34a-434176c91292",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/keys/sub/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/path/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "14911555-2907-49d1-b4e7-3b62413927c8"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "web",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31119",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "af14475c-ccb9-45cd-92ca-3b28561cb162",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31119",
+                    "name": "web",
+                    "remote_cleanup": "off",
+                    "server_id": "c42bb236-dc8f-4ef8-b34a-434176c91292",
+                    "target": "localhost:31119"
+                  }
+                ],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "c42bb236-dc8f-4ef8-b34a-434176c91292",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/keys/sub/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/path/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 2,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "db736456-818d-4241-9a61-f37b3fd27c33"
+          }
+        },
+        {
+          "args": [
+            "up",
+            "web"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "af14475c-ccb9-45cd-92ca-3b28561cb162",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31119",
+                    "name": "web",
+                    "remote_cleanup": "off",
+                    "server_id": "c42bb236-dc8f-4ef8-b34a-434176c91292",
+                    "target": "localhost:31119"
+                  }
+                ],
+                "revision": 3,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "c42bb236-dc8f-4ef8-b34a-434176c91292",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/keys/sub/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/path/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "Start requested for 1 forward(s); daemon is running.",
+              "ready": null,
+              "revision": 3,
+              "saved": true,
+              "state": "saved"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "23120a82-231c-410b-aa04-55263e2a5416"
+          }
+        },
+        {
+          "args": [
+            "down",
+            "web"
+          ],
+          "exit": 5,
+          "result": {
+            "error": {
+              "code": "storage_error",
+              "message": "storage_error: cannot read last committed configuration; using the same --config-dir as this command, stop the daemon, repair config.toml, then run `fwm config recover --from-candidate` (backs up the damaged snapshot and preserves readable control intent): Not a directory (os error 20)"
+            },
+            "ok": false
+          }
+        },
+        {
+          "args": [
+            "server",
+            "edit",
+            "dev",
+            "--unset",
+            "identity"
+          ],
+          "exit": 5,
+          "result": {
+            "error": {
+              "code": "storage_error",
+              "message": "storage_error: Not a directory (os error 20)"
+            },
+            "ok": false
+          }
+        },
+        {
+          "args": [
+            "status",
+            "web"
+          ],
+          "exit": 0,
+          "result": {
+            "config_revision": 3,
+            "daemon_instance_id": "b50619c1-9d67-4508-b674-b09a9ce676b6",
+            "daemon_running": true,
+            "daemon_state": "running",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": null,
+                "id": "af14475c-ccb9-45cd-92ca-3b28561cb162",
+                "kind": "local",
+                "last_error": "Connection refused (os error 61)",
+                "listen": "127.0.0.1:31119",
+                "name": "web",
+                "next_retry_unix_ms": 1789902360162,
+                "retry_count": 2,
+                "server": "dev",
+                "state": "backoff",
+                "target": "localhost:31119"
+              }
+            ],
+            "runtime_available": true,
+            "warnings": []
+          }
+        },
+        {
+          "args": [
+            "daemon",
+            "stop"
+          ],
+          "exit": 0,
+          "result": {
+            "message": "Daemon stopped; forward running intent is preserved.",
+            "ok": true
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 2,
+          "result": {
+            "error": {
+              "code": "invalid_request",
+              "message": "cannot read last committed configuration; using the same --config-dir as this command, stop the daemon, repair config.toml, then run `fwm config recover --from-candidate` (backs up the damaged snapshot and preserves readable control intent): Not a directory (os error 20)"
+            },
+            "ok": false
+          }
+        },
+        {
+          "args": [
+            "remove",
+            "web"
+          ],
+          "exit": 2,
+          "result": {
+            "error": {
+              "code": "invalid_request",
+              "message": "cannot read last committed configuration; using the same --config-dir as this command, stop the daemon, repair config.toml, then run `fwm config recover --from-candidate` (backs up the damaged snapshot and preserves readable control intent): Not a directory (os error 20)"
+            },
+            "ok": false
+          }
+        },
+        {
+          "args": [
+            "down",
+            "web"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "af14475c-ccb9-45cd-92ca-3b28561cb162",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31119",
+                    "name": "web",
+                    "remote_cleanup": "off",
+                    "server_id": "c42bb236-dc8f-4ef8-b34a-434176c91292",
+                    "target": "localhost:31119"
+                  }
+                ],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "c42bb236-dc8f-4ef8-b34a-434176c91292",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/keys/sub/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/path/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "Stop requested for 1 forward(s); daemon remains stopped.",
+              "revision": 4
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "a316b96a-3321-419d-90c5-56d1866f1b2d"
+          }
+        }
+      ]
+    },
+    {
+      "case": "legacy-group-inference-creates-new-conflict",
+      "calls": [
+        {
+          "args": [
+            "config",
+            "validate"
+          ],
+          "exit": 2,
+          "result": {
+            "error": {
+              "code": "invalid_request",
+              "message": "listen addresses conflict within group \"bundle\": bundle-3000 and bundle-03000; group members need distinct listening addresses to start together"
+            },
+            "ok": false
+          }
+        },
+        {
+          "args": [
+            "config",
+            "validate"
+          ],
+          "exit": 0,
+          "result": {
+            "revision": 0,
+            "valid": true
+          }
+        }
+      ]
+    },
+    {
+      "case": "recovery-mirror-failure-loses-stop-and-delete-protection",
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/ssh.conf"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "cad3bd14-38c8-4b18-a13a-c6b67937d6d7"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "deleted",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31122",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "6dd88894-bd47-4d2e-becb-29750935878f",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31122",
+                    "name": "deleted",
+                    "remote_cleanup": "off",
+                    "server_id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "target": "localhost:31122"
+                  }
+                ],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 2,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "cb0cbfe7-9825-4aa9-a1a5-f88a4849297c"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "survivor",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31123",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "6dd88894-bd47-4d2e-becb-29750935878f",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31122",
+                    "name": "deleted",
+                    "remote_cleanup": "off",
+                    "server_id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "target": "localhost:31122"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "59b0d9e0-6284-4720-81d1-b7224c448904",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31123",
+                    "name": "survivor",
+                    "remote_cleanup": "off",
+                    "server_id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "target": "localhost:31123"
+                  }
+                ],
+                "revision": 3,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 3,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "600d4d68-4544-4a69-9d26-973509ad69e3"
+          }
+        },
+        {
+          "args": [
+            "remove",
+            "deleted"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "59b0d9e0-6284-4720-81d1-b7224c448904",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31123",
+                    "name": "survivor",
+                    "remote_cleanup": "off",
+                    "server_id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "target": "localhost:31123"
+                  }
+                ],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) removed; daemon remains stopped. config.toml has pending edits and was preserved; selected start/stop/delete intent is saved and will also be preserved when that draft is reloaded",
+              "revision": 4
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "449a76d5-7ad5-432a-8378-a3fb9ad7778c"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "recover",
+            "--from-candidate"
+          ],
+          "exit": 0,
+          "result": {
+            "daemon_running": false,
+            "data": {
+              "backup_directory": "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/state/recovery-backups/7fef1b0f-b8a6-415e-93c5-a940e2d2e884",
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "59b0d9e0-6284-4720-81d1-b7224c448904",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31123",
+                    "name": "survivor",
+                    "remote_cleanup": "off",
+                    "server_id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "target": "localhost:31123"
+                  }
+                ],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "warning": "configuration committed, but config.toml could not be updated; pending control intent remains protected: Operation not permitted (os error 1)"
+            },
+            "message": "Configuration recovered; all rules are stopped. Use up to start selected rules.",
+            "ok": true,
+            "saved": true
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "6dd88894-bd47-4d2e-becb-29750935878f",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31122",
+                    "name": "deleted",
+                    "remote_cleanup": "off",
+                    "server_id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "target": "localhost:31122"
+                  },
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "59b0d9e0-6284-4720-81d1-b7224c448904",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31123",
+                    "name": "survivor",
+                    "remote_cleanup": "off",
+                    "server_id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "target": "localhost:31123"
+                  }
+                ],
+                "revision": 5,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "5d83f215-6b7e-4ae5-927c-1f2ca0482e4d",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/recovery-mirror/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 5
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "ef95fd89-1312-44d2-a101-a7d9e8f2f014"
+          }
+        }
+      ]
+    },
+    {
+      "case": "missing-snapshot-silently-applies-draft-at-start",
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/lost-snapshot/ssh.conf"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "6cbc4230-86ab-49a9-8de0-8a26a26626d0",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/lost-snapshot/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "bc4b0b4e-36c2-410b-b238-3f75e5b951c7"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "web",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31124",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "026eee18-e67c-4355-8cd8-9b57dad290e4",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31124",
+                    "name": "web",
+                    "remote_cleanup": "off",
+                    "server_id": "6cbc4230-86ab-49a9-8de0-8a26a26626d0",
+                    "target": "localhost:31124"
+                  }
+                ],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "6cbc4230-86ab-49a9-8de0-8a26a26626d0",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/lost-snapshot/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 2,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "1f9a8f6c-d14a-4d3b-bf34-c534405b9cf0"
+          }
+        },
+        {
+          "args": [
+            "daemon",
+            "start"
+          ],
+          "exit": 0,
+          "result": {
+            "message": "Daemon is running.",
+            "ok": true
+          }
+        },
+        {
+          "args": [
+            "daemon",
+            "stop"
+          ],
+          "exit": 0,
+          "result": {
+            "message": "Daemon stopped; forward running intent is preserved.",
+            "ok": true
+          }
+        },
+        {
+          "args": [
+            "daemon",
+            "start"
+          ],
+          "exit": 0,
+          "result": {
+            "message": "Daemon is running.",
+            "ok": true
+          }
+        },
+        {
+          "args": [
+            "status",
+            "web"
+          ],
+          "exit": 0,
+          "result": {
+            "config_revision": 2,
+            "daemon_instance_id": "fe2d794c-a56e-4d2d-b78d-45277a756a9e",
+            "daemon_running": true,
+            "daemon_state": "running",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": null,
+                "id": "026eee18-e67c-4355-8cd8-9b57dad290e4",
+                "kind": "local",
+                "last_error": "Connection refused (os error 61)",
+                "listen": "127.0.0.1:31124",
+                "name": "web",
+                "next_retry_unix_ms": 1789902360503,
+                "retry_count": 2,
+                "server": "dev",
+                "state": "backoff",
+                "target": "localhost:31124"
+              }
+            ],
+            "runtime_available": true,
+            "warnings": []
+          }
+        }
+      ]
+    },
+    {
+      "case": "dangling-config-link-treated-as-absent-and-replaced",
+      "calls": [
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [],
+            "revision": 0,
+            "schema_version": 3,
+            "servers": []
+          }
+        },
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/dangling-candidate/ssh.conf"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "271b65fb-824e-4fb9-b3d0-000713983264",
+                    "identity_files": [],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/dangling-candidate/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "da313959-d57a-4793-bd1a-22e57a3b6cdf"
+          }
+        }
+      ]
+    },
+    {
+      "case": "negative-controls-final-pass",
+      "expected_behavior_confirmed": true,
+      "covers": [
+        "completed-delete-name-reuse",
+        "missing-identity-parents",
+        "invalid-draft-stop",
+        "preserved-stop-through-reload",
+        "retired-overlay-allows-later-explicit-edit"
+      ],
+      "calls": [
+        {
+          "args": [
+            "server",
+            "add",
+            "dev",
+            "--host",
+            "127.0.0.1",
+            "--port",
+            "1",
+            "--ssh-config",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+            "--identity",
+            "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 1,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "server saved; daemon remains stopped.",
+              "revision": 1
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "114f3098-74f3-4fdd-9652-4af3425ed91e"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "reused",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31125",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "a775d642-2410-4add-b310-9f9dc53f4af0",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 2,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 2,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "28f4f748-81c1-4133-906f-048edf5545c4"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "a775d642-2410-4add-b310-9f9dc53f4af0",
+                "kind": "local",
+                "listen": "127.0.0.1:31125",
+                "name": "reused",
+                "remote_cleanup": "off",
+                "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "target": "localhost:31125"
+              }
+            ],
+            "revision": 2,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "identity_files": [
+                  "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                ],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "remove",
+            "reused"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 3,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) removed; daemon remains stopped.",
+              "revision": 3
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "4c9e7d38-bc39-4fe4-9f4a-d86e8259be53"
+          }
+        },
+        {
+          "args": [
+            "add",
+            "reused",
+            "--server",
+            "dev",
+            "--local",
+            "--port",
+            "31125",
+            "--disabled"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 4,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+              "ready": null,
+              "revision": 4,
+              "saved": true,
+              "state": "stopped"
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "618dc968-8bea-4a6b-99a5-7788f6fe1f16"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                "kind": "local",
+                "listen": "127.0.0.1:31125",
+                "name": "reused",
+                "remote_cleanup": "off",
+                "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "target": "localhost:31125"
+              }
+            ],
+            "revision": 4,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "identity_files": [
+                  "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                ],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 5,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 5
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "82a69fce-0ca0-4db6-a965-58b4ff988658"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                "kind": "local",
+                "listen": "127.0.0.1:31125",
+                "name": "reused",
+                "remote_cleanup": "off",
+                "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "target": "localhost:31125"
+              }
+            ],
+            "revision": 5,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "identity_files": [
+                  "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                ],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "down",
+            "reused"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 6,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "Stop requested for 1 forward(s); daemon remains stopped.",
+              "revision": 6
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "25fb240e-01c7-4e28-b8aa-dd643b0e8667"
+          }
+        },
+        {
+          "args": [
+            "down",
+            "reused"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 7,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "Stop requested for 1 forward(s); daemon remains stopped. config.toml has pending edits and was preserved; selected start/stop/delete intent is saved and will also be preserved when that draft is reloaded",
+              "revision": 7
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "11d0756b-7d95-4cf9-ba2d-0cdf3d3a6291"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 8,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 8
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "356023d0-52b4-4b43-a8b9-0ef6cd4a22e9"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                "kind": "local",
+                "listen": "127.0.0.1:31125",
+                "name": "reused",
+                "remote_cleanup": "off",
+                "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "target": "localhost:31125"
+              }
+            ],
+            "revision": 8,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "identity_files": [
+                  "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                ],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "config",
+            "reload"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "running",
+                    "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 9,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "configuration reloaded; daemon remains stopped.",
+              "revision": 9
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "9ada0079-2b70-4405-bffa-60504219b25a"
+          }
+        },
+        {
+          "args": [
+            "config",
+            "export"
+          ],
+          "exit": 0,
+          "result": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                "kind": "local",
+                "listen": "127.0.0.1:31125",
+                "name": "reused",
+                "remote_cleanup": "off",
+                "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "target": "localhost:31125"
+              }
+            ],
+            "revision": 9,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "127.0.0.1",
+                "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                "identity_files": [
+                  "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                ],
+                "known_hosts": null,
+                "name": "dev",
+                "port": 1,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                "user": null
+              }
+            ]
+          }
+        },
+        {
+          "args": [
+            "down",
+            "reused"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [
+                  {
+                    "connection_mode": "shared",
+                    "desired_state": "stopped",
+                    "id": "94666816-7d8e-4c3c-bb46-7d3ab74c6fa9",
+                    "kind": "local",
+                    "listen": "127.0.0.1:31125",
+                    "name": "reused",
+                    "remote_cleanup": "off",
+                    "server_id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "target": "localhost:31125"
+                  }
+                ],
+                "revision": 10,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "Stop requested for 1 forward(s); daemon remains stopped.",
+              "revision": 10
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "f2d51f60-bdb5-45ed-8c45-61e8de6aa523"
+          }
+        },
+        {
+          "args": [
+            "remove",
+            "reused"
+          ],
+          "exit": 0,
+          "result": {
+            "api_version": 1,
+            "data": {
+              "config": {
+                "defaults": {
+                  "retry": {
+                    "connect_timeout_secs": 10,
+                    "keepalive_interval_secs": 5,
+                    "keepalive_max": 3,
+                    "max_delay_secs": 30,
+                    "stable_reset_secs": 60
+                  }
+                },
+                "forwards": [],
+                "revision": 11,
+                "schema_version": 3,
+                "servers": [
+                  {
+                    "host": "127.0.0.1",
+                    "id": "96ef617b-6a44-4e70-9a65-ec7562253917",
+                    "identity_files": [
+                      "/private/tmp/fwm-postfix-storage-2n4gtjrd/missing/parents/id"
+                    ],
+                    "known_hosts": null,
+                    "name": "dev",
+                    "port": 1,
+                    "proxy_jump": [],
+                    "ssh_alias": null,
+                    "ssh_config": "/private/tmp/fwm-postfix-storage-2n4gtjrd/negative-controls/ssh.conf",
+                    "user": null
+                  }
+                ]
+              },
+              "message": "1 forward(s) removed; daemon remains stopped.",
+              "revision": 11
+            },
+            "error": null,
+            "ok": true,
+            "request_id": "360bcbf0-6082-4129-aadc-a7ea922e57cd"
+          }
+        }
+      ]
+    }
+  ]
+}

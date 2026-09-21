@@ -1,0 +1,74 @@
+{
+  "config_bytes": 200022,
+  "rows": [
+    {
+      "attempt": 1,
+      "exit": 2,
+      "log_bytes": 400161
+    },
+    {
+      "attempt": 2,
+      "exit": 2,
+      "log_bytes": 800322
+    },
+    {
+      "attempt": 3,
+      "exit": 2,
+      "log_bytes": 1200483
+    },
+    {
+      "attempt": 4,
+      "exit": 2,
+      "log_bytes": 1600644
+    },
+    {
+      "attempt": 5,
+      "exit": 2,
+      "log_bytes": 2000805
+    },
+    {
+      "attempt": 6,
+      "exit": 2,
+      "log_bytes": 2400966
+    },
+    {
+      "attempt": 7,
+      "exit": 2,
+      "log_bytes": 2801127
+    },
+    {
+      "attempt": 8,
+      "exit": 2,
+      "log_bytes": 3201288
+    },
+    {
+      "attempt": 9,
+      "exit": 2,
+      "log_bytes": 3601449
+    },
+    {
+      "attempt": 10,
+      "exit": 2,
+      "log_bytes": 4001610
+    },
+    {
+      "attempt": 11,
+      "exit": 2,
+      "log_bytes": 4401771
+    },
+    {
+      "attempt": 12,
+      "exit": 2,
+      "log_bytes": 4801932
+    },
+    {
+      "attempt": 13,
+      "exit": 2,
+      "log_bytes": 5202093
+    }
+  ],
+  "rotation_files": [
+    "daemon.log"
+  ],
+  "error_prefix": "error: invalid TOML in /private/tmp/fwm-log-sdid_4hn/config.toml: TOML parse error at line 2, column 200005\n  |\n2 | xxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxxx"
+}

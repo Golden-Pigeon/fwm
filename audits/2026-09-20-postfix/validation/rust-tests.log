@@ -1,0 +1,651 @@
+   Compiling fwm-core v0.1.0 (/workspace/fwm/crates/fwm-core)
+   Compiling fwm-api v0.1.0 (/workspace/fwm/crates/fwm-api)
+   Compiling fwm v0.1.0 (/workspace/fwm/crates/fwm)
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 4.93s
+     Running unittests src/main.rs (target/debug/deps/fwm-27e0b432095869d9)
+
+running 195 tests
+test cli::add::group_tests::explicit_group_is_independent_of_single_name_or_batch_prefix ... ok
+test cli::add::group_tests::explicit_group_accepts_dynamic_and_remote_members ... ok
+test cli::add::group_tests::duplicate_ports_in_a_stopped_group_are_rejected_even_with_different_names ... ok
+test cli::add::group_tests::explicit_group_creates_and_appends_one_or_many_members ... ok
+test cli::add::tests::explicit_names_are_preserved_and_batches_keep_port_suffixes ... ok
+test cli::add::tests::auto_name_uses_resolved_profile_name_and_respects_unicode_length ... ok
+test cli::add::group_tests::group_options_do_not_weaken_explicit_server_or_direction_requirements ... ok
+test cli::add::group_tests::single_name_matching_an_existing_group_explains_how_to_append ... ok
+test cli::add::tests::rejects_invalid_batch_without_saving_an_automatic_profile ... ok
+test cli::add::tests::auto_names_all_directions_and_batch_ports ... ok
+test cli::add::group_tests::invalid_group_names_and_rule_group_collisions_are_atomic ... ok
+test cli::args::audit_tests::explicit_timeout_implies_wait_for_every_activation_command ... ok
+test cli::args::audit_tests::numeric_name_is_not_mistaken_for_spec_when_only_metadata_values_follow ... ok
+test cli::args::audit_tests::group_management_arguments_are_discoverable_and_membership_flags_are_exclusive ... ok
+test cli::add::tests::saved_batch_groups_match_explicit_or_automatic_names ... ok
+test cli::args::tests::accepts_shorthand_with_a_direction_and_edit_direction_inheritance ... ok
+test cli::add::tests::remote_cleanup_defaults_to_verified_with_a_dedicated_connection ... ok
+test cli::args::audit_tests::edit_numeric_names_keep_unambiguous_legacy_and_explicit_port_specifications ... ok
+test cli::add::tests::local_and_dynamic_forwards_cannot_enable_remote_cleanup ... ok
+test cli::args::tests::legacy_remote_ranges_keep_whitespace_and_attached_short_values ... ok
+test cli::args::tests::validates_durations_and_user_service_defaults ... ok
+test cli::args::tests::legacy_and_explicit_specs_use_the_same_input_path ... ok
+test cli::args::tests::edit_supports_partial_updates_but_add_still_requires_both_ports ... ok
+test cli::args::tests::requires_exactly_one_direction_and_selection ... ok
+test cli::args::tests::rejects_missing_direction_or_target_and_conflicting_shorthand_flags ... ok
+test cli::contracts_tests::cleanup_policy_preserves_an_explicit_remote_opt_out_and_mode_until_overridden ... ok
+test cli::args::tests::names_are_optional_and_direction_never_consumes_a_positional_name ... ok
+test cli::contracts_tests::error_categories_survive_context_without_turning_operational_failures_into_bad_input ... ok
+test cli::contracts_tests::completion_errors_keep_the_final_saved_state_payload_through_context_and_json_conversion ... ok
+test cli::contracts_tests::leaving_remote_forwarding_turns_cleanup_off_and_rejects_explicit_verified_cleanup ... ok
+test cli::contracts_tests::normalization_never_interprets_arguments_to_other_command_families_as_forwards ... ok
+test cli::contracts_tests::new_alias_selection_validates_unicode_length_and_never_persists_on_failure ... ok
+test cli::contracts_tests::normalization_respects_option_values_global_paths_and_the_end_of_options_marker ... ok
+test cli::contracts_tests::service_runtime_failures_and_timeouts_keep_distinct_exit_codes_through_context ... ok
+test cli::daemon::service_lifecycle::tests::failed_recovery_reports_both_failures_without_claiming_rollback ... ok
+test cli::daemon::service_lifecycle::tests::failed_registration_or_readiness_restores_previous_runtime ... ok
+test cli::daemon::service_lifecycle::tests::installation_preflight_failure_never_stops_the_existing_daemon ... ok
+test cli::daemon::service_lifecycle::tests::installed_service_is_preflighted_then_fully_stopped_before_install ... ok
+test cli::contracts_tests::selecting_an_inherited_profile_cannot_silently_replace_its_ssh_config ... ok
+test cli::contracts_tests::all_wait_commands_use_the_same_duration_units_and_preserve_subsecond_timeouts ... ok
+test cli::args::audit_tests::numeric_and_range_names_are_not_consumed_by_direction_flags_before_the_name ... ok
+test cli::daemon::service_lifecycle::tests::lost_shutdown_reply_is_success_if_owner_really_exited ... ok
+test cli::daemon::service_lifecycle::tests::restart_refreshes_the_managed_executable_before_waiting_for_readiness ... ok
+test cli::daemon::service_lifecycle::tests::stop_error_after_the_owner_exited_restores_previously_running_state ... ok
+test cli::completion::tests::wait_deadline_interrupts_a_stalled_status_request ... ok
+test cli::daemon::service_lifecycle::tests::stop_failure_does_not_attempt_install_or_spawn ... ok
+test cli::daemon::service_lifecycle::tests::successful_recovery_preserves_the_original_timeout_error_code ... ok
+test cli::daemon::service_lifecycle::tests::uninstall_always_checks_registration_and_waits_for_daemon_release ... ok
+test cli::daemon::service_lifecycle::tests::unmanaged_daemon_is_handed_over_without_service_stop ... ok
+test cli::daemon::service_lifecycle::tests::unresponsive_owner_receives_shutdown_and_unconfirmed_stop_is_explicit ... ok
+test cli::contracts_tests::all_wait_commands_reject_invalid_or_overflowing_durations_before_execution ... ok
+test cli::forwards::tests::waits_for_created_ids_despite_renames_and_ignores_unrelated_rules ... ok
+test cli::output::tests::failed_diagnostic_is_a_command_failure_but_successful_checks_are_not ... ok
+test cli::output::tests::mappings_show_both_sides_and_full_targets ... ok
+test cli::parse::patch_tests::direction_port_shorthand_converts_dynamic_using_existing_bind_and_default_target_host ... ok
+test cli::forwards::tests::names_single_and_batch_rules_after_deduplication ... ok
+test cli::parse::patch_tests::direction_port_shorthand_matches_port_patch_for_every_direction_and_address_family ... ok
+test cli::parse::patch_tests::explicit_spec_still_replaces_both_addresses_on_edit ... ok
+test cli::parse::patch_tests::full_mapping_edits_without_bind_preserve_the_original_ip_for_both_directions ... ok
+test cli::parse::patch_tests::shorthand_edit_rejects_ranges_lists_and_invalid_ports_without_mutating_input ... ok
+test cli::parse::patch_tests::shorthand_create_still_defaults_to_loopback_and_expands_port_lists ... ok
+test cli::parse::tests::accepts_ipv6_on_both_sides ... ok
+test cli::parse::tests::defaults_to_loopback_and_preserves_remote_dns ... ok
+test cli::forwards::tests::validates_every_generated_name_and_rejects_existing_names_without_changes ... ok
+test cli::parse::tests::edit_changes_only_requested_ports_or_direction_including_ipv6 ... ok
+test cli::parse::tests::edit_preserves_direction_and_metadata_only_edits ... ok
+test cli::parse::tests::edit_same_port_changes_ports_without_resetting_existing_hosts ... ok
+test cli::parse::tests::expands_local_and_remote_shorthand_with_localhost_targets ... ok
+test cli::forwards::tests::editing_cannot_enable_verified_cleanup_for_nonremote_directions ... ok
+test cli::parse::tests::rejects_ambiguous_addresses_and_zero_ports ... ok
+test cli::parse::tests::maps_multiple_sources_to_one_target ... ok
+test cli::parse::tests::rejects_explicit_spec_conflicts_and_bare_direction ... ok
+test cli::parse::tests::switching_a_dynamic_proxy_requires_a_destination_but_keeps_its_listen_address ... ok
+test cli::forwards::tests::editing_direction_updates_cleanup_and_retains_explicit_off ... ok
+test cli::args::tests::query_and_management_selectors_are_consistent ... ok
+test cli::ports::tests::expands_inclusive_ranges_and_deduplicates_in_sorted_order ... ok
+test cli::queries::streaming_selection::tests::explicit_group_and_shorthand_follow_keep_event_time_group_membership ... ok
+test cli::queries::streaming_selection::tests::server_follow_pins_identity_through_rename_deletion_and_label_expiry ... ok
+test cli::ports::tests::rejects_malformed_and_out_of_range_ports ... ok
+test cli::server_selection::tests::creates_alias_without_resolving_or_mutating_config ... ok
+test cli::queries::streaming_selection::tests::historical_id_wins_over_another_deleted_rules_name_and_remains_pinned ... ok
+test cli::ports::tests::caps_distinct_ports_not_duplicate_mentions ... ok
+test cli::queries::streaming_selection::tests::rule_follow_does_not_jump_to_a_new_rule_reusing_the_original_name ... ok
+test cli::server_selection::tests::validates_new_alias_names ... ok
+test cli::server_selection::tests::selects_by_explicit_name_or_id_and_never_overwrites_an_existing_profile ... ok
+test cli::queries::tests::status_selectors_match_exact_rules_groups_and_servers ... ok
+test cli::servers::tests::server_edit_preserves_identity_and_unspecified_fields ... ok
+test cli::servers::tests::server_edit_changes_address_modes_and_rejects_invalid_or_duplicate_names ... ok
+test cli::servers::tests::server_edit_rejects_empty_connection_overrides_and_ambiguous_jump_lists ... ok
+test cli::servers::tests::unset_is_idempotent_and_can_be_combined_with_other_updates ... ok
+test cli::servers::tests::unset_removes_only_the_requested_overrides ... ok
+test cli::servers::tests::setting_and_unsetting_the_same_field_is_rejected_without_mutation ... ok
+test cli::queries::tests::logs_reads_deleted_names_offline_without_starting_or_contacting_a_daemon ... ok
+test client::failure_tests::startup_readiness_is_bounded_and_returns_the_log_location ... ok
+test client::failure_tests::stalled_ipc_reports_timeout_without_retrying_an_uncertain_mutation ... ok
+test client::failure_tests::reload_requires_the_daemon_that_refreshes_ssh_configuration ... ok
+test client::tests::old_daemon_gets_actionable_upgrade_error_before_alias_mutation ... ok
+test client::failure_tests::status_view_requires_an_atomic_snapshot_capability_before_sending ... ok
+test configuration::tests::failed_plans_and_conflicting_activation_never_change_input ... ok
+test client::failure_tests::supported_atomic_status_view_is_sent_with_its_selection ... ok
+test configuration::tests::legacy_and_batch_delete_have_the_same_control_intent ... ok
+test configuration::tests::single_replace_with_new_server_is_atomic_and_checks_references ... ok
+test configuration::tests::offline_restart_enables_only_selected_rules_without_losing_command_semantics ... ok
+test configuration::tests::legacy_put_and_single_replace_preserve_identity_without_changing_input ... ok
+test client::failure_tests::unsupported_daemon_is_rejected_before_the_mutation_is_sent ... ok
+test cli::completion::tests::missing_selected_rule_cannot_be_mistaken_for_ready ... ok
+test client::failure_tests::disconnect_corrupt_frame_and_missing_error_are_not_successes ... ok
+test client::failure_tests::startup_failure_does_not_spawn_when_diagnostic_log_cannot_be_opened ... ok
+test cli::completion::tests::saved_configuration_survives_start_failure_and_error_exposes_saved_true ... ok
+test daemon::batch::tests::bad_last_member_or_internal_conflict_never_partially_commits ... ok
+test daemon::batch::tests::alias_add_cannot_overwrite_existing_server_id_or_name ... ok
+test daemon::batch::mutation_tests::no_op_group_down_protects_stopped_rules_from_pending_start_edits ... ok
+test cli::completion::tests::readiness_query_failure_keeps_last_snapshot_and_saved_revision ... ok
+test daemon::batch::mutation_tests::group_delete_is_one_idempotent_commit_and_cannot_be_revived_by_a_broken_draft ... ok
+test daemon::dispatch::postfix_tests::configuration_rejects_ids_that_cannot_fit_history_metadata ... ok
+test daemon::batch::tests::batch_commits_once_and_retry_does_not_duplicate_rules ... ok
+test daemon::batch::tests::alias_server_and_rules_commit_once_and_retries_are_idempotent ... ok
+test daemon::batch::mutation_tests::group_edit_and_new_server_are_atomic_and_all_ids_must_exist ... ok
+test daemon::batch::mutation_tests::restart_stopped_group_persists_running_intent_and_returns_actual_selection ... ok
+test daemon::dispatch::postfix_tests::every_probe_rejects_invalid_request_ids_before_execution ... ok
+test daemon::batch::tests::invalid_batch_or_orphan_never_persists_the_new_server ... ok
+test daemon::dispatch::postfix_tests::status_view_returns_configuration_from_the_snapshot_revision ... ok
+test daemon::events::postfix_tests::contextless_queued_events_do_not_acquire_the_current_rules_scope_when_read ... ok
+test daemon::events::postfix_tests::oversized_event_requests_resync_without_silently_advancing_cursor ... ok
+test daemon::batch::tests::ping_advertises_atomic_alias_add ... ok
+test daemon::batch::tests::existing_rule_is_not_overwritten_even_when_another_member_is_new ... ok
+test daemon::batch::tests::stale_alias_add_returns_revision_conflict_without_changes ... ok
+test daemon::events::tests::labels_survive_rename_delete_and_restart_without_relabeling_old_events ... ok
+test daemon::dispatch::tests::repeated_mutation_id_returns_original_commit_without_reapplying ... ok
+test daemon::dispatch::tests::stale_revision_is_rejected_without_persisting ... ok
+test daemon::probes::tests::trust_recovery_does_not_resume_stopped_healthy_or_other_attention_failures ... ok
+test daemon::probes::tests::aliases_match_only_the_same_host_key_identity_port_and_trust_database ... ok
+test daemon::events::postfix_tests::queued_engine_events_keep_producer_context_and_time_after_edits ... ok
+test daemon::logging::tests::diagnostic_log_retains_only_one_bounded_backup ... ok
+test daemon::startup_tests::direct_daemon_start_records_loading_error_without_stdio_redirection ... ok
+test offline::tests::offline_writer_refuses_symlink_lock_without_modifying_target ... ok
+test cli::daemon::tests::listening_unresponsive_peer_without_lock_is_not_stopped ... ok
+test offline::tests::log_write_failure_does_not_undo_a_successful_config_commit ... ok
+test daemon::dispatch::postfix_tests::maximum_legal_config_and_runtime_are_bounded_together ... ok
+test platform::ipc::implementation::tests::long_configuration_paths_use_a_stable_private_short_endpoint ... ok
+test offline::tests::unsupported_offline_operation_and_invalid_candidate_do_not_persist ... ok
+test offline::tests::simultaneous_offline_writers_cannot_lose_updates ... ok
+test offline::tests::restart_keeps_its_command_when_daemon_becomes_online_while_waiting_for_lock ... ok
+test platform::ipc::implementation::tests::never_replaces_a_regular_file ... ok
+test platform::service::command::tests::fixture_child ... ok
+test offline::tests::offline_writer_waits_for_owner_lock_and_rechecks_revision ... ok
+test platform::service::discovery::tests::empty_launchctl_list_failure_is_unavailable_but_other_failures_remain_errors ... ok
+test platform::service::discovery::tests::extracts_escaped_paths_without_running_command_text ... ok
+test platform::service::linux::tests::arguments_do_not_expand_unit_specifiers_or_environment ... ok
+test platform::ipc::implementation::tests::socket_is_private_and_transports_frames ... ok
+test offline::tests::stale_revision_cannot_overwrite_a_newer_offline_commit ... ok
+test platform::service::tests::profile_services_are_distinct_and_stable ... ok
+test platform::service::tests::xml_values_cannot_insert_extra_arguments ... ok
+test platform::service::definition::tests::rollback_never_overwrites_another_writer ... ok
+test platform::service::windows::registration_tests::changing_enabled_state_does_not_recreate_or_restart_a_registered_task ... ok
+test platform::service::definition::tests::partial_staging_failure_keeps_old_definition_and_cleans_temporary_files ... ok
+test platform::service::windows::registration_tests::conflicting_legacy_registrations_cannot_install_but_are_all_stopped_and_uninstalled ... ok
+test platform::service::operation_lock::tests::equivalent_paths_share_one_operation_lock_and_other_profiles_remain_independent ... ok
+test platform::service::windows::registration_tests::explicit_start_and_rollback_can_run_disabled_tasks_without_enabling_future_login ... ok
+test platform::service::windows::registration_tests::disabled_task_start_failures_restore_enablement_and_report_combined_restore_failures ... ok
+test platform::service::windows::registration_tests::manager_registration_is_authoritative_with_or_without_a_marker ... ok
+test platform::service::windows::registration_tests::query_failure_or_malformed_data_never_masquerades_as_an_absent_task ... ok
+test platform::service::windows::registration_tests::missing_manager_only_allows_factory_fallback_when_no_definition_exists ... ok
+test platform::service::windows::tests::task_arguments_preserve_spaces_and_trailing_backslashes ... ok
+test platform::service::windows::registration_tests::install_stop_start_uninstall_and_disabled_restore_use_only_the_owned_task ... ok
+test platform::service::tests::failed_registration_restores_previous_definition ... ok
+test platform::service::windows::registration_tests::task_identity_conflicts_and_manager_mutation_failures_preserve_the_marker ... ok
+test platform::service::windows::registration_tests::unknown_legacy_task_names_are_found_from_xml_and_preserved_when_upgraded ... ok
+test platform::service::command::tests::subprocess_timeout_is_bounded_and_nonzero_exit_is_retained ... ok
+test platform::service::workflow_tests::failed_legacy_enumeration_is_not_treated_as_no_registered_service ... ok
+test platform::service::workflow_tests::failed_first_linux_install_removes_loaded_registration_after_restoring_files ... ok
+test platform::service::workflow_tests::corrupt_marker_does_not_prevent_removing_a_verified_os_registration ... ok
+test platform::service::workflow_tests::changed_disk_definition_is_not_checkpointed_as_the_loaded_job ... ok
+test platform::service::workflow_tests::invalid_definition_destination_fails_before_any_manager_mutation ... ok
+test platform::service::workflow_tests::install_stop_start_uninstall_and_repeated_uninstall_are_consistent ... ok
+test platform::service::workflow_tests::missing_systemd_properties_are_a_query_error_not_an_argument_error ... ok
+test platform::service::workflow_tests::changed_executable_refreshes_the_registered_definition_and_preserves_enablement ... ok
+test platform::service::workflow_tests::query_errors_are_not_reported_as_absent_registrations ... ok
+test platform::service::workflow_tests::orphaned_legacy_registration_without_marker_is_found_and_removed ... ok
+test daemon::events::tests::large_event_history_is_paged_without_losing_cursor_positions ... ok
+test platform::service::workflow_tests::multiple_legacy_registrations_block_install_but_uninstall_cleans_all ... ok
+test platform::service::workflow_tests::legacy_definition_keeps_its_id_but_updates_to_the_current_executable ... ok
+test platform::service::workflow_tests::rollback_ownership_check_precedes_manager_changes ... ok
+test ssh_actions::tests::diagnostics_identify_the_shell_used_by_recovery_commands ... ok
+test ssh_actions::tests::posix_commands_quote_spaces_apostrophes_and_shell_metacharacters ... ok
+test ssh_actions::tests::powershell_commands_invoke_quoted_executables_and_preserve_literal_arguments ... ok
+test platform::service::workflow_tests::restoring_an_inactive_mac_registration_does_not_wake_the_daemon ... ok
+test platform::service::workflow_tests::unrecoverable_orphan_is_rejected_before_stopping_the_old_service ... ok
+test platform::service::workflow_tests::unavailable_manager_allows_unmanaged_start_only_without_saved_definition ... ok
+test platform::service::workflow_tests::foreign_profile_at_legacy_service_name_is_rejected_without_mutations ... ok
+test platform::service::workflow_tests::rollback_restores_disabled_login_policy_even_when_the_old_job_was_unloaded ... ok
+test platform::service::workflow_tests::outer_checkpoint_recovers_old_definition_and_manager_after_failed_upgrade ... ok
+test daemon::logging::tests::repeated_startup_errors_use_bounded_shared_daemon_log ... ok
+test daemon::dispatch::postfix_tests::maximum_status_stays_in_frame_and_individual_query_keeps_details ... ok
+test daemon::events::tests::bounded_log_reports_cursor_gaps ... ok
+
+test result: ok. 195 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.74s
+
+     Running tests/audit_state_workflows.rs (target/debug/deps/audit_state_workflows-fb0ebb7ec40fb4dc)
+
+running 6 tests
+test damaged_snapshot_has_a_safe_explicit_recovery_command_with_backups ... ok
+test current_group_logs_cannot_be_shadowed_by_a_retired_rule_name ... ok
+test recovery_refuses_a_live_daemon_and_unreadable_intent_without_explicit_discard ... ok
+test server_changes_remain_filterable_offline_online_after_rename_and_removal ... ok
+test streaming::following_a_server_tracks_id_after_rename_without_changing_historical_labels ... ok
+test streaming::watch_survives_ipc_disconnect_and_resumes_live_updates ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.85s
+
+     Running tests/audited_cli.rs (target/debug/deps/audited_cli-f2eeabef5b8a45c9)
+
+running 9 tests
+test empty_group_discovery_does_not_initialize_a_configuration_or_start_a_daemon ... ok
+test u16_dual_stack_groups_allow_disjoint_families_and_reject_mapped_duplicates ... ok
+test u11_u12_numeric_edit_names_and_optional_bind_patches_work_through_the_process ... ok
+test u13_u14_invalid_ipv6_and_ambiguous_object_names_fail_atomically ... ok
+test u30_u31_validate_rejects_typos_and_imported_remote_defaults_match_cli ... ok
+test u10_explicit_timeout_waits_for_add_up_and_restart_and_conflicts_with_disabled ... ok
+test u01_u08_group_rename_preserves_custom_names_and_discovery_reports_membership ... ok
+test u15_automatic_long_groups_are_distinct_stable_and_never_merge_unrelated_profiles ... ok
+test u02_u08_group_merge_is_explicit_and_members_can_join_move_or_leave_without_identity_loss ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 1.12s
+
+     Running tests/cli_contracts.rs (target/debug/deps/cli_contracts-d7ed478e9b1739fa)
+
+running 4 tests
+test waiting_for_a_disabled_add_fails_before_saving_or_starting_a_daemon ... ok
+test argument_errors_emit_one_json_failure_with_help_and_no_filesystem_side_effects ... ok
+test non_waiting_disabled_add_reports_saved_stopped_and_no_readiness_claim ... ok
+test help_and_version_for_every_command_family_do_not_initialize_configuration ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.08s
+
+     Running tests/cli_streaming.rs (target/debug/deps/cli_streaming-1f443a1a27b2e5aa)
+
+running 8 tests
+test watch_rejects_initially_unknown_selectors_instead_of_waiting_forever ... ok
+test logs_follow_tail_zero_skips_old_events_deduplicates_warnings_and_exits_on_ctrl_c ... ok
+test offline_watch_reports_malformed_draft_in_json_then_recovers_when_repaired ... ok
+test server_status_watch_keeps_its_identity_after_server_rename_and_removal ... ok
+test named_status_watch_tracks_stable_id_across_rename_then_shows_deletion ... ok
+test logs_follow_old_name_survives_rename_deletion_restart_and_rotation_without_duplicates ... ok
+test group_status_watch_includes_new_members_and_survives_an_empty_group ... ok
+test status_watch_observes_offline_online_restart_rename_delete_and_ctrl_c ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.35s
+
+     Running tests/control_workflows.rs (target/debug/deps/control_workflows-d3742710819e89fd)
+
+running 5 tests
+test json_argument_errors_are_one_failure_object_with_no_success_output ... ok
+test explicit_up_overrides_an_earlier_stop_without_overwriting_pending_edits ... ok
+test retry_reports_skipped_rules_and_restart_activates_the_selected_rule ... ok
+test offline_down_and_remove_leave_other_running_intent_offline ... ok
+test stop_and_delete_preserve_draft_bytes_and_survive_later_reload ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.90s
+
+     Running tests/daemon_presence_audit.rs (target/debug/deps/daemon_presence_audit-b43d60209c30d892)
+
+running 2 tests
+test equivalent_profile_paths_identify_the_same_configuration_without_creating_it ... ok
+test unresponsive_owner_is_not_reported_stopped_or_replaced_and_stop_sends_shutdown ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 3.07s
+
+     Running tests/daemon_restart.rs (target/debug/deps/daemon_restart-c754dbf347241b78)
+
+running 5 tests
+test restart_starts_an_empty_profile_and_replaces_a_running_instance ... ok
+test long_profile_path_supports_background_start_status_and_restart ... ok
+test restart_preserves_profiles_ids_revisions_and_running_or_stopped_intent ... ok
+test restart_starts_a_stopped_daemon_with_its_existing_configuration ... ok
+test restarting_one_profile_does_not_replace_another_daemon ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.61s
+
+     Running tests/doctor_config.rs (target/debug/deps/doctor_config-1607a1cb19644100)
+
+running 4 tests
+test first_run_doctor_handles_empty_and_broken_directories_without_daemon ... ok
+test doctor_distinguishes_valid_unapplied_draft_from_applied_configuration ... ok
+test selected_doctor_and_server_check_report_bad_draft_as_one_json_failure ... ok
+test doctor_checks_invalid_draft_online_and_offline_without_overwriting_it ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.19s
+
+     Running tests/handwritten_config.rs (target/debug/deps/handwritten_config-8d4d82e0d54c5e46)
+
+running 3 tests
+test first_server_edit_and_later_rename_keep_the_generated_identity ... ok
+test missing_server_id_is_read_only_stable_and_can_be_used_by_first_offline_add ... ok
+test missing_forward_id_survives_first_edit_up_or_down ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.48s
+
+     Running tests/history_cli.rs (target/debug/deps/history_cli-bb093bdd9ced8ccc)
+
+running 2 tests
+test tail_is_exact_json_is_one_object_and_human_logs_use_utc_dates ... ok
+test historical_names_groups_and_servers_survive_rename_restart_delete_and_offline_queries ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.44s
+
+     Running tests/intuitive_add.rs (target/debug/deps/intuitive_add-25c83767005565ec)
+
+running 5 tests
+test invalid_or_conflicting_names_do_not_leave_an_empty_automatic_server ... ok
+test server_is_required_with_zero_one_or_many_profiles_without_mutating_configuration ... ok
+test automatic_names_include_direction_and_port_and_explicit_batches_keep_name_prefix ... ok
+test positional_and_named_rule_names_work_around_direction_flags ... ok
+test first_add_accepts_an_ssh_alias_without_name_or_preregistration_atomically ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.66s
+
+     Running tests/offline_mutations.rs (target/debug/deps/offline_mutations-53ffee4b9e377904)
+
+running 9 tests
+test offline_status_reports_fallback_in_json_without_mixing_text ... ok
+test checks_and_failed_trust_do_not_start_saved_rules ... ok
+test offline_edits_reject_pending_drafts_without_overwriting_them ... ok
+test invalid_offline_reload_preserves_draft_bytes_and_committed_running_rules ... ok
+test offline_reload_applies_stopped_and_deleted_rules_without_starting_old_intent ... ok
+test empty_or_identical_edits_are_noops_offline_and_online ... ok
+test configuration_only_commands_leave_saved_running_rules_dormant ... ok
+test invalid_commands_do_not_launch_daemon_or_change_configuration ... ok
+test valid_up_and_restart_start_after_persisting_intent ... ok
+
+test result: ok. 9 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.71s
+
+     Running tests/port_group_regressions.rs (target/debug/deps/port_group_regressions-aed9e80d96d306d2)
+
+running 5 tests
+test group_errors_do_not_change_config_and_explain_the_correct_append_syntax ... ok
+test stopped_group_cannot_be_collapsed_onto_one_listener_by_any_edit_form ... ok
+test different_stopped_groups_can_share_ports_and_member_moves_cannot_make_a_group_invalid ... ok
+test direction_value_edit_preserves_hosts_identity_and_group_on_both_directions ... ok
+test explicit_group_supports_single_batch_and_named_appends_with_consistent_selection ... ok
+
+test result: ok. 5 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.54s
+
+     Running tests/port_shorthand.rs (target/debug/deps/port_shorthand-2b24499e2cb156b0)
+
+running 3 tests
+test invalid_or_conflicting_batches_never_change_config_or_revision ... ok
+test same_port_shorthand_expands_atomically_and_survives_daemon_restart ... ok
+test many_sources_target_one_port_and_single_rule_edits_preserve_direction ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.50s
+
+     Running tests/server_overrides.rs (target/debug/deps/server_overrides-35da197b200fb274)
+
+running 3 tests
+test validate_rejects_invalid_overrides_in_hand_edited_config ... ok
+test invalid_overrides_and_conflicting_unset_never_change_saved_config ... ok
+test unset_persists_and_restores_effective_ssh_settings ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.37s
+
+     Running tests/ssh_path_ux.rs (target/debug/deps/ssh_path_ux-672a0cdbd4e3fca7)
+
+running 2 tests
+test saved_relative_ssh_paths_survive_chdir_and_equivalent_files_are_accepted ... ok
+test diagnostics_show_actual_process_agent_and_commands_for_the_same_instance ... ok
+
+test result: ok. 2 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.25s
+
+     Running tests/ux_commands.rs (target/debug/deps/ux_commands-1891b7f3ca72c453)
+
+running 8 tests
+test add_requires_an_explicit_server_even_when_only_one_is_saved ... ok
+test batch_groups_support_short_and_explicit_query_selectors ... ok
+test moving_to_a_direct_alias_creates_the_profile_and_rule_change_in_one_revision ... ok
+test status_text_displays_complete_local_and_remote_mappings ... ok
+test server_edits_preserve_identity_and_forward_references ... ok
+test partial_rule_edits_preserve_addresses_identity_and_batch_membership ... ok
+test group_edits_update_all_members_atomically_and_preserve_their_addresses ... ok
+test add_and_up_wait_failures_emit_only_the_final_json_result ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.95s
+
+     Running unittests src/lib.rs (target/debug/deps/fwm_api-aa4aa4ec34f85da4)
+
+running 3 tests
+test protocol::tests::create_forwards_accepts_existing_clients_without_a_server_field ... ok
+test codec::tests::rejects_oversize_before_allocating_payload ... ok
+test codec::tests::roundtrip_through_fragmented_transport ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/client_contract.rs (target/debug/deps/client_contract-e2efa998b407bcb1)
+
+running 4 tests
+test clean_transport_disconnect_without_response_is_an_error ... ok
+test application_error_is_preserved_for_the_ui_to_interpret ... ok
+test matched_response_preserves_version_correlation_and_payload ... ok
+test version_and_request_id_mismatch_cannot_be_accepted_as_success ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/framing.rs (target/debug/deps/framing-b273429cbed615e8)
+
+running 7 tests
+test zero_and_oversized_headers_are_rejected_without_waiting_for_payload ... ok
+test only_eof_at_a_frame_boundary_is_a_clean_disconnect ... ok
+test serialization_failure_does_not_write_a_partial_frame ... ok
+test transport_write_failure_is_preserved ... ok
+test sequential_frames_preserve_boundaries_and_unicode_byte_lengths ... ok
+test malformed_json_utf8_and_wrong_payload_types_are_invalid_data ... ok
+test maximum_size_frame_is_accepted_and_one_extra_byte_is_rejected_atomically ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.07s
+
+     Running tests/protocol_contract.rs (target/debug/deps/protocol_contract-6ec3c010a9b9f182)
+
+running 3 tests
+test requests_accept_absent_revision_but_reject_invalid_revision_types ... ok
+test grouped_control_wire_format_is_stable_for_other_ui_clients ... ok
+test revision_guard_classification_covers_every_public_command ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running unittests src/lib.rs (target/debug/deps/fwm_core-512813ea62dad001)
+
+running 191 tests
+test cleanup::lease::tests::embedded_program_is_one_shell_argument ... ok
+test engine::cleanup_tests::verified_rules_always_have_independent_connection_identity ... ok
+test engine::cleanup_tests::missing_identity_is_actionable_before_ssh_and_does_not_cancel_siblings ... ok
+test cleanup::context::tests::corrupt_ownership_is_never_silently_replaced ... ok
+test engine::connection::channel_tests::cancelling_accepted_remote_channel_closes_it_and_releases_capacity ... ok
+test engine::connection::channel_tests::cancelled_direct_open_closes_late_channel_and_holds_capacity_until_confirmation ... ok
+test cleanup::context::tests::restart_preserves_owner_and_monotonically_advances_rule_generation ... ok
+test engine::connection::channel_tests::failure_tests::lease_confirm_release_and_idle_output_follow_the_protocol_contract ... ok
+test engine::connection::channel_tests::established_listener_detects_helper_exit_and_requests_only_its_session_to_reconnect ... ok
+test engine::connection::channel_tests::failure_tests::unexpected_idle_helper_output_is_a_protocol_failure ... ok
+test engine::connection::channel_tests::failure_tests::helper_channel_confirmed_after_open_timeout_is_closed_without_leaking ... ok
+test engine::connection::channel_tests::refused_remote_target_closes_channel_without_closing_shared_transport ... ok
+test engine::connection::channel_tests::remote_route_is_unavailable_until_listener_request_is_confirmed ... ok
+test engine::connection::channel_tests::failure_tests::rejected_ownership_confirmation_cancels_the_listener_before_attention ... ok
+test engine::connection::channel_tests::unknown_remote_address_cannot_reuse_a_unique_ports_route ... ok
+test engine::connection::channel_tests::retired_remote_worker_cannot_reserve_a_new_recovery_generation ... ok
+test engine::lifecycle::tests::restart_rebuilds_healthy_selection_without_replacing_shared_connection_or_siblings ... ok
+test engine::lifecycle::tests::retry_reports_skips_and_only_bumps_unhealthy_running_rules ... ok
+test engine::lifecycle::tests::unknown_selection_does_not_partially_restart ... ok
+test engine::postfix_tests::extreme_time_intervals_are_rejected_before_spawning_connections ... ok
+test engine::postfix_tests::metadata_and_unrelated_servers_do_not_wake_failed_groups ... ok
+test engine::postfix_tests::restart_and_retry_clear_old_generation_counts ... ok
+test engine::postfix_tests::completed_supervisors_are_replaced_by_retry_restart_and_reconcile ... ok
+test engine::postfix_tests::shutdown_uses_one_deadline_and_joins_aborted_futures ... ok
+test engine::postfix_tests::stopping_during_handshake_closes_pending_transport ... ok
+test engine::connection::channel_tests::unowned_stopped_and_over_capacity_remote_channels_are_rejected ... ok
+test engine::remote::tests::cleanup_ownership_failure_emits_attention_without_requesting_reconnect ... ok
+test engine::remote::tests::disconnected_session_releases_unconfirmed_request ... ok
+test engine::remote::tests::timeout_and_stop_preserve_late_remote_reply_for_compensation ... ok
+test engine::remote::tests::transient_cleanup_failure_requests_fresh_connection_and_waits_for_it_to_close ... ok
+test engine::retry::tests::retry_is_immediate_then_bounded_even_after_overflow ... ok
+test engine::retry::tests::retry_jitter_stays_inside_each_exponential_window_and_cap ... ok
+test engine::socks::protocol_tests::connect_decodes_ipv4_ipv6_and_remote_dns_with_boundary_ports ... ok
+test engine::socks::protocol_tests::empty_invalid_encoding_nul_destinations_and_zero_ports_reply_before_closing ... ok
+test engine::socks::protocol_tests::fragmented_input_and_multiple_auth_methods_preserve_following_application_bytes ... ok
+test engine::postfix_tests::unused_servers_never_read_ssh_configuration_fifos ... ok
+test engine::socks::protocol_tests::invalid_request_headers_return_protocol_specific_failure_replies ... ok
+test engine::socks::protocol_tests::unsupported_greeting_versions_and_authentication_methods_fail_without_connect_reply ... ok
+test engine::socks::tests::preserves_hostname_for_remote_dns ... ok
+test engine::socks::protocol_tests::truncation_at_every_wire_field_returns_io_error_without_hanging_or_false_success ... ok
+test engine::socks::tests::rejects_udp_with_protocol_reply ... ok
+test engine::state::tests::concurrent_publishers_deliver_monotonic_sequence ... ok
+test engine::state::tests::queued_events_keep_original_labels_and_retired_rules_keep_their_own_server ... ok
+test engine::state::tests::stale_completion_cannot_overwrite_replacement_or_resurrect_deletion ... ok
+test history::selection_audit_tests::current_group_takes_priority_over_historical_rule_alias_and_matches_explicit_group ... ok
+test engine::tests::metadata_changes_preserve_generation_and_shared_connection_identity ... ok
+test history::selection_audit_tests::current_rule_name_does_not_mix_with_another_rules_historical_alias ... ok
+test history::selection_audit_tests::renamed_group_shorthand_uses_event_time_membership_and_includes_no_old_group_events ... ok
+test history::storage::tests::append_open_and_metadata_failures_preserve_existing_paths ... ok
+test history::storage::tests::active_and_archived_read_errors_are_not_misreported_as_empty_history ... ok
+test history::storage::tests::duplicate_generation_records_across_rotation_are_emitted_only_once ... ok
+test history::storage::tests::low_level_read_seek_and_separator_write_errors_are_propagated ... ok
+test history::storage::tests::continuous_rotation_during_validation_returns_a_bounded_retry_error ... ok
+test history::storage::tests::maximum_escaped_ids_and_labels_fit_persisted_record ... ok
+test history::storage::tests::oversized_and_invalid_utf8_records_are_skipped_without_hiding_later_events ... ok
+test history::storage::tests::oversized_metadata_is_rejected_before_modifying_any_history_file ... ok
+test history::storage::tests::partial_record_write_reports_failure_and_later_append_recovers ... ok
+test history::storage::tests::rotation_failure_does_not_discard_the_active_generation ... ok
+test history::storage::tests::oversized_history_reads_only_the_retained_tail_and_reports_clipping ... ok
+test engine::postfix_tests::stopping_queued_connection_never_starts_tcp_after_permit_arrives ... ok
+test history::storage::tests::utf8_and_json_expansion_are_truncated_without_corrupting_the_record ... ok
+test history::tests::captured_context_remains_authoritative_in_constructors_and_legacy_projection ... ok
+test history::tests::append_recovers_from_a_crashed_partial_write_and_bounds_json_escaping ... ok
+test history::tests::follow_deduplicates_rotation_and_accepts_reset_sequence_from_a_new_instance ... ok
+test history::tests::legacy_unknown_labels_are_not_guessed_from_a_later_event_or_current_config ... ok
+test history::tests::offline_history_keeps_deleted_and_renamed_rule_labels_across_restart ... ok
+test history::tests::malformed_and_truncated_lines_are_reported_and_old_envelopes_still_load ... ok
+test history::tests::utc_dates_are_human_readable ... ok
+test model::audit_tests::bracketed_targets_must_be_valid_ipv6_with_a_valid_optional_scope ... ok
+test model::audit_tests::direction_defaults_match_cli_and_explicit_cleanup_off_is_retained ... ok
+test model::audit_tests::foreign_rule_server_ids_and_group_ids_cannot_be_claimed_as_names ... ok
+test model::audit_tests::overlap_respects_families_and_ipv4_mapping_in_both_argument_orders ... ok
+test model::audit_tests::server_typos_and_tunnel_incompatible_fields_are_rejected_in_json_and_toml ... ok
+test model::audit_tests::unknown_forward_fields_never_turn_misspelled_stopped_intent_into_running ... ok
+test model::group_validation_tests::dynamic_and_local_members_share_the_same_local_listener_namespace ... ok
+test model::group_validation_tests::group_listener_conflicts_are_rejected_for_all_member_states_and_directions ... ok
+test model::group_validation_tests::group_members_on_distinct_addresses_or_ports_are_valid ... ok
+test model::group_validation_tests::same_group_can_reuse_ports_on_distinct_remote_servers_or_distinct_sides ... ok
+test model::group_validation_tests::separate_stopped_alternatives_may_reuse_ports_but_running_rules_may_not ... ok
+test model::tests::dangling_server_and_wildcard_conflicts_are_rejected ... ok
+test model::tests::endpoint_handles_ipv6_and_rejects_ambiguous_or_invalid_input ... ok
+test model::tests::legacy_batches_gain_groups_without_changing_member_identity ... ok
+test engine::connection::channel_tests::failure_tests::helper_startup_denial_missing_python_disconnect_and_timeout_are_actionable ... ok
+test history::tests::rotation_bounds_both_files_and_read_order_and_tail_are_stable ... ok
+test history::storage::tests::two_rotations_between_opens_retry_to_an_ordered_generation ... ok
+test ssh::auth::tests::malformed_mismatched_and_untrusted_file_certificates_do_not_authenticate ... ok
+test ssh::auth::tests::repeated_private_file_is_not_offered_twice ... ok
+test engine::connection::channel_tests::failure_tests::helper_replies_validate_json_size_protocol_identity_pid_and_error_code ... ok
+test ssh::auth::tests::encrypted_and_malformed_private_files_report_attention_without_interaction ... ok
+test ssh::auth::tests::unix::agent_disconnect_during_identity_listing_is_explicit_attention ... ok
+test ssh::auth::tests::unix::agent_signs_successfully_and_identities_only_filters_unlisted_keys ... ok
+test engine::connection::channel_tests::failure_tests::local_bind_conflict_recovers_after_release_and_stops_while_in_backoff ... ok
+test ssh::auth::tests::unix::agent_signing_failure_malformed_response_and_disconnect_report_attention ... ok
+test ssh::auth::tests::unix::agent_user_certificate_is_accepted_even_when_plain_key_was_rejected ... ok
+test ssh::auth::tests::unix::corrupt_agent_signature_is_rejected_by_server ... ok
+test ssh::auth::tests::unix::duplicate_agent_identities_are_not_offered_or_signed_repeatedly ... ok
+test ssh::auth::tests::unix::ecdsa_file_and_agent_signatures_both_authenticate ... ok
+test ssh::auth::tests::unix::fresh_connection_recovers_after_agent_key_is_authorized ... ok
+test ssh::auth::tests::unix::identities_only_without_matching_sidecar_sends_no_agent_key ... ok
+test ssh::auth::tests::unix::missing_explicit_identity_and_agent_socket_are_identified ... ok
+test ssh::auth::tests::unix::public_identity_file_selects_agent_key_with_identities_only_true ... ok
+test ssh::auth::tests::unix::refused_agent_signature_fails_promptly_without_reusing_incomplete_session ... ok
+test ssh::auth::tests::unix::rejected_file_identity_is_not_signed_again_by_agent ... ok
+test engine::connection::channel_tests::failure_tests::verified_listener_permission_refusal_stops_after_three_attempts_and_releases_lease ... ok
+test ssh::auth::tests::unix::encrypted_private_key_is_selected_from_unlocked_agent_with_identities_only ... ok
+test engine::connection::channel_tests::failure_tests::socks_channel_refusal_and_timeout_reply_without_killing_the_shared_transport ... ok
+test ssh::auth::tests::unix::encrypted_user_certificate_uses_matching_agent_identity ... ok
+test ssh::auth::tests::unix::unavailable_or_rejected_agent_list_reports_attention ... ok
+test ssh::auth::tests::user_certificate_files_authenticate_and_rejected_certificate_can_fall_back_to_plain_key ... ok
+test ssh::config::override_tests::connection_overrides_take_precedence_and_unset_follows_updated_ssh_config ... ok
+test ssh::config::override_tests::disable_and_inherit_states_survive_toml_round_trips ... ok
+test ssh::config::override_tests::explicit_jump_can_override_ssh_config_none ... ok
+test ssh::config::override_tests::host_alias_case_is_preserved_without_changing_trust_matching ... ok
+test ssh::config::override_tests::identity_agent_environment_syntax_is_rejected_explicitly ... ok
+test ssh::config::override_tests::identity_unset_restores_configured_authentication_options ... ok
+test ssh::config::override_tests::include_host_scope_does_not_escape_into_its_parent ... ok
+test ssh::config::override_tests::invalid_direct_overrides_are_rejected_before_configuration_or_network_access ... ok
+test ssh::config::override_tests::openssh_boolean_aliases_are_respected_and_invalid_values_are_rejected ... ok
+test ssh::config::override_tests::proxy_jump_inherits_overrides_disables_and_restores_inheritance ... ok
+test ssh::config::override_tests::relative_paths_inside_included_ssh_files_have_a_stable_source_directory ... ok
+test ssh::config::override_tests::shadowed_unsupported_defaults_preserve_the_effective_first_value ... ok
+test ssh::config::override_tests::ssh_configuration_and_includes_reject_fifos_without_reading_them ... ok
+test ssh::config::override_tests::ssh_lexer_preserves_literal_path_backslashes_and_quoted_escapes ... ok
+test ssh::config::override_tests::unsetting_custom_config_restores_default_config_and_default_paths ... ok
+test ssh::config::tests::host_patterns_and_quotes ... ok
+test ssh::config::tests::include_cycles_fail_without_recursing_forever ... ok
+test ssh::config::tests::includes_preserve_first_value_and_excluded_hosts ... ok
+test ssh::config::tests::unsafe_or_unimplemented_connection_options_are_rejected ... ok
+test ssh::connection::tests::jump_parsing_keeps_ipv6_and_user ... ok
+test ssh::path_options::tests::ordinary_relative_paths_are_stable_and_token_paths_keep_their_meaning ... ok
+test ssh::path_options::tests::saved_file_symlinks_follow_later_target_switches ... ok
+test ssh::tests::inspection_sends_no_credentials_and_unknown_or_changed_keys_block_authentication ... ok
+test ssh::tests::native_proxy_jump_authenticates_and_verifies_every_hop ... ok
+test ssh::tests::reload_tests::server_restart_and_config_reload_refresh_aliases_without_disrupting_other_servers ... ok
+test ssh::tests::selected_nested_hop_uses_target_database_and_only_trusts_one_key ... ok
+test engine::connection::channel_tests::failure_tests::refused_remote_listener_retries_and_failed_cancel_keeps_stopping_until_confirmed ... ok
+test ssh::trust::tests::changed_key_is_blocked_and_cannot_be_overwritten_by_trust ... ok
+test ssh::trust::tests::hashed_nonstandard_port_and_revocation ... ok
+test ssh::trust::tests::host_patterns_support_negation_and_public_key_comments_do_not_affect_identity ... ok
+test ssh::trust::tests::trust_requires_exact_fingerprint_and_does_not_duplicate ... ok
+test store::control::tests::controls_preserve_unrelated_draft_changes_and_survive_reload ... ok
+test store::control::tests::malformed_candidate_cannot_prevent_stop_and_ordinary_edits_still_require_reload ... ok
+test store::control::tests::malformed_draft_is_preserved_and_repaired_old_draft_cannot_resurrect_deleted_rules ... ok
+test store::control::tests::oversized_accumulated_control_records_are_rejected_before_commit ... ok
+test store::control::tests::pending_control_follows_ids_when_a_draft_reassigns_the_old_name ... ok
+test store::control::tests::repeated_down_records_intent_and_a_later_up_supersedes_it ... ok
+test ssh::tests::stalled_agent_becomes_needs_attention_instead_of_an_infinite_reconnect_loop ... ok
+test store::failure_tests::candidate_directory_sync_failure_keeps_control_protection ... ok
+test store::failure_tests::editor_rename_after_version_check_wins_without_losing_either_file ... ok
+test store::failure_tests::editor_save_between_read_candidate_and_reload_is_not_mirrored_over ... ok
+test store::failure_tests::editor_save_during_control_or_reload_keeps_new_draft_and_reports_conflict ... ok
+test store::failure_tests::first_initialization_does_not_overwrite_a_candidate_created_after_load ... ok
+test store::failure_tests::failed_overlay_cleanup_keeps_a_valid_saved_configuration ... ok
+test store::failure_tests::in_place_save_through_a_moved_handle_is_retained_and_reported ... ok
+test store::failure_tests::oversized_and_symlink_candidates_are_rejected_without_losing_snapshot ... ok
+test store::failure_tests::post_replace_directory_sync_failure_is_a_warning_not_a_false_rollback ... ok
+test store::failure_tests::mirror_failures_report_committed_state_and_keep_stop_protection_on_restart ... ok
+test ssh::auth::tests::unix::unsupported_rsa_agent_identity_does_not_hide_a_usable_later_key ... ok
+test ssh::auth::tests::unsupported_rsa_identity_does_not_block_a_later_supported_ed25519_key ... ok
+test ssh::auth::tests::rsa_certificate_must_not_bypass_sha1_only_server_rejection ... ok
+test store::identity::tests::missing_ids_are_stable_and_separate_kinds_while_explicit_ids_stay_unchanged ... ok
+test store::identity::tests::uuid_v5_matches_the_standard_dns_vector ... ok
+test ssh::auth::tests::unix::rsa_agent_certificate_uses_sha256_server_choice ... ok
+test store::migration_tests::legacy_group_inference_keeps_the_separate_explicit_server_namespace ... ok
+test store::migration_tests::legacy_group_inference_preserves_stopped_alternatives_and_existing_group_validity ... ok
+test store::migration_tests::initialize_current_snapshot_can_be_repeated_without_migration ... ok
+test ssh::auth::tests::unix::rsa_agent_signatures_use_negotiated_sha256_and_sha512_and_never_sha1 ... ok
+test ssh::auth::tests::private_files_negotiate_rsa_sha2_and_reject_sha1_before_authentication ... ok
+test store::migration_tests::migration_does_not_overwrite_unapplied_candidate_changes ... ok
+test store::failure_tests::recovery_mirror_failure_preserves_deleted_ids_and_all_recovered_stops ... ok
+test store::failure_tests::sequential_daemon_commits_refresh_the_version_after_initial_publication ... ok
+test ssh::auth::tests::local_certificate_signatures_verify_with_exact_negotiated_rsa_hash ... ok
+test store::migration_tests::legacy_group_inference_skips_forward_ids_and_migrates_unrelated_batches ... ok
+test store::recovery::tests::dangling_candidate_link_is_rejected_by_all_first_write_paths ... ok
+test store::migration_tests::preexisting_name_id_collisions_report_both_objects_and_recovery_without_rewriting_files ... ok
+test store::failure_tests::staging_write_sync_and_snapshot_replace_fail_without_changing_either_file ... ok
+test store::failure_tests::revision_reservation_failure_cannot_replace_the_applied_snapshot ... ok
+test store::migration_tests::version_one_reverse_rules_gain_verified_recovery_without_losing_ids ... ok
+test store::recovery::tests::missing_legacy_snapshot_requires_explicit_recovery ... ok
+test store::migration_tests::version_two_upgrade_keeps_explicit_cleanup_choice_and_backs_up_snapshot ... ok
+test store::tests::explicit_reload_cannot_turn_missing_file_into_empty_configuration ... ok
+test store::tests::bad_candidate_does_not_replace_last_committed_state ... ok
+test store::tests::invalid_commit_keeps_previous_revision ... ok
+test store::recovery::tests::committed_revision_maximum_remains_readable_and_overflow_never_replaces_files ... ok
+test store::recovery::tests::absolute_ssh_path_failure_does_not_block_loading_stopping_or_removing_it ... ok
+test store::recovery::tests::unreadable_intent_requires_explicit_discard_and_never_silently_starts_rules ... ok
+test store::tests::uncommitted_valid_edits_require_reload ... ok
+test store::recovery::tests::recovery_preserves_readable_stop_delete_intent_and_backs_up_original_bytes ... ok
+test store::recovery::tests::invalid_candidate_is_rejected_before_backups_or_commits_and_recovery_is_repeatable ... ok
+test store::recovery::tests::recovery_advances_the_committed_revision_even_from_an_older_candidate ... ok
+test engine::connection::channel_tests::equivalent_remote_endpoints_wait_for_old_cancellation_but_valid_dual_stack_runs ... ok
+
+test result: ok. 191 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 6.36s
+
+     Running tests/paths.rs (target/debug/deps/paths-45e97b5c39c554f3)
+
+running 7 tests
+test relative_config_directory_becomes_absolute_without_changing_current_directory ... ok
+test isolated_paths_and_pipe_names_are_stable_per_configuration_directory ... ok
+test private_directory_permissions_are_restored_on_existing_directories ... ok
+test symlink_ancestors_are_resolved_before_parent_components ... ok
+test missing_directories_and_dot_spellings_have_one_identity_and_safe_legacy_pipes ... ok
+test config_and_runtime_symlinks_are_rejected_without_modifying_the_target ... ok
+test directory_creation_is_idempotent_and_rejects_regular_files ... ok
+
+test result: ok. 7 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+
+     Running tests/selection.rs (target/debug/deps/selection-71539ddb5a823b9b)
+
+running 4 tests
+test renamed_rules_keep_id_selection_but_drop_old_name_selection ... ok
+test group_and_server_namespaces_are_explicit_and_group_alias_selects_all_members ... ok
+test selections_include_stopped_rules_and_keep_configuration_order ... ok
+test empty_valid_selections_are_distinct_from_unknown_selections ... ok
+
+test result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 0.00s
+

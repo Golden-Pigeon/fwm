@@ -1,0 +1,14 @@
+{
+  "baseline_files_checked": 164,
+  "baseline_files_changed": [],
+  "report_finding_rows": 36,
+  "unique_findings": 36,
+  "missing_report_links": [],
+  "cli_checks_passed": 96,
+  "cli_checks_failed": 0,
+  "engine_matrix_rows": 28,
+  "engine_probe_exit": 0,
+  "storage_probe_exit": 0,
+  "storage_seven_passed": true,
+  "history_rotation_cases": 3
+}

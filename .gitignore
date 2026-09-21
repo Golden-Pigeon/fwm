@@ -1,0 +1,6 @@
+/target/
+/.codegraph/
+*.log
+!/audits/2026-09-20-postfix/validation/*.log
+.DS_Store
+__pycache__/

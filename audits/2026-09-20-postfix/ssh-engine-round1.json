@@ -1,0 +1,26 @@
+[
+  {
+    "mode": "dual_gate",
+    "exit": 0,
+    "stdout": "initial=[{\"id\":\"v4\",\"name\":\"v4\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"0.0.0.0:35000\",\"target\":\"127.0.0.1:1\",\"desired_state\":\"running\",\"state\":\"established\",\"retry_count\":0,\"next_retry_unix_ms\":null,\"last_error\":null,\"active_connections\":0},{\"id\":\"v6\",\"name\":\"v6\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"[::1]:35000\",\"target\":\"127.0.0.1:1\",\"desired_state\":\"running\",\"state\":\"stopping\",\"retry_count\":0,\"next_retry_unix_ms\":null,\"last_error\":\"waiting for previous owner of remote port to finish cancellation\",\"active_connections\":0}]\nafter_removing_v4=[{\"id\":\"v6\",\"name\":\"v6\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"[::1]:35000\",\"target\":\"127.0.0.1:1\",\"desired_state\":\"running\",\"state\":\"established\",\"retry_count\":0,\"next_retry_unix_ms\":null,\"last_error\":null,\"active_connections\":0}]\ntrace=[\"auth offered\",\"forward 0.0.0.0:35000\",\"cancel 0.0.0.0:35000\",\"forward ::1:35000\",\"cancel ::1:35000\"]\n",
+    "stderr": ""
+  },
+  {
+    "mode": "mapped_cancel",
+    "exit": 0,
+    "stdout": "old_callback_reached_new_target=true\nstates=[{\"id\":\"new\",\"name\":\"new\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"[::ffff:127.0.0.1]:35001\",\"target\":\"127.0.0.1:59311\",\"desired_state\":\"running\",\"state\":\"backoff\",\"retry_count\":1,\"next_retry_unix_ms\":1789902240960,\"last_error\":\"remote listener [::ffff:127.0.0.1]:35001 refused (port in use or forwarding prohibited): The request was rejected by the other party\",\"active_connections\":1},{\"id\":\"old\",\"name\":\"old\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"127.0.0.1:35001\",\"target\":\"127.0.0.1:1\",\"desired_state\":\"stopped\",\"state\":\"stopping\",\"retry_count\":0,\"next_retry_unix_ms\":null,\"last_error\":\"waiting for previous listener to close\",\"active_connections\":0}]\ntrace=[\"auth offered\",\"forward 127.0.0.1:35001\",\"forward ::ffff:127.0.0.1:35001\",\"cancel 127.0.0.1:35001\",\"cancel 127.0.0.1:35001\"]\n",
+    "stderr": ""
+  },
+  {
+    "mode": "metadata_attention",
+    "exit": 0,
+    "stdout": "requests_before_rename=1\nrequests_after_rename=2\nstates=[{\"id\":\"attention\",\"name\":\"renamed-only\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"127.0.0.1:35002\",\"target\":\"127.0.0.1:1\",\"desired_state\":\"running\",\"state\":\"needs_attention\",\"retry_count\":0,\"next_retry_unix_ms\":null,\"last_error\":\"SSH authentication requires attention: fixture@127.0.0.1: no SSH agent is configured; load a valid key into ssh-agent or configure an unencrypted identity file\",\"active_connections\":0}]\ntrace=[\"auth offered\",\"auth offered\"]\n",
+    "stderr": ""
+  },
+  {
+    "mode": "huge_keepalive",
+    "exit": 0,
+    "stdout": "panics=[\"panicked at library/std/src/time.rs:430:33:\\noverflow when adding duration to instant\",\"panicked at library/std/src/time.rs:430:33:\\noverflow when adding duration to instant\"]\nstates=[{\"id\":\"huge\",\"name\":\"huge\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"127.0.0.1:35003\",\"target\":\"127.0.0.1:1\",\"desired_state\":\"running\",\"state\":\"backoff\",\"retry_count\":2,\"next_retry_unix_ms\":1789902244138,\"last_error\":\"JoinError\",\"active_connections\":0}]\ntrace=[]\n",
+    "stderr": ""
+  }
+]

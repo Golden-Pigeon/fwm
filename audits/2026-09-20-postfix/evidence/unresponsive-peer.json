@@ -1,0 +1,64 @@
+{
+  "results": [
+    {
+      "command": "status",
+      "exit": 0,
+      "out": "{\"config_dir\":\"/tmp/fwm-postfix-ipc-fdin8baw\",\"daemon_running\":null,\"daemon_state\":\"unresponsive\"}",
+      "error": ""
+    },
+    {
+      "command": "stop",
+      "exit": 0,
+      "out": "{\"message\":\"Daemon stopped; forward running intent is preserved.\",\"ok\":true}",
+      "error": ""
+    },
+    {
+      "command": "status",
+      "exit": 0,
+      "out": "{\"config_dir\":\"/tmp/fwm-postfix-ipc-fdin8baw\",\"daemon_running\":null,\"daemon_state\":\"unresponsive\"}",
+      "error": ""
+    }
+  ],
+  "requests": [
+    {
+      "api_version": 1,
+      "request_id": "0e13ecd9-3f53-4ab1-a198-4a07ac62127f",
+      "expected_revision": null,
+      "command": {
+        "method": "ping"
+      }
+    },
+    {
+      "api_version": 1,
+      "request_id": "304b8e28-91f3-44d9-8564-4756f27a85bb",
+      "expected_revision": null,
+      "command": {
+        "method": "ping"
+      }
+    },
+    {
+      "api_version": 1,
+      "request_id": "49772ada-cb70-45af-a51b-9578c1461979",
+      "expected_revision": null,
+      "command": {
+        "method": "shutdown"
+      }
+    },
+    {
+      "api_version": 1,
+      "request_id": "85fe129a-0a6a-4601-8d49-a30b045fb4b8",
+      "expected_revision": null,
+      "command": {
+        "method": "ping"
+      }
+    },
+    {
+      "api_version": 1,
+      "request_id": "d38cfe45-e1d5-4867-a0b2-55841643e435",
+      "expected_revision": null,
+      "command": {
+        "method": "ping"
+      }
+    }
+  ]
+}

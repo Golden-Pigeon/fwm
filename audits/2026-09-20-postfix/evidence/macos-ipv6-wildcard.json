@@ -1,0 +1,46 @@
+{
+  "source": "live AF_INET6 wildcard socket in this temporary Python process only",
+  "family": "AF_INET6",
+  "ipv6_v6only": 1,
+  "actual_sockname": [
+    "::",
+    60042,
+    0,
+    0
+  ],
+  "lsof_argv": [
+    "/usr/sbin/lsof",
+    "-nP",
+    "-a",
+    "-p",
+    "42866",
+    "-iTCP:60042",
+    "-F",
+    "pfnT"
+  ],
+  "lsof_stdout": "p42866\nf3\nn*:60042\nTST=LISTEN\nTQR=0\nTQS=0\n",
+  "lsof_stderr": "",
+  "parsed": [
+    {
+      "pid": 42866,
+      "fd": "3",
+      "listening": true,
+      "local": [
+        "0.0.0.0",
+        60042
+      ],
+      "remote": [
+        "0.0.0.0",
+        0
+      ]
+    }
+  ],
+  "requested_listen_host": "::",
+  "confirm_address_comparison": [
+    false
+  ],
+  "production_helper_source": "crates/fwm-core/src/cleanup/remote_helper.py",
+  "remote_commands_executed": false,
+  "signals_sent": false,
+  "tcp_connections_accepted": 0
+}

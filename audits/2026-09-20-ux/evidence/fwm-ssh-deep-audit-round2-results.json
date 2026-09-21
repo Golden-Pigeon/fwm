@@ -1,0 +1,764 @@
+[
+  {
+    "label": "add profile",
+    "args": [
+      "server",
+      "add",
+      "dev",
+      "--ssh",
+      "dev",
+      "--ssh-config",
+      "/private/tmp/fwm-ssh-deep-rxffodqu/ssh-config",
+      "--known-hosts",
+      "/private/tmp/fwm-ssh-deep-rxffodqu/known"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [],
+          "revision": 1,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": null,
+              "id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "identity_files": [],
+              "known_hosts": "/private/tmp/fwm-ssh-deep-rxffodqu/known",
+              "name": "dev",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": "dev",
+              "ssh_config": "/private/tmp/fwm-ssh-deep-rxffodqu/ssh-config",
+              "user": null
+            }
+          ]
+        },
+        "message": "server saved; daemon remains stopped.",
+        "revision": 1
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "a07e74f7-8c2a-4ccf-9241-3237feb885bc"
+    }
+  },
+  {
+    "label": "trust",
+    "args": [
+      "server",
+      "trust",
+      "dev",
+      "--fingerprint",
+      "SHA256:utCQ3CwWmwl+2GyqbssSR6SM28uX9cJV9bL4N8DJ5b4"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "algorithm": "ssh-ed25519",
+        "fingerprint": "SHA256:utCQ3CwWmwl+2GyqbssSR6SM28uX9cJV9bL4N8DJ5b4",
+        "global_known_hosts": [],
+        "host": "127.0.0.1",
+        "known_hosts": "/private/tmp/fwm-ssh-deep-rxffodqu/known",
+        "port": 60909,
+        "public_key": "ssh-ed25519 AAAAC3NzaC1lZDI1NTE5AAAAIDQmDWidpYr6+olNScfla41CVx2vCfXK4XUQXv4xrVVk",
+        "status": "trusted"
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "f7cdf84a-b9f3-4c11-afc4-4d301ccc9a1c"
+    }
+  },
+  {
+    "label": "initial ready",
+    "args": [
+      "add",
+      "web",
+      "--server",
+      "dev",
+      "--local",
+      "--src",
+      "60910",
+      "--tgt",
+      "1",
+      "--wait",
+      "--timeout",
+      "5s"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "id": "6374c437-3962-4386-8456-7c9c9136579d",
+              "kind": "local",
+              "listen": "127.0.0.1:60910",
+              "name": "web",
+              "remote_cleanup": "off",
+              "server_id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "target": "localhost:1"
+            }
+          ],
+          "revision": 2,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": null,
+              "id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "identity_files": [],
+              "known_hosts": "/private/tmp/fwm-ssh-deep-rxffodqu/known",
+              "name": "dev",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": "dev",
+              "ssh_config": "/private/tmp/fwm-ssh-deep-rxffodqu/ssh-config",
+              "user": null
+            }
+          ]
+        },
+        "message": "1 forward(s) saved (running: 1, stopped: 0); daemon is running.",
+        "ready": true,
+        "revision": 2,
+        "runtime": {
+          "config_revision": 2,
+          "daemon_instance_id": "b2e0ff9a-a8f6-4f0f-84db-a31c96758989",
+          "forwards": [
+            {
+              "active_connections": 0,
+              "desired_state": "running",
+              "id": "6374c437-3962-4386-8456-7c9c9136579d",
+              "kind": "local",
+              "last_error": null,
+              "listen": "127.0.0.1:60910",
+              "name": "web",
+              "next_retry_unix_ms": null,
+              "retry_count": 0,
+              "server": "dev",
+              "state": "established",
+              "target": "localhost:1"
+            }
+          ]
+        },
+        "saved": true,
+        "state": "established"
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "911e51fd-e1e3-4694-9192-2a92abed620d"
+    }
+  },
+  {
+    "label": "check sees new ssh config",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 3,
+    "err": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "Connection refused (os error 61)",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 2,
+          "candidate_revision": 2,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "restart all server rules old ssh retained",
+    "args": [
+      "restart",
+      "--server",
+      "dev",
+      "--wait",
+      "--timeout",
+      "5s"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "id": "6374c437-3962-4386-8456-7c9c9136579d",
+              "kind": "local",
+              "listen": "127.0.0.1:60910",
+              "name": "web",
+              "remote_cleanup": "off",
+              "server_id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "target": "localhost:1"
+            }
+          ],
+          "revision": 3,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": null,
+              "id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "identity_files": [],
+              "known_hosts": "/private/tmp/fwm-ssh-deep-rxffodqu/known",
+              "name": "dev",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": "dev",
+              "ssh_config": "/private/tmp/fwm-ssh-deep-rxffodqu/ssh-config",
+              "user": null
+            }
+          ]
+        },
+        "message": "restart requested",
+        "operation": {
+          "affected": [
+            "6374c437-3962-4386-8456-7c9c9136579d"
+          ],
+          "skipped": []
+        },
+        "ready": true,
+        "revision": 3,
+        "runtime": {
+          "config_revision": 3,
+          "daemon_instance_id": "b2e0ff9a-a8f6-4f0f-84db-a31c96758989",
+          "forwards": [
+            {
+              "active_connections": 0,
+              "desired_state": "running",
+              "id": "6374c437-3962-4386-8456-7c9c9136579d",
+              "kind": "local",
+              "last_error": null,
+              "listen": "127.0.0.1:60910",
+              "name": "web",
+              "next_retry_unix_ms": null,
+              "retry_count": 0,
+              "server": "dev",
+              "state": "established",
+              "target": "localhost:1"
+            }
+          ]
+        },
+        "saved": true,
+        "state": "established"
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "ec3f86dd-ae40-4756-a8d6-285457c9cc38"
+    }
+  },
+  {
+    "label": "reload config",
+    "args": [
+      "config",
+      "reload"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "id": "6374c437-3962-4386-8456-7c9c9136579d",
+              "kind": "local",
+              "listen": "127.0.0.1:60910",
+              "name": "web",
+              "remote_cleanup": "off",
+              "server_id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "target": "localhost:1"
+            }
+          ],
+          "revision": 4,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": null,
+              "id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "identity_files": [],
+              "known_hosts": "/private/tmp/fwm-ssh-deep-rxffodqu/known",
+              "name": "dev",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": "dev",
+              "ssh_config": "/private/tmp/fwm-ssh-deep-rxffodqu/ssh-config",
+              "user": null
+            }
+          ]
+        },
+        "message": "configuration reloaded",
+        "revision": 4
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "96d0ce69-1350-4726-bc27-3b7b026d18f4"
+    }
+  },
+  {
+    "label": "after reload still established",
+    "args": [
+      "status",
+      "web"
+    ],
+    "exit": 0,
+    "out": {
+      "config_revision": 4,
+      "daemon_instance_id": "b2e0ff9a-a8f6-4f0f-84db-a31c96758989",
+      "daemon_running": true,
+      "forwards": [
+        {
+          "active_connections": 0,
+          "desired_state": "running",
+          "id": "6374c437-3962-4386-8456-7c9c9136579d",
+          "kind": "local",
+          "last_error": null,
+          "listen": "127.0.0.1:60910",
+          "name": "web",
+          "next_retry_unix_ms": null,
+          "retry_count": 0,
+          "server": "dev",
+          "state": "established",
+          "target": "localhost:1"
+        }
+      ],
+      "warnings": []
+    }
+  },
+  {
+    "label": "remove web",
+    "args": [
+      "remove",
+      "web"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [],
+          "revision": 5,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": null,
+              "id": "8883708a-cf0d-4cdb-afc0-acf62a264073",
+              "identity_files": [],
+              "known_hosts": "/private/tmp/fwm-ssh-deep-rxffodqu/known",
+              "name": "dev",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": "dev",
+              "ssh_config": "/private/tmp/fwm-ssh-deep-rxffodqu/ssh-config",
+              "user": null
+            }
+          ]
+        },
+        "message": "1 forward(s) removed",
+        "revision": 5
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "678c2c43-5e3d-4300-8f2a-72ea82599cc9"
+    }
+  },
+  {
+    "label": "stop",
+    "args": [
+      "daemon",
+      "stop"
+    ],
+    "exit": 0,
+    "out": {
+      "message": "Daemon stopped; forward running intent is preserved.",
+      "ok": true
+    }
+  },
+  {
+    "label": "offline current agent works",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "authenticated": true,
+            "note": "authentication succeeded; forwarding permissions are checked by individual listener/channel requests",
+            "ok": true,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 5,
+          "candidate_revision": 5,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "00d7a259-c147-4402-85fe-fe23da70ad62"
+    }
+  },
+  {
+    "label": "start daemon old env",
+    "args": [
+      "daemon",
+      "start"
+    ],
+    "exit": 0,
+    "out": {
+      "message": "Daemon is running.",
+      "ok": true
+    }
+  },
+  {
+    "label": "same CLI env online stale agent",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 3,
+    "err": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH authentication requires attention: fixture@127.0.0.1: SSH agent unavailable: No such file or directory (os error 2); load a valid key into ssh-agent or configure an unencrypted identity file",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 5,
+          "candidate_revision": 5,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "restart daemon good env",
+    "args": [
+      "daemon",
+      "restart"
+    ],
+    "exit": 0,
+    "out": {
+      "message": "Daemon restarted; forward running intent is preserved.",
+      "ok": true
+    }
+  },
+  {
+    "label": "same check restored",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "authenticated": true,
+            "note": "authentication succeeded; forwarding permissions are checked by individual listener/channel requests",
+            "ok": true,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 5,
+          "candidate_revision": 5,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "e59930fa-7c49-461e-8402-83d4f6fe68bd"
+    }
+  },
+  {
+    "label": "stop",
+    "args": [
+      "daemon",
+      "stop"
+    ],
+    "exit": 0,
+    "out": {
+      "message": "Daemon stopped; forward running intent is preserved.",
+      "ok": true
+    }
+  },
+  {
+    "label": "IdentitiesOnly yes rejects unrelated agent key",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 3,
+    "err": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH authentication requires attention: fixture@127.0.0.1: the server rejected all available identities; load a valid key into ssh-agent or configure an unencrypted identity file",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 5,
+          "candidate_revision": 5,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "OpenSSH rejects invalid IdentitiesOnly true",
+    "exit": 0,
+    "err": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n"
+  },
+  {
+    "label": "IdentitiesOnly true silently allows agent key",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 0,
+    "out": {
+      "api_version": 1,
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "authenticated": true,
+            "note": "authentication succeeded; forwarding permissions are checked by individual listener/channel requests",
+            "ok": true,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 5,
+          "candidate_revision": 5,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": null,
+      "ok": true,
+      "request_id": "2904f737-8f45-439b-9531-625a788fc705"
+    }
+  },
+  {
+    "label": "OpenSSH public IdentityFile authenticates from agent",
+    "exit": 0,
+    "err": ""
+  },
+  {
+    "label": "public IdentityFile cannot select loaded agent key",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 3,
+    "err": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH authentication requires attention: fixture@127.0.0.1: /private/tmp/fwm-ssh-deep-rxffodqu/client.pub: Could not read key; encrypted keys must be unlocked in ssh-agent; load a valid key into ssh-agent or configure an unencrypted identity file",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 5,
+          "candidate_revision": 5,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "explicit missing private path hidden",
+    "args": [
+      "server",
+      "check",
+      "dev"
+    ],
+    "exit": 3,
+    "err": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH authentication requires attention: fixture@127.0.0.1: no SSH agent is configured; load a valid key into ssh-agent or configure an unencrypted identity file",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 5,
+          "candidate_revision": 5,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "cleanup",
+    "args": [
+      "daemon",
+      "stop"
+    ],
+    "exit": 0,
+    "out": {
+      "message": "Daemon stopped; forward running intent is preserved.",
+      "ok": true
+    }
+  }
+]

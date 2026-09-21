@@ -1,0 +1,8 @@
+{
+  "exit": 2,
+  "stderr": "error: invalid TOML in /private/tmp/fwm-direct-n5biyjh6/config.toml: TOML parse error at line 1, column 19\n  |\n1 | schema_version = [\n  |                   ^\nunclosed array, expected `]`\n\n",
+  "daemon_log_exists": false,
+  "state_files": [
+    "daemon.lock"
+  ]
+}

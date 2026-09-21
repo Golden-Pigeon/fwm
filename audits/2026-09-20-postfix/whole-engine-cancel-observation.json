@@ -1,0 +1,25 @@
+{
+  "cancelled_remote_start": {
+    "active_count_returns_zero": true,
+    "application_payload_bytes": 0,
+    "attempts": 24,
+    "cancel_already_set_before_every_serve_remote": true,
+    "loopback_target_accepts_after_cancellation": 0
+  },
+  "source_sha256": {
+    "crates/fwm-core/src/engine/state.rs": "a66502858e2a5505658b50e0cb2b24713fd2eba481b9a397b7ea862e0025cb85",
+    "crates/fwm-core/src/engine/socks.rs": "890ece5765385ba384475b10e5598a9618dd44e81349208168bd9cf90696f11e",
+    "crates/fwm-core/src/engine/retry.rs": "f9f662c3581347c98c70d7e4f734b40edee1738e3350cf2499de494dc973596d",
+    "crates/fwm-core/src/engine/channels.rs": "d751fb6ccde8212f1fbc4b5572d31e923e931848dafdd2a2fa5ad9e3f8719baf",
+    "crates/fwm-core/src/engine/forward.rs": "93e9c02d92cf8fb3d26572e5c2e90d3dc3b5e4088935b211b1b6b3fcd6219a25"
+  },
+  "temporary_source_adaptations": {
+    "channels.rs": [
+      "Replace only ChannelStream/client type import with in-memory adapter; russh errors stay real"
+    ],
+    "forward.rs": [
+      "Replace only ChannelStream/client type import with in-memory adapter; russh errors stay real",
+      "Expose private local/serve_local to sibling fixture; function bodies unchanged"
+    ]
+  }
+}

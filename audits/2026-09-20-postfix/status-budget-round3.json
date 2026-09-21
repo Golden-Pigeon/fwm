@@ -1,0 +1,13 @@
+{
+  "batch_size": 512,
+  "save_ok": true,
+  "config_json_bytes": 98518,
+  "status_ok": false,
+  "status_error": {
+    "code": "response_too_large",
+    "message": "response exceeds the IPC frame limit"
+  },
+  "single_rule_cli_exit": 2,
+  "single_rule_stdout": "",
+  "single_rule_stderr": "{\"error\":{\"code\":\"response_too_large\",\"message\":\"response_too_large: response exceeds the IPC frame limit\"},\"ok\":false}\n"
+}

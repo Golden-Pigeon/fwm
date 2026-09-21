@@ -1,0 +1,13 @@
+
+running 3 tests
+REPRO Macos: uninstall for /tmp/.tmpodaF49/profile &%$ space stopped and removed registration for /tmp/.tmpodaF49/other-profile
+REPRO Linux: failed first install rollback removed disk file but left loaded registration; installed()=true
+test service::workflow_tests::postfix_review::audit_linux_failed_first_install_leaves_registered_unit_after_restore ... ok
+REPRO Linux: uninstall for /tmp/.tmpfqPtdl/profile &%$ space stopped and removed registration for /tmp/.tmpfqPtdl/other-profile
+REPRO Macos: restore returned Ok but changed registered program from /actually-running/fwm to /edited-on-disk/fwm
+test service::workflow_tests::postfix_review::audit_unix_legacy_filename_can_adopt_a_different_profile ... ok
+REPRO Linux: restore returned Ok but changed registered program from /actually-running/fwm to /edited-on-disk/fwm
+test service::workflow_tests::postfix_review::audit_checkpoint_confuses_disk_definition_with_registered_program ... ok
+
+test result: ok. 3 passed; 0 failed; 0 ignored; 0 measured; 38 filtered out; finished in 0.12s
+

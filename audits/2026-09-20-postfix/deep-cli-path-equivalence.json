@@ -1,0 +1,246 @@
+{
+  "classification": "excluded: these are not proven equivalent ssh_config paths",
+  "reason": "ssh_config is expanded by expand_home only (config.rs:52-57,490-499), while %d tokens are expanded in identity and known-host paths; no runtime/SSH test was executed",
+  "cases": [
+    {
+      "case": "save_home_token_profile",
+      "args": [
+        "server",
+        "add",
+        "dev",
+        "--host",
+        "dev.invalid",
+        "--ssh-config",
+        "%d/.ssh/config"
+      ],
+      "exit": 0,
+      "result": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [],
+            "revision": 1,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "dev.invalid",
+                "id": "39293f6b-4a83-4926-afe9-7056cba6d405",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "%d/.ssh/config",
+                "user": null
+              }
+            ]
+          },
+          "message": "server saved; daemon remains stopped.",
+          "revision": 1
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "3c16b0a1-cfe5-4b97-bd8c-0f5808fa9a0f"
+      }
+    },
+    {
+      "case": "same_token_spelling_is_accepted",
+      "args": [
+        "add",
+        "same",
+        "--server",
+        "dev",
+        "--ssh-config",
+        "%d/.ssh/config",
+        "--local",
+        "--port",
+        "40100",
+        "--disabled"
+      ],
+      "exit": 0,
+      "result": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "1a97bb97-d46f-448b-944b-c7e36fe00499",
+                "kind": "local",
+                "listen": "127.0.0.1:40100",
+                "name": "same",
+                "remote_cleanup": "off",
+                "server_id": "39293f6b-4a83-4926-afe9-7056cba6d405",
+                "target": "localhost:40100"
+              }
+            ],
+            "revision": 2,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "dev.invalid",
+                "id": "39293f6b-4a83-4926-afe9-7056cba6d405",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "%d/.ssh/config",
+                "user": null
+              }
+            ]
+          },
+          "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+          "ready": null,
+          "revision": 2,
+          "saved": true,
+          "state": "stopped"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "eaefb146-a9e7-457f-9acd-d51f92f186ec"
+      }
+    },
+    {
+      "case": "tilde_spelling_differs_from_literal_percent_d_path",
+      "args": [
+        "add",
+        "tilde",
+        "--server",
+        "dev",
+        "--ssh-config",
+        "~/.ssh/config",
+        "--local",
+        "--port",
+        "40101",
+        "--disabled"
+      ],
+      "exit": 2,
+      "result": {
+        "error": {
+          "code": "invalid_request",
+          "message": "server \"dev\" is already configured with a different SSH config; --ssh-config only configures new aliases (use `fwm server edit NAME --ssh-config PATH` to change it)"
+        },
+        "ok": false
+      }
+    },
+    {
+      "case": "absolute_home_spelling_differs_from_literal_percent_d_path",
+      "args": [
+        "edit",
+        "same",
+        "--server",
+        "dev",
+        "--ssh-config",
+        "/home/fixture/.ssh/config"
+      ],
+      "exit": 2,
+      "result": {
+        "error": {
+          "code": "invalid_request",
+          "message": "server \"dev\" is already configured with a different SSH config; --ssh-config only configures new aliases (use `fwm server edit NAME --ssh-config PATH` to change it)"
+        },
+        "ok": false
+      }
+    },
+    {
+      "case": "omitting_redundant_path_is_accepted",
+      "args": [
+        "add",
+        "implicit",
+        "--server",
+        "dev",
+        "--local",
+        "--port",
+        "40101",
+        "--disabled"
+      ],
+      "exit": 0,
+      "result": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "1a97bb97-d46f-448b-944b-c7e36fe00499",
+                "kind": "local",
+                "listen": "127.0.0.1:40100",
+                "name": "same",
+                "remote_cleanup": "off",
+                "server_id": "39293f6b-4a83-4926-afe9-7056cba6d405",
+                "target": "localhost:40100"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "stopped",
+                "id": "5cde9073-27f9-4e22-8906-ab009f73c2d4",
+                "kind": "local",
+                "listen": "127.0.0.1:40101",
+                "name": "implicit",
+                "remote_cleanup": "off",
+                "server_id": "39293f6b-4a83-4926-afe9-7056cba6d405",
+                "target": "localhost:40101"
+              }
+            ],
+            "revision": 3,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "dev.invalid",
+                "id": "39293f6b-4a83-4926-afe9-7056cba6d405",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "dev",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": "%d/.ssh/config",
+                "user": null
+              }
+            ]
+          },
+          "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+          "ready": null,
+          "revision": 3,
+          "saved": true,
+          "state": "stopped"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "435840c1-bd2b-4879-a27c-6c43f47b91bf"
+      }
+    }
+  ]
+}

@@ -1,0 +1,104 @@
+[
+  {
+    "selector": "missing",
+    "still_running_after_two_updates": true,
+    "updates": [
+      {
+        "config_revision": 0,
+        "daemon_instance_id": "",
+        "daemon_running": null,
+        "daemon_state": "unavailable",
+        "forwards": [],
+        "runtime_available": false,
+        "warnings": [
+          "status temporarily unavailable: exchanging daemon request: daemon closed without a response; continuing to watch"
+        ]
+      },
+      {
+        "config_revision": 0,
+        "daemon_instance_id": "",
+        "daemon_running": null,
+        "daemon_state": "unavailable",
+        "forwards": [],
+        "runtime_available": false,
+        "warnings": [
+          "status temporarily unavailable: exchanging daemon request: daemon closed without a response; continuing to watch"
+        ]
+      }
+    ],
+    "requests": [
+      "ping",
+      "get_config",
+      "ping",
+      "get_config"
+    ]
+  },
+  {
+    "selector": "web",
+    "still_running_after_two_updates": true,
+    "updates": [
+      {
+        "config_revision": 0,
+        "daemon_instance_id": "",
+        "daemon_running": null,
+        "daemon_state": "unavailable",
+        "forwards": [],
+        "runtime_available": false,
+        "warnings": [
+          "status temporarily unavailable: exchanging daemon request: daemon closed without a response; continuing to watch"
+        ]
+      },
+      {
+        "config_revision": 0,
+        "daemon_instance_id": "",
+        "daemon_running": null,
+        "daemon_state": "unavailable",
+        "forwards": [],
+        "runtime_available": false,
+        "warnings": [
+          "status temporarily unavailable: exchanging daemon request: daemon closed without a response; continuing to watch"
+        ]
+      }
+    ],
+    "requests": [
+      "ping",
+      "get_config",
+      "ping",
+      "get_config"
+    ]
+  },
+  {
+    "selector": null,
+    "still_running_after_two_updates": true,
+    "updates": [
+      {
+        "config_revision": 0,
+        "daemon_instance_id": "",
+        "daemon_running": null,
+        "daemon_state": "unavailable",
+        "forwards": [],
+        "runtime_available": false,
+        "warnings": [
+          "status temporarily unavailable: exchanging daemon request: daemon closed without a response; continuing to watch"
+        ]
+      },
+      {
+        "config_revision": 0,
+        "daemon_instance_id": "",
+        "daemon_running": null,
+        "daemon_state": "unavailable",
+        "forwards": [],
+        "runtime_available": false,
+        "warnings": [
+          "status temporarily unavailable: exchanging daemon request: daemon closed without a response; continuing to watch"
+        ]
+      }
+    ],
+    "requests": [
+      "ping",
+      "get_config",
+      "ping",
+      "get_config"
+    ]
+  }
+]

@@ -1,0 +1,19 @@
+{
+  "entry": {
+    "daemon_instance_id": "audit",
+    "event": {
+      "forward_id": "rule",
+      "message": "old transport failed",
+      "sequence": 1,
+      "server_id": "server-a",
+      "timestamp_ms": 1789902906324
+    },
+    "forward_name": "new-rule",
+    "group": "new-group",
+    "server_id": "server-b",
+    "server_name": "beta"
+  },
+  "new_server_results": 1,
+  "old_server_results": 0,
+  "original_timestamp_ms": 1234
+}

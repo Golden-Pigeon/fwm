@@ -1,0 +1,5 @@
+    Blocking waiting for file lock on build directory
+    Checking fwm-core v0.1.0 (/workspace/fwm/crates/fwm-core)
+    Checking fwm-api v0.1.0 (/workspace/fwm/crates/fwm-api)
+    Checking fwm v0.1.0 (/workspace/fwm/crates/fwm)
+    Finished `dev` profile [unoptimized + debuginfo] target(s) in 7.98s

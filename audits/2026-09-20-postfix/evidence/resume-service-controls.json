@@ -1,0 +1,56 @@
+{
+  "scope": "existing pure fake-manager service transaction controls",
+  "native_service_manager_invoked": false,
+  "tests": [
+    {
+      "test": "service::workflow_tests::outer_checkpoint_recovers_old_definition_and_manager_after_failed_upgrade",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::outer_checkpoint_recovers_old_definition_and_manager_after_failed_upgrade ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.19s\n\n",
+      "stderr": ""
+    },
+    {
+      "test": "service::workflow_tests::rollback_ownership_check_precedes_manager_changes",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::rollback_ownership_check_precedes_manager_changes ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.01s\n\n",
+      "stderr": ""
+    },
+    {
+      "test": "service::workflow_tests::invalid_definition_destination_fails_before_any_manager_mutation",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::invalid_definition_destination_fails_before_any_manager_mutation ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s\n\n",
+      "stderr": ""
+    },
+    {
+      "test": "service::workflow_tests::restoring_an_inactive_mac_registration_does_not_wake_the_daemon",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::restoring_an_inactive_mac_registration_does_not_wake_the_daemon ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.03s\n\n",
+      "stderr": ""
+    },
+    {
+      "test": "service::workflow_tests::rollback_restores_disabled_login_policy_even_when_the_old_job_was_unloaded",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::rollback_restores_disabled_login_policy_even_when_the_old_job_was_unloaded ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.03s\n\n",
+      "stderr": ""
+    },
+    {
+      "test": "service::workflow_tests::query_errors_are_not_reported_as_absent_registrations",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::query_errors_are_not_reported_as_absent_registrations ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s\n\n",
+      "stderr": ""
+    },
+    {
+      "test": "service::workflow_tests::unrecoverable_orphan_is_rejected_before_stopping_the_old_service",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::unrecoverable_orphan_is_rejected_before_stopping_the_old_service ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.01s\n\n",
+      "stderr": ""
+    },
+    {
+      "test": "service::workflow_tests::unavailable_manager_allows_unmanaged_start_only_without_saved_definition",
+      "returncode": 0,
+      "stdout": "\nrunning 1 test\ntest service::workflow_tests::unavailable_manager_allows_unmanaged_start_only_without_saved_definition ... ok\n\ntest result: ok. 1 passed; 0 failed; 0 ignored; 0 measured; 37 filtered out; finished in 0.00s\n\n",
+      "stderr": ""
+    }
+  ],
+  "passed": 8,
+  "temporary_directory_cleaned": true
+}

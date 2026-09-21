@@ -1,0 +1,289 @@
+{
+  "controls": {
+    "healthy_retry": {
+      "affected": [],
+      "skipped": [
+        {
+          "id": "memory-rule",
+          "name": "memory-rule",
+          "reason": "already_established"
+        }
+      ]
+    },
+    "metadata_generation_unchanged": true,
+    "metadata_old_guard_decrements": [
+      {
+        "active_connections": 0,
+        "desired_state": "running",
+        "group": "new-group",
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "memory-rule",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "established",
+        "target": null
+      }
+    ],
+    "stopped_after_drop": [
+      {
+        "active_connections": 0,
+        "desired_state": "stopped",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "memory-rule",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "stopping",
+        "target": null
+      }
+    ],
+    "stopped_restart": {
+      "affected": [],
+      "skipped": [
+        {
+          "id": "memory-rule",
+          "name": "memory-rule",
+          "reason": "stopped"
+        }
+      ]
+    },
+    "stopped_retry": {
+      "affected": [],
+      "skipped": [
+        {
+          "id": "memory-rule",
+          "name": "memory-rule",
+          "reason": "stopped"
+        }
+      ]
+    },
+    "unknown_selection": "unknown forward missing",
+    "unknown_selection_atomic": true
+  },
+  "final_focused_sweep": {
+    "after_stop_and_60_seconds_virtual_time": [
+      {
+        "active_connections": 0,
+        "desired_state": "stopped",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "memory-rule",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "stopped",
+        "target": null
+      }
+    ],
+    "during_backoff": [
+      {
+        "active_connections": 0,
+        "desired_state": "running",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": "memory listener unavailable",
+        "listen": "127.0.0.1:1080",
+        "name": "memory-rule",
+        "next_retry_unix_ms": 1789906776137,
+        "retry_count": 2,
+        "server": "memory-fixture",
+        "state": "backoff",
+        "target": null
+      }
+    ],
+    "new_findings": 0,
+    "old_generation_update_ignored": true
+  },
+  "restart_count_leak": {
+    "after_new_stream_closed": [
+      {
+        "active_connections": 2,
+        "desired_state": "running",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "renamed",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "established",
+        "target": null
+      }
+    ],
+    "after_old_streams_closed": [
+      {
+        "active_connections": 2,
+        "desired_state": "running",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "renamed",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "starting",
+        "target": null
+      }
+    ],
+    "after_restart": [
+      {
+        "active_connections": 2,
+        "desired_state": "running",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "renamed",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "starting",
+        "target": null
+      }
+    ],
+    "after_shutdown": [
+      {
+        "active_connections": 0,
+        "desired_state": "running",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "renamed",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "stopped",
+        "target": null
+      }
+    ],
+    "before": [
+      {
+        "active_connections": 2,
+        "desired_state": "running",
+        "group": null,
+        "id": "memory-rule",
+        "kind": "dynamic",
+        "last_error": null,
+        "listen": "127.0.0.1:1080",
+        "name": "memory-rule",
+        "next_retry_unix_ms": null,
+        "retry_count": 0,
+        "server": "memory-fixture",
+        "state": "established",
+        "target": null
+      }
+    ],
+    "restart_report": {
+      "affected": [
+        "memory-rule"
+      ],
+      "skipped": []
+    }
+  },
+  "scope": "production lifecycle/reconcile/state functions with pure-memory group tasks; no SSH, sockets, agent, helper, or process signals",
+  "build_libraries": {
+    "anyhow": "/workspace/fwm/target/debug/deps/libanyhow-6b7cad20ac8ad7e5.rlib",
+    "async_trait": "/workspace/fwm/target/debug/deps/libasync_trait-5d97359d37ee00ff.dylib",
+    "chrono": "/workspace/fwm/target/debug/deps/libchrono-9b68cd5223cd01be.rlib",
+    "directories": "/workspace/fwm/target/debug/deps/libdirectories-d9dd5b82f9faa549.rlib",
+    "fs2": "/workspace/fwm/target/debug/deps/libfs2-e76c62511edabf5b.rlib",
+    "glob": "/workspace/fwm/target/debug/deps/libglob-1e751c5899ba88b8.rlib",
+    "data_encoding": "/workspace/fwm/target/debug/deps/libdata_encoding-80b683a8a3d2109a.rlib",
+    "hmac": "/workspace/fwm/target/debug/deps/libhmac-56806c1fb487ad5d.rlib",
+    "sha1": "/workspace/fwm/target/debug/deps/libsha1-cc7d9e044b681aa1.rlib",
+    "rand": "/workspace/fwm/target/debug/deps/librand-f19125605fb8e993.rlib",
+    "russh": "/workspace/fwm/target/debug/deps/librussh-8e372b8e706060f9.rlib",
+    "serde": "/workspace/fwm/target/debug/deps/libserde-66e864adb1168bd5.rlib",
+    "serde_json": "/workspace/fwm/target/debug/deps/libserde_json-4aaf3423c1ffbacd.rlib",
+    "thiserror": "/workspace/fwm/target/debug/deps/libthiserror-d1f1ee7806e40c8e.rlib",
+    "tokio": "/workspace/fwm/target/debug/deps/libtokio-87dc9c675008ecf5.rlib",
+    "tokio_util": "/workspace/fwm/target/debug/deps/libtokio_util-d7a51e000253ee7a.rlib",
+    "toml": "/workspace/fwm/target/debug/deps/libtoml-0f715e00ab20e6be.rlib",
+    "tempfile": "/workspace/fwm/target/debug/deps/libtempfile-8b13b9d8fa652dd8.rlib",
+    "tracing": "/workspace/fwm/target/debug/deps/libtracing-622859933e8e0784.rlib",
+    "uuid": "/workspace/fwm/target/debug/deps/libuuid-f50bf7de660f4ea4.rlib"
+  },
+  "source_sha256": {
+    "crates/fwm-core/src/model_forward.rs": "7160b6a43857ad8a5de605a889e40e040fc3bedfb380c1a0308a55922178f286",
+    "crates/fwm-core/src/lib.rs": "185fcc6e468363c96a81d2ed7e2df0ce3945f31cdabd6f6a222b111c449adb37",
+    "crates/fwm-core/src/paths.rs": "efd3ce8c8634d618ff580f8276b163c99e3582aaa757668a23fac807341a7b9f",
+    "crates/fwm-core/src/store.rs": "1fd457d01a182e510b87df20cf6f197e738e2d6d1b502ba78d8eb21f6519fa38",
+    "crates/fwm-core/src/group_validation_tests.rs": "e7425964d5d74cf9e6812e3635cbe46ca1d81d0f899ceb7c31a304125101d256",
+    "crates/fwm-core/src/history.rs": "6e454f0042e3c58ac5f595901dade0e8371e4352d61bab69e3be9461531ce05e",
+    "crates/fwm-core/src/selection.rs": "36af7a6705aa69c9b304bebf6fe88167ee75b5eb1034a41b1b002bfdc57490e2",
+    "crates/fwm-core/src/model_audit_tests.rs": "e1f9c3e665c06307536775ae551da47b291eea89f35f93fc92d4ecf0feabba79",
+    "crates/fwm-core/src/model.rs": "b36bf64c7363866ec12ac996ed50af740aa3b696cf0badcc9f3aa8cd9afca0d7",
+    "crates/fwm-core/src/paths/windows.rs": "00bd2ec192e213ee8554ed4e8cd9ead04eb854a21e8cb74c46f50cc878d4047a",
+    "crates/fwm-core/src/cleanup/error.rs": "7ea4465e9f75ca9ef33665df14cc46ed525a8ee19899c59086f1fb8408439164",
+    "crates/fwm-core/src/cleanup/remote_helper.py": "b9000111fe6a115e6440a8cd40ffe8bf3a474172091701efddd3d3aaabfd0a95",
+    "crates/fwm-core/src/cleanup/test_remote_protocol.py": "8fe8d68ff8b4aa816bd0e73fcb403b14948691f8f1cb99e6a6a28fe6372e0e1f",
+    "crates/fwm-core/src/cleanup/test_remote_helper.py": "d6db4bb64cdc78fe1132ddb803f6c86e38d1c78a16260699ab594153b8267768",
+    "crates/fwm-core/src/cleanup/mod.rs": "98e140e0551746e982f9be23a1b22982507ef55e0c9574836462897649d05747",
+    "crates/fwm-core/src/cleanup/lease.rs": "f6d64c2bc3e59ca64274d8e85117d374c5e03afc211b63a788a4adf40ee57216",
+    "crates/fwm-core/src/cleanup/context.rs": "caab43cf4aad57b8c5a350bd35eab78de06e50c8ce286e1317cb78dbb242f123",
+    "crates/fwm-core/src/cleanup/__pycache__/remote_helper.cpython-311.pyc": "8fb2cef2f9b1549dd9d75df9dc4af11987e2da84948b287214d6f2f49cdd8d0f",
+    "crates/fwm-core/src/cleanup/__pycache__/test_remote_protocol.cpython-311.pyc": "d3f78c34fc805d1fe38fbfb7c2f91b6c36a4f39c6c6c2dad035dfa7e670caf96",
+    "crates/fwm-core/src/cleanup/__pycache__/test_remote_helper.cpython-311.pyc": "d04c579abd3ab17061c7e6745ae512a1789fb92c44dd2a57ead9c6750680f786",
+    "crates/fwm-core/src/ssh/path_options.rs": "285a4dd87e96b9543bf631f32aa40ec4d12571a282fe4d4022a5a0773f0bc0e4",
+    "crates/fwm-core/src/ssh/auth_agent.rs": "91dd203dee8eb84de522f4ac61d5f6d236cce1d9c8c44fb8320d32dbe816f9e9",
+    "crates/fwm-core/src/ssh/error.rs": "0eb42090c775f7189c524af05ea214c584b98f1b52ef7f62d01e093e5be5e995",
+    "crates/fwm-core/src/ssh/auth_tests.rs": "9f5a12d1105f56c47770809177a7b14e6c96e00d62cbe96ae9e77559ffde1259",
+    "crates/fwm-core/src/ssh/config.rs": "0662ac6ec19bc7f073738b814aad292da36335b9bc70fce1ff913c5e5e37f586",
+    "crates/fwm-core/src/ssh/auth_fixture.rs": "53acd08a10f05c82a832183114c7ec9d6d75707993a8946fbd64fe13da1a4c63",
+    "crates/fwm-core/src/ssh/auth.rs": "6a1146b43817ba8c995ef5f90c7e0c25a545bfcb777b723abb4c6ae531d7f082",
+    "crates/fwm-core/src/ssh/mod.rs": "9d2d51dd45442e432febbfc729a27d7211e0a6461fa5f1c6055b406baf257ea2",
+    "crates/fwm-core/src/ssh/reload_tests.rs": "2a85c6dad2eab0929f6487afba0e1aac8b53f1f44bedce2d1e9250a4293e4d5c",
+    "crates/fwm-core/src/ssh/config_override_tests.rs": "af243d053620b21d2bd4e75d1f5b9589047f8302f29fe20a0fb3021972957f86",
+    "crates/fwm-core/src/ssh/tests.rs": "97604e0bb6a046bc8e1caae20c84204b526b57b9a7300c76de7cd7c429c9f6bf",
+    "crates/fwm-core/src/ssh/auth_signer.rs": "f80115b1166bd46872a393821b8f8f50f6a5ff0acf84d71aa41a7cc181f31269",
+    "crates/fwm-core/src/ssh/trust.rs": "9e7becfe945100c16310f500312d160065a3ff97d7c85d4ae9910967459811ef",
+    "crates/fwm-core/src/ssh/connection.rs": "129368e23b88101ec7ed818a00e8fad3daaf0491485c8555112478051f92a8ce",
+    "crates/fwm-core/src/history/selection_audit_tests.rs": "7077e39642d4704d540bd0b83da5fcaba8d208cb98bbded7ce27603bafe48332",
+    "crates/fwm-core/src/history/cursor.rs": "c451186309a201b6e31ad2401c52c613e1178201e47a82059632e96a99c68832",
+    "crates/fwm-core/src/history/tests.rs": "1d60aa843c10de52f0925e568efa0fb85de65daa1e8629fb78d194a8a256f84f",
+    "crates/fwm-core/src/history/storage.rs": "26a875976fa2efce3d09a53d9360e5b2b1a8eab26db13916622dae2847df27f2",
+    "crates/fwm-core/src/history/storage_tests.rs": "ba70f18cc45f3c09c00ec8238e7a0baceeb86becc8e2d225d8f95f5a1d1119e3",
+    "crates/fwm-core/src/engine/remote.rs": "ba3890cbd2f334adaaee16999c49faf6a09b436f25b59debafaf54a464de8cc7",
+    "crates/fwm-core/src/engine/socks_protocol_tests.rs": "20fec17e7b90c8710cb1952846ecf580b531c1f01eca6d8fd691163bb8cb018d",
+    "crates/fwm-core/src/engine/cleanup_tests.rs": "bf61d8c03fdb051f0fcb81654d5a30434b6d5ed0fbb2cd2e409d098fef85adb1",
+    "crates/fwm-core/src/engine/mod.rs": "735d4886bb3d432d798eb6f6a0187228911cd4c8c94044363f3e0177aa002b97",
+    "crates/fwm-core/src/engine/state.rs": "a66502858e2a5505658b50e0cb2b24713fd2eba481b9a397b7ea862e0025cb85",
+    "crates/fwm-core/src/engine/channel_tests.rs": "783d3a6e295b991ea1f64eaed6af3f7b1ab15976b5fb7162c8a63b4628e47d56",
+    "crates/fwm-core/src/engine/channels.rs": "d751fb6ccde8212f1fbc4b5572d31e923e931848dafdd2a2fa5ad9e3f8719baf",
+    "crates/fwm-core/src/engine/socks.rs": "890ece5765385ba384475b10e5598a9618dd44e81349208168bd9cf90696f11e",
+    "crates/fwm-core/src/engine/lifecycle.rs": "27f7047eb4bb90845af8136e4b7e515bd7754e9fbdb0866dcc9cbac1e18873d5",
+    "crates/fwm-core/src/engine/forward.rs": "93e9c02d92cf8fb3d26572e5c2e90d3dc3b5e4088935b211b1b6b3fcd6219a25",
+    "crates/fwm-core/src/engine/connection.rs": "c4ea1a82212437c3114dcdfe3fc5c00541b8364a8ff6b79e8026f2077fdc96b2",
+    "crates/fwm-core/src/engine/retry.rs": "f9f662c3581347c98c70d7e4f734b40edee1738e3350cf2499de494dc973596d",
+    "crates/fwm-core/src/engine/failure_tests.rs": "ebbc801443ac4af076632bb3fbe9af3937a5d98b202a1c60627ed9e9661e176b",
+    "crates/fwm-core/src/store/io.rs": "222b46b2e6f75625342c16ee2ef5b813001c7bae9bd662ecedc51e9f7ced41fa",
+    "crates/fwm-core/src/store/control.rs": "95ae1a95c9279fce41727e801f10cb45c5e1c71ee0c7bf0319a9820319571dac",
+    "crates/fwm-core/src/store/recovery.rs": "2bea3286cc5c27138a63fcfbc862cbc9e26eb25e179ef6cc08838ea8066fc1f3",
+    "crates/fwm-core/src/store/recovery_tests.rs": "e33e34d2d479da1e16919ce99dfeb6b9dcf2af1a6e915c4811d832164aa58d5d",
+    "crates/fwm-core/src/store/identity.rs": "694fbc2778b8f1abbb182345f4449312d699f5bd4f02b53831f083330e33311a",
+    "crates/fwm-core/src/store/migration_tests.rs": "09cacc545afdfc641c487de8da64ebb6333c68988a3f8f0a332481db959d6293",
+    "crates/fwm-core/src/store/failure_tests.rs": "8c33d7dc11f3c3f844e8eb898eae7459308cf0e9138eb6f1710bde5c50a494d3",
+    "crates/fwm-core/src/store/control/tests.rs": "74aeb8cd1b85567f3e74542f5de9c5b7235eefbaf83df6757ad7883a850efbe5"
+  },
+  "stderr": "",
+  "exit_code": 0
+}

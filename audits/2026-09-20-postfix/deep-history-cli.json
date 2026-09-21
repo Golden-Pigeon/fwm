@@ -1,0 +1,192 @@
+{
+  "case": "deleted_id_unioned_with_other_deleted_name",
+  "first_id": "57c31a27-3ce4-4438-8bf3-978662002abc",
+  "second_id": "23195238-fd4d-457d-b75c-bce2c490c0a7",
+  "before": {
+    "events": [
+      {
+        "daemon_instance_id": "offline-57318ce3-65c6-42c5-bb1c-b66abdc8c195",
+        "event": {
+          "forward_id": "57c31a27-3ce4-4438-8bf3-978662002abc",
+          "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+          "sequence": 1,
+          "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+          "timestamp_ms": 1789907361216
+        },
+        "forward_name": "first",
+        "group": null,
+        "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+        "server_name": "fixture"
+      },
+      {
+        "daemon_instance_id": "offline-8d7ec01d-c0a2-4a5a-9038-0321f280dfc5",
+        "event": {
+          "forward_id": "57c31a27-3ce4-4438-8bf3-978662002abc",
+          "message": "1 forward(s) removed; daemon remains stopped.",
+          "sequence": 1,
+          "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+          "timestamp_ms": 1789907361272
+        },
+        "forward_name": "first",
+        "group": null,
+        "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+        "server_name": "fixture"
+      }
+    ],
+    "warnings": []
+  },
+  "after": {
+    "events": [
+      {
+        "daemon_instance_id": "offline-57318ce3-65c6-42c5-bb1c-b66abdc8c195",
+        "event": {
+          "forward_id": "57c31a27-3ce4-4438-8bf3-978662002abc",
+          "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+          "sequence": 1,
+          "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+          "timestamp_ms": 1789907361216
+        },
+        "forward_name": "first",
+        "group": null,
+        "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+        "server_name": "fixture"
+      },
+      {
+        "daemon_instance_id": "offline-8d7ec01d-c0a2-4a5a-9038-0321f280dfc5",
+        "event": {
+          "forward_id": "57c31a27-3ce4-4438-8bf3-978662002abc",
+          "message": "1 forward(s) removed; daemon remains stopped.",
+          "sequence": 1,
+          "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+          "timestamp_ms": 1789907361272
+        },
+        "forward_name": "first",
+        "group": null,
+        "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+        "server_name": "fixture"
+      },
+      {
+        "daemon_instance_id": "offline-8c7c0b68-593d-4eef-a383-abeab7c9e3f5",
+        "event": {
+          "forward_id": "23195238-fd4d-457d-b75c-bce2c490c0a7",
+          "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+          "sequence": 1,
+          "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+          "timestamp_ms": 1789907361301
+        },
+        "forward_name": "57c31a27-3ce4-4438-8bf3-978662002abc",
+        "group": null,
+        "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+        "server_name": "fixture"
+      },
+      {
+        "daemon_instance_id": "offline-9057db0e-ecad-4e38-a940-d82cd3544bd1",
+        "event": {
+          "forward_id": "23195238-fd4d-457d-b75c-bce2c490c0a7",
+          "message": "1 forward(s) removed; daemon remains stopped.",
+          "sequence": 1,
+          "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+          "timestamp_ms": 1789907361339
+        },
+        "forward_name": "57c31a27-3ce4-4438-8bf3-978662002abc",
+        "group": null,
+        "server_id": "65836895-8cf9-43ce-b1e0-688cf39bdb4a",
+        "server_name": "fixture"
+      }
+    ],
+    "warnings": []
+  },
+  "normal_controls_passed": true,
+  "calls": [
+    {
+      "args": [
+        "add",
+        "first",
+        "--server",
+        "fixture",
+        "--local",
+        "--port",
+        "34101",
+        "--disabled"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "config",
+        "export"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "remove",
+        "first"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "logs",
+        "57c31a27-3ce4-4438-8bf3-978662002abc"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "add",
+        "57c31a27-3ce4-4438-8bf3-978662002abc",
+        "--server",
+        "fixture",
+        "--local",
+        "--port",
+        "34102",
+        "--disabled"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "config",
+        "export"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "remove",
+        "57c31a27-3ce4-4438-8bf3-978662002abc"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "logs",
+        "57c31a27-3ce4-4438-8bf3-978662002abc"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "logs",
+        "first"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "logs",
+        "23195238-fd4d-457d-b75c-bce2c490c0a7"
+      ],
+      "exit": 0
+    },
+    {
+      "args": [
+        "config",
+        "export"
+      ],
+      "exit": 0
+    }
+  ],
+  "scope": "temporary offline CLI only; every added rule disabled; no daemon or network"
+}

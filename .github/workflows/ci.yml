@@ -1,0 +1,67 @@
+name: Rust
+on:
+  push:
+  pull_request:
+
+permissions:
+  contents: read
+
+jobs:
+  test:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          components: rustfmt, clippy
+      - run: cargo fmt --all -- --check
+      - run: cargo clippy --workspace --all-targets --locked -- -D warnings
+      - run: cargo test --workspace --locked
+      - name: Verified recovery helper tests
+        if: runner.os != 'Windows'
+        run: python3 -m unittest discover -s crates/fwm-core/src/cleanup -p 'test_*.py' -v
+      - run: cargo build --locked
+      - name: Status, watch and IPC budget regressions
+        if: runner.os != 'Windows'
+        run: python3 tests/postfix_queries.py target/debug/fwm
+      - name: Shell completion line editor regressions
+        if: runner.os != 'Windows'
+        run: python3 tests/shell_completion_scripts.py
+      - name: Real OpenSSH smoke (Linux)
+        if: runner.os == 'Linux'
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-server
+          sudo mkdir -p /run/sshd
+          sudo env FWM_SSH_TEST_USER="$USER" python3 tests/smoke.py "$PWD/target/debug/fwm"
+
+  coverage:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.90.0
+        with:
+          components: llvm-tools-preview
+      - name: Instrument Rust unit and CLI integration tests
+        run: python3 tests/coverage.py
+      - name: Include real SSH and recovery workflows
+        run: |
+          sudo apt-get update
+          sudo apt-get install -y openssh-server
+          sudo mkdir -p /run/sshd
+          sudo env FWM_SSH_TEST_USER="$USER" LLVM_PROFILE_FILE="$PWD/target/coverage/raw/fwm-%8m.profraw" python3 tests/smoke.py "$PWD/target/coverage/build/debug/fwm"
+      - name: Enforce line and function coverage floors
+        run: python3 tests/coverage.py --report-only --fail-under-lines 80 --fail-under-functions 80
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: coverage-report
+          path: |
+            target/coverage/html/
+            target/coverage/report.txt
+            target/coverage/lcov.info
+            target/coverage/tests.log

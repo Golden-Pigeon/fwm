@@ -1,0 +1,26 @@
+{
+  "round": 4,
+  "new_independent_issues": 0,
+  "checked": [
+    "fresh read-only commands do not initialize state",
+    "candidate and applied remain distinct until reload",
+    "ordinary edits preserve pending draft bytes",
+    "reload applies unrelated draft changes and preserves control intent and IDs",
+    "broken draft yields failure JSON and offline status warning with last applied state",
+    "damaged log records warn while retaining valid bounded history",
+    "daemon lifecycle preserves stopped rule ID and applied configuration despite bad draft",
+    "deleted rule remains queryable by stable ID"
+  ],
+  "known_issues_referenced": [
+    "unknown_fields",
+    "remote_config_defaults",
+    "historical_name_shadows_current_group",
+    "group_log_forms_differ",
+    "server_follow_rename",
+    "group_watch_rename",
+    "valid_candidate_cannot_repair_broken_snapshot",
+    "watch_exits_on_transient_ipc_disconnect",
+    "server_events_unfilterable"
+  ],
+  "source_recheck": "core store/model/history, CLI config/status/logs/selection/output, daemon state/dispatch; other command families covered by independent reviewers"
+}

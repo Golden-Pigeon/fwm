@@ -1,0 +1,24 @@
+[
+  {
+    "case": "remote_config_defaults",
+    "validate": 0,
+    "cleanup": "off",
+    "mode": "shared"
+  },
+  {
+    "case": "valid_candidate_cannot_repair_broken_snapshot",
+    "validate_code": 0,
+    "reload_code": 2,
+    "reload_error": "{\"error\":{\"code\":\"invalid_request\",\"message\":\"cannot read last committed configuration: invalid TOML in /private/tmp/fwm-audit-more-z9wmsa9m/state/applied.toml: TOML parse error at line 1, column 11\\n  |\\n1 | broken = [\\n  |           ^\\nunclosed array, expected `]`\\n\"},\"ok\":false}"
+  },
+  {
+    "case": "watch_exits_on_transient_ipc_disconnect",
+    "requests": [
+      "ping",
+      "get_config"
+    ],
+    "code": 5,
+    "stdout": "",
+    "stderr": "{\"error\":{\"code\":\"io_error\",\"message\":\"exchanging daemon request: daemon closed without a response\"},\"ok\":false}"
+  }
+]

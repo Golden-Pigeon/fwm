@@ -1,0 +1,69 @@
+[
+  {
+    "case": "unknown_fields",
+    "valid": {
+      "revision": 0,
+      "valid": true
+    },
+    "actual_user": null,
+    "actual_desired": "running",
+    "file_after": "schema_version = 3\nrevision = 1\n\n[defaults.retry]\nkeepalive_interval_secs = 5\nkeepalive_max = 3\nconnect_timeout_secs = 10\nmax_delay_secs = 30\nstable_reset_secs = 60\n\n[[servers]]\nid = \"server\"\nname = \"dev\"\nhost = \"127.0.0.1\"\nport = 1\nidentity_files = []\nproxy_jump = []\n\n[[forwards]]\nid = \"rule\"\nname = \"web\"\nserver_id = \"server\"\nkind = \"local\"\nlisten = \"127.0.0.1:31992\"\ntarget = \"localhost:8080\"\ndesired_state = \"running\"\nconnection_mode = \"shared\"\nremote_cleanup = \"off\"\n"
+  },
+  {
+    "case": "historical_name_shadows_current_group",
+    "status": [
+      "new"
+    ],
+    "short_logs": [
+      "task",
+      "archived"
+    ],
+    "group_logs": [
+      "new"
+    ]
+  },
+  {
+    "case": "group_log_forms_differ",
+    "short_groups": [
+      "g",
+      "g",
+      "h"
+    ],
+    "explicit_groups": [
+      "h"
+    ]
+  },
+  {
+    "case": "server_follow_rename",
+    "before": {
+      "daemon_instance_id": "offline-4b1fbd32-5151-4118-bdef-3d634ca12212",
+      "event": {
+        "forward_id": "f39d2193-6c57-4973-beba-415216e96dec",
+        "message": "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+        "sequence": 1,
+        "timestamp_ms": 1789894269689
+      },
+      "forward_name": "web",
+      "group": null,
+      "server_id": "b45f26f5-1cb4-4104-8101-1e3961494491",
+      "server_name": "dev"
+    },
+    "after": null,
+    "still_running": true,
+    "retained_new": [
+      "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+      "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped.",
+      "1 forward(s) saved (running: 0, stopped: 1); daemon remains stopped."
+    ]
+  },
+  {
+    "case": "group_watch_rename",
+    "before": 1,
+    "after": [
+      0,
+      0
+    ],
+    "current": 1,
+    "still_running": true
+  }
+]

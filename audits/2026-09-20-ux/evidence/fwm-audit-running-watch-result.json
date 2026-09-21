@@ -1,0 +1,28 @@
+{
+  "case": "running_watch_transient_disconnect",
+  "requests": [
+    "ping",
+    "get_config",
+    "status",
+    "ping",
+    "get_config"
+  ],
+  "code": 5,
+  "stdout_updates": [
+    {
+      "config_revision": 0,
+      "daemon_instance_id": "fixture",
+      "daemon_running": true,
+      "forwards": [],
+      "warnings": []
+    }
+  ],
+  "stderr": {
+    "error": {
+      "code": "io_error",
+      "message": "exchanging daemon request: daemon closed without a response"
+    },
+    "ok": false
+  },
+  "new_independent_issue": false
+}

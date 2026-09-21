@@ -1,0 +1,14 @@
+[
+  {
+    "case": "watch_recovers_and_keeps_id_then_survives_deletion",
+    "passed": true
+  },
+  {
+    "case": "follow_rename_delete_and_reused_name_keeps_original_id",
+    "passed": true
+  },
+  {
+    "case": "malformed_unknown_zero_and_oversized_frames_close_without_mutating_or_crashing",
+    "passed": true
+  }
+]

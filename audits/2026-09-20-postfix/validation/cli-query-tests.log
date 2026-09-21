@@ -1,0 +1,8 @@
+test_initial_watch_outage_preserves_saved_rows_and_rejects_missing_selectors (__main__.Queries.test_initial_watch_outage_preserves_saved_rows_and_rejects_missing_selectors) ... ok
+test_mixed_configuration_and_snapshot_revision_is_rejected (__main__.Queries.test_mixed_configuration_and_snapshot_revision_is_rejected) ... ok
+test_real_daemon_maximum_batch_has_readable_full_and_selected_status (__main__.Queries.test_real_daemon_maximum_batch_has_readable_full_and_selected_status) ... ok
+
+----------------------------------------------------------------------
+Ran 3 tests in 0.959s
+
+OK

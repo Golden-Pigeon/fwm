@@ -1,0 +1,146 @@
+[
+  {
+    "option": "StrictHostKeyChecking",
+    "value": "true",
+    "ssh_exit": 0,
+    "ssh_values": [
+      "stricthostkeychecking true"
+    ],
+    "fwm_exit": 3,
+    "fwm": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH configuration: StrictHostKeyChecking may not disable explicit trust",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "option": "Compression",
+    "value": "false",
+    "ssh_exit": 255,
+    "ssh_values": [],
+    "fwm_exit": 3,
+    "fwm": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH configuration: compression=yes is unsupported",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "option": "ForwardAgent",
+    "value": "false",
+    "ssh_exit": 0,
+    "ssh_values": [
+      "forwardagent no"
+    ],
+    "fwm_exit": 3,
+    "fwm": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH configuration: forwardagent=yes is unsupported",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "option": "IdentitiesOnly",
+    "value": "potato",
+    "ssh_exit": 255,
+    "ssh_values": [],
+    "fwm_exit": 3,
+    "fwm": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "Connection refused (os error 61)",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  }
+]

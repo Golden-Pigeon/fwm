@@ -1,0 +1,4300 @@
+{
+  "scope": "production completion/output/configuration code with a memory-only client and paused Tokio clock; no sockets or processes launched by product code",
+  "passed": 34,
+  "completion_cases": 22,
+  "parser_cases": [
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all"
+      ],
+      "case": "no_wait",
+      "effective_wait_ms": null,
+      "passed": true,
+      "rejected": false
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--wait"
+      ],
+      "case": "wait_default",
+      "effective_wait_ms": 20000,
+      "passed": true,
+      "rejected": false
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        "500ms"
+      ],
+      "case": "timeout_implies_wait",
+      "effective_wait_ms": 500,
+      "passed": true,
+      "rejected": false
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--wait",
+        "--timeout",
+        "2m"
+      ],
+      "case": "timeout_overrides_default",
+      "effective_wait_ms": 120000,
+      "passed": true,
+      "rejected": false
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        "2"
+      ],
+      "case": "bare_duration_means_seconds",
+      "effective_wait_ms": 2000,
+      "passed": true,
+      "rejected": false
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        "3s"
+      ],
+      "case": "seconds",
+      "effective_wait_ms": 3000,
+      "passed": true,
+      "rejected": false
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        "0ms"
+      ],
+      "case": "zero_rejected",
+      "effective_wait_ms": null,
+      "passed": true,
+      "rejected": true
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        "-1s"
+      ],
+      "case": "negative_rejected",
+      "effective_wait_ms": null,
+      "passed": true,
+      "rejected": true
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        "2.5s"
+      ],
+      "case": "fraction_rejected",
+      "effective_wait_ms": null,
+      "passed": true,
+      "rejected": true
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        ""
+      ],
+      "case": "empty_rejected",
+      "effective_wait_ms": null,
+      "passed": true,
+      "rejected": true
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout"
+      ],
+      "case": "missing_value_rejected",
+      "effective_wait_ms": null,
+      "passed": true,
+      "rejected": true
+    },
+    {
+      "argv": [
+        "fwm",
+        "up",
+        "--all",
+        "--timeout",
+        "2h"
+      ],
+      "case": "unknown_unit_rejected",
+      "effective_wait_ms": null,
+      "passed": true,
+      "rejected": true
+    }
+  ],
+  "cases": [
+    {
+      "case": "port_replaced_during_wait",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:43000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:9090"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "port_replaced_during_wait",
+        "elapsed_virtual_ms": 101,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:43000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:9090"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 2
+      },
+      "passed": true
+    },
+    {
+      "case": "batch_member_port_replaced",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "listen": "127.0.0.1:42001",
+                "name": "web-1",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              },
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:43000",
+                "name": "web-1",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:9090"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "batch_member_port_replaced",
+        "elapsed_virtual_ms": 101,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:43000",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:9090"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 2
+      },
+      "passed": true
+    },
+    {
+      "case": "server_replaced_during_wait",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "beta",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "server_replaced_during_wait",
+        "elapsed_virtual_ms": 101,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-b",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 2
+      },
+      "passed": true
+    },
+    {
+      "case": "kind_replaced_during_wait",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "dynamic",
+                "last_error": null,
+                "listen": "127.0.0.1:43000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": null
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "kind_replaced_during_wait",
+        "elapsed_virtual_ms": 0,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "dynamic",
+              "listen": "127.0.0.1:43000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "server_profile_replaced_same_display",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "server_profile_replaced_same_display",
+        "elapsed_virtual_ms": 101,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "replacement.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 2
+      },
+      "passed": true
+    },
+    {
+      "case": "rename_only_control",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "renamed",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "rename_only_control",
+        "elapsed_virtual_ms": 0,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "renamed",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "unrelated_revision_control",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "unrelated_revision_control",
+        "elapsed_virtual_ms": 0,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "renamed-beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "batch_partial_then_all_ready",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "listen": "127.0.0.1:42001",
+                "name": "web-1",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 7,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              },
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42001",
+                "name": "web-1",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "batch_partial_then_all_ready",
+        "elapsed_virtual_ms": 101,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 2
+      },
+      "passed": true
+    },
+    {
+      "case": "batch_partial_timeout",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 7,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              },
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42001",
+                "name": "web-1",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "starting",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true
+        },
+        "error": {
+          "code": "wait_timeout",
+          "message": "Timed out waiting for all selected listeners. Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "batch_partial_timeout",
+        "elapsed_virtual_ms": 351,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 4
+      },
+      "passed": true
+    },
+    {
+      "case": "batch_attention_fails",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 7,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              },
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42001",
+                "name": "web-1",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "needs_attention",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true
+        },
+        "error": {
+          "code": "needs_attention",
+          "message": "A selected forward needs authentication, trust, or configuration changes. Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "batch_attention_fails",
+        "elapsed_virtual_ms": 0,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "batch_added_group_member_not_selected",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              },
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "listen": "127.0.0.1:42001",
+                "name": "web-1",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              },
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-1",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42001",
+                "name": "web-1",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "batch_added_group_member_not_selected",
+        "elapsed_virtual_ms": 0,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "new-member",
+              "kind": "local",
+              "listen": "127.0.0.1:45000",
+              "name": "new-member",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "selected_deleted_control",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": []
+          },
+          "saved": true
+        },
+        "error": {
+          "code": "wait_timeout",
+          "message": "Timed out waiting for all selected listeners. Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "selected_deleted_control",
+        "elapsed_virtual_ms": 351,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 4
+      },
+      "passed": true
+    },
+    {
+      "case": "selected_stopped_control",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 8,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "stopped",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "stopped",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true
+        },
+        "error": {
+          "code": "wait_timeout",
+          "message": "Timed out waiting for all selected listeners. Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "selected_stopped_control",
+        "elapsed_virtual_ms": 351,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "stopped",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 8,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 4
+      },
+      "passed": true
+    },
+    {
+      "case": "same_name_new_id_control",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 9,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": []
+          },
+          "saved": true
+        },
+        "error": {
+          "code": "wait_timeout",
+          "message": "Timed out waiting for all selected listeners. Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "same_name_new_id_control",
+        "elapsed_virtual_ms": 351,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "replacement-id",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 9,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 4
+      },
+      "passed": true
+    },
+    {
+      "case": "unselected_attention_ignored",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 7,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "unselected_attention_ignored",
+        "elapsed_virtual_ms": 0,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            },
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-1",
+              "kind": "local",
+              "listen": "127.0.0.1:42001",
+              "name": "web-1",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "restart_instance_control",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 7,
+            "daemon_instance_id": "restarted-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "restart_instance_control",
+        "elapsed_virtual_ms": 101,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 2
+      },
+      "passed": true
+    },
+    {
+      "case": "request_stall_deadline",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": null,
+          "saved": true
+        },
+        "error": {
+          "code": "wait_timeout",
+          "message": "Timed out waiting for all selected listeners. Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "request_stall_deadline",
+        "elapsed_virtual_ms": 351,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "request_slow_success_deadline",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": null,
+          "saved": true
+        },
+        "error": {
+          "code": "wait_timeout",
+          "message": "Timed out waiting for all selected listeners. Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "request_slow_success_deadline",
+        "elapsed_virtual_ms": 351,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "request_failure_preserves_last",
+      "response": {
+        "data": {
+          "ready": false,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 7,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "starting",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true
+        },
+        "error": {
+          "code": "wait_failed",
+          "message": "Could not query readiness: daemon_unavailable: memory fixture daemon restart gap Configuration is saved; background recovery continues for enabled rules."
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "request_failure_preserves_last",
+        "elapsed_virtual_ms": 101,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 2
+      },
+      "passed": true
+    },
+    {
+      "case": "startup_failure_reports_saved",
+      "response": {
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "ready": false,
+          "revision": 7,
+          "saved": true
+        },
+        "error": {
+          "code": "daemon_unavailable",
+          "message": "Configuration is saved, but the daemon could not start: daemon_unresponsive: memory fixture start failure"
+        },
+        "ok": false
+      },
+      "trace": {
+        "audit_case": "startup_failure_reports_saved",
+        "elapsed_virtual_ms": 1,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 0
+      },
+      "passed": true
+    },
+    {
+      "case": "startup_delay_outside_wait_budget",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon is running.",
+          "ready": true,
+          "revision": 7,
+          "runtime": {
+            "config_revision": 7,
+            "daemon_instance_id": "memory-daemon",
+            "forwards": [
+              {
+                "active_connections": 0,
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "last_error": null,
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "next_retry_unix_ms": null,
+                "retry_count": 0,
+                "server": "alpha",
+                "state": "established",
+                "target": "localhost:8080"
+              }
+            ]
+          },
+          "saved": true,
+          "state": "established"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "startup_delay_outside_wait_budget",
+        "elapsed_virtual_ms": 2001,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 1
+      },
+      "passed": true
+    },
+    {
+      "case": "no_wait_does_not_query_runtime",
+      "response": {
+        "api_version": 1,
+        "data": {
+          "config": {
+            "defaults": {
+              "retry": {
+                "connect_timeout_secs": 10,
+                "keepalive_interval_secs": 5,
+                "keepalive_max": 3,
+                "max_delay_secs": 30,
+                "stable_reset_secs": 60
+              }
+            },
+            "forwards": [
+              {
+                "connection_mode": "shared",
+                "desired_state": "running",
+                "group": "batch",
+                "id": "rule-0",
+                "kind": "local",
+                "listen": "127.0.0.1:42000",
+                "name": "web-0",
+                "remote_cleanup": "off",
+                "server_id": "server-a",
+                "target": "localhost:8080"
+              }
+            ],
+            "revision": 7,
+            "schema_version": 3,
+            "servers": [
+              {
+                "host": "alpha.invalid",
+                "id": "server-a",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "alpha",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              },
+              {
+                "host": "beta.invalid",
+                "id": "server-b",
+                "identity_files": [],
+                "known_hosts": null,
+                "name": "beta",
+                "port": null,
+                "proxy_jump": [],
+                "ssh_alias": null,
+                "ssh_config": null,
+                "user": null
+              }
+            ]
+          },
+          "message": "saved; daemon remains stopped.",
+          "ready": null,
+          "revision": 7,
+          "saved": true,
+          "state": "saved"
+        },
+        "error": null,
+        "ok": true,
+        "request_id": "accepted-mutation"
+      },
+      "trace": {
+        "audit_case": "no_wait_does_not_query_runtime",
+        "elapsed_virtual_ms": 0,
+        "latest_validated_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "original_config": {
+          "defaults": {
+            "retry": {
+              "connect_timeout_secs": 10,
+              "keepalive_interval_secs": 5,
+              "keepalive_max": 3,
+              "max_delay_secs": 30,
+              "stable_reset_secs": 60
+            }
+          },
+          "forwards": [
+            {
+              "connection_mode": "shared",
+              "desired_state": "running",
+              "group": "batch",
+              "id": "rule-0",
+              "kind": "local",
+              "listen": "127.0.0.1:42000",
+              "name": "web-0",
+              "remote_cleanup": "off",
+              "server_id": "server-a",
+              "target": "localhost:8080"
+            }
+          ],
+          "revision": 7,
+          "schema_version": 3,
+          "servers": [
+            {
+              "host": "alpha.invalid",
+              "id": "server-a",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "alpha",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            },
+            {
+              "host": "beta.invalid",
+              "id": "server-b",
+              "identity_files": [],
+              "known_hosts": null,
+              "name": "beta",
+              "port": null,
+              "proxy_jump": [],
+              "ssh_alias": null,
+              "ssh_config": null,
+              "user": null
+            }
+          ]
+        },
+        "status_queries": 0
+      },
+      "passed": true
+    }
+  ]
+}

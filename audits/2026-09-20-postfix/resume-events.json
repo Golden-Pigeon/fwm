@@ -1,0 +1,124 @@
+{
+  "assertions_passed": true,
+  "cases": [
+    {
+      "case": "move_unscoped",
+      "entry": {
+        "daemon_instance_id": "functional-audit",
+        "event": {
+          "forward_id": "rule",
+          "message": "old operation completed",
+          "sequence": 1,
+          "server_id": "b",
+          "timestamp_ms": 1789906627533
+        },
+        "forward_name": "new-rule",
+        "group": "new-group",
+        "server_id": "b",
+        "server_name": "beta"
+      },
+      "incorrect_scope": true,
+      "source_timestamp_preserved": false
+    },
+    {
+      "case": "move_explicit_server",
+      "entry": {
+        "daemon_instance_id": "functional-audit",
+        "event": {
+          "forward_id": "rule",
+          "message": "old operation completed",
+          "sequence": 1,
+          "server_id": "a",
+          "timestamp_ms": 1789906627533
+        },
+        "forward_name": "new-rule",
+        "group": "new-group",
+        "server_id": "b",
+        "server_name": "beta"
+      },
+      "incorrect_scope": true,
+      "source_timestamp_preserved": false
+    },
+    {
+      "case": "rename_group",
+      "entry": {
+        "daemon_instance_id": "functional-audit",
+        "event": {
+          "forward_id": "rule",
+          "message": "old operation completed",
+          "sequence": 1,
+          "server_id": "a",
+          "timestamp_ms": 1789906627534
+        },
+        "forward_name": "old-rule",
+        "group": "new-group",
+        "server_id": "a",
+        "server_name": "alpha"
+      },
+      "incorrect_scope": true,
+      "source_timestamp_preserved": false
+    },
+    {
+      "case": "delete",
+      "entry": {
+        "daemon_instance_id": "functional-audit",
+        "event": {
+          "forward_id": "rule",
+          "message": "old operation completed",
+          "sequence": 1,
+          "server_id": "a",
+          "timestamp_ms": 1789906627535
+        },
+        "forward_name": "old-rule",
+        "group": "old-group",
+        "server_id": "a",
+        "server_name": "alpha"
+      },
+      "incorrect_scope": false,
+      "source_timestamp_preserved": false
+    },
+    {
+      "case": "recreate_new_id",
+      "entry": {
+        "daemon_instance_id": "functional-audit",
+        "event": {
+          "forward_id": "rule",
+          "message": "old operation completed",
+          "sequence": 1,
+          "server_id": "a",
+          "timestamp_ms": 1789906627536
+        },
+        "forward_name": "old-rule",
+        "group": "old-group",
+        "server_id": "a",
+        "server_name": "alpha"
+      },
+      "incorrect_scope": false,
+      "source_timestamp_preserved": false
+    },
+    {
+      "case": "stale_generation",
+      "connection_error_emitted": {
+        "forward_id": "rule",
+        "message": "target connection failed: old generation completed late",
+        "sequence": 1,
+        "timestamp_ms": 1789906627536
+      },
+      "state_update_suppressed": true
+    },
+    {
+      "case": "deleted_generation",
+      "connection_error_emitted": {
+        "forward_id": "rule",
+        "message": "target connection failed: deleted operation completed late",
+        "sequence": 2,
+        "timestamp_ms": 1789906627537
+      }
+    }
+  ],
+  "scope": "unchanged EventJournal and Rule modules; no sockets, daemon, SSH, agent or system services",
+  "production_module_sha256": {
+    "crates/fwm/src/daemon/events.rs": "9a23feeffb83e1a226e88fab1f57744f358d04c2c4c86a780b2dba78ebc50529",
+    "crates/fwm-core/src/engine/state.rs": "a66502858e2a5505658b50e0cb2b24713fd2eba481b9a397b7ea862e0025cb85"
+  }
+}

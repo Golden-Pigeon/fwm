@@ -1,0 +1,6 @@
+{
+  "action": "add a different server profile with no rules",
+  "exit": 0,
+  "stdout": "requests_before_rename=1\nrequests_after_rename=2\nstates=[{\"id\":\"attention\",\"name\":\"attention\",\"group\":null,\"server\":\"fixture\",\"kind\":\"remote\",\"listen\":\"127.0.0.1:35002\",\"target\":\"127.0.0.1:1\",\"desired_state\":\"running\",\"state\":\"needs_attention\",\"retry_count\":0,\"next_retry_unix_ms\":null,\"last_error\":\"SSH authentication requires attention: fixture@127.0.0.1: no SSH agent is configured; load a valid key into ssh-agent or configure an unencrypted identity file\",\"active_connections\":0}]\ntrace=[\"auth offered\",\"auth offered\"]\n",
+  "stderr": ""
+}

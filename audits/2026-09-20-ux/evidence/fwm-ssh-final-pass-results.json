@@ -1,0 +1,162 @@
+[
+  {
+    "label": "uppercase Host matches",
+    "exit": 3,
+    "result": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "Connection refused (os error 61)",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "absolute Include preserves matching",
+    "exit": 3,
+    "result": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "Connection refused (os error 61)",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "unmatched unsupported option ignored",
+    "exit": 3,
+    "result": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "Connection refused (os error 61)",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "Match explicitly unsupported",
+    "exit": 3,
+    "result": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH configuration: /private/tmp/fwm-ssh-final-pass-2re2lul_/ssh_config:4: Match is unsupported; use Host blocks or a dedicated --ssh-config file",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  },
+  {
+    "label": "environment expansion explicitly unsupported",
+    "exit": 3,
+    "result": {
+      "data": {
+        "backend": "russh",
+        "checks": [
+          {
+            "kind": "configuration",
+            "ok": true
+          },
+          {
+            "error": "SSH configuration: SSH ${ENV} expansion is unsupported; use an explicit path",
+            "ok": false,
+            "server": "dev"
+          }
+        ],
+        "configuration": {
+          "applied_revision": 0,
+          "candidate_revision": 0,
+          "unapplied_changes": false,
+          "using_applied_snapshot": false,
+          "valid": true
+        }
+      },
+      "error": {
+        "code": "check_failed",
+        "message": "one or more server checks failed; see the diagnostic results below"
+      },
+      "ok": false
+    }
+  }
+]

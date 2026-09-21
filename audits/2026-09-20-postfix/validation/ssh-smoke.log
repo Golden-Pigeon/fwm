@@ -1,0 +1,17 @@
+PASS direct SSH alias, automatic naming and atomic server/rule creation
+PASS real OpenSSH: local / remote / SOCKS5 forwarding
+PASS rule/group restarts isolate sibling streams; retry reports skips; wait JSON is one final result
+PASS contextual hop trust uses the target database, remains explicit, and is idempotent
+PASS trust resumes blocked forwards, preserves stopped/healthy rules, rejects wrong fingerprints
+PASS interactive trust PTY yes/no, non-TTY/JSON refusal, fingerprint mismatch and idempotent trust
+PASS server restart and config reload re-resolve SSH aliases while other server streams survive
+PASS real stale sshd actively terminated/rebound; foreign manager and sibling TCP protected
+PASS normal stop releases ownership and up establishes a new verified session
+PASS unexpected helper death causes supervised session recovery
+PASS unrelated listener protected; automatic retry succeeds after its port is released
+PASS port lists/ranges, deduplication, atomic creation and L/R many-to-one traffic
+PASS add/remove remote rule and rename preserve sibling TCP stream
+PASS concurrent configuration revisions
+PASS blackhole recovery; detected after 20.0s; deleted rule stays deleted
+PASS invalid-config rollback and persistent manual stop across daemon restart
+PASS authentication doctor

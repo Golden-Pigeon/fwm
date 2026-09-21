@@ -1,0 +1,5 @@
+{
+  "exit": 0,
+  "stdout": "{\"actual_port\":60138,\"first_check_error\":\"unknown host key for 127.0.0.1: SHA256:MdC6H3foPAWP9Ea0IQQVGYTq55lfl2iIZecPG/hRNAE; inspect and explicitly trust this key first\",\"first_handler_port\":1,\"same_final_file_second_check_ok\":true,\"trace\":[\"auth offered\"]}\n",
+  "stderr": ""
+}

@@ -1,0 +1,323 @@
+[
+  {
+    "args": [
+      "add",
+      "web",
+      "--server",
+      "dev",
+      "--local",
+      "--port",
+      "32000",
+      "--disabled"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "add",
+      "batch",
+      "--server",
+      "dev",
+      "--remote",
+      "--src",
+      "32001-32002",
+      "--tgt",
+      "8080",
+      "--disabled"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "config",
+      "export"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "edit",
+      "web",
+      "--tgt",
+      "8081"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "edit",
+      "web",
+      "--group",
+      "batch"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "group",
+      "list"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "edit",
+      "batch",
+      "--rename",
+      "renamed"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "config",
+      "export"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "edit",
+      "renamed",
+      "--ungroup"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "group",
+      "list"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "edit",
+      "web",
+      "--group",
+      "solo"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "edit",
+      "web",
+      "--rename",
+      "simple"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "server",
+      "edit",
+      "dev",
+      "--rename",
+      "renamed-server"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "status",
+      "--server",
+      "renamed-server"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "logs",
+      "web",
+      "--tail",
+      "1000"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "config",
+      "export"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "add",
+      "--local",
+      "--port",
+      "32100",
+      "--disabled"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "invalid_arguments"
+  },
+  {
+    "args": [
+      "add",
+      "simple",
+      "--server",
+      "renamed-server",
+      "--local",
+      "--port",
+      "32100",
+      "--disabled"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "invalid_request"
+  },
+  {
+    "args": [
+      "edit",
+      "missing",
+      "--tgt",
+      "80"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "invalid_request"
+  },
+  {
+    "args": [
+      "status",
+      "missing"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "not_found"
+  },
+  {
+    "args": [
+      "remove",
+      "missing"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "not_found"
+  },
+  {
+    "args": [
+      "up",
+      "missing"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "invalid_request"
+  },
+  {
+    "args": [
+      "restart",
+      "--group",
+      "missing"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "invalid_request"
+  },
+  {
+    "args": [
+      "server",
+      "edit",
+      "missing",
+      "--user",
+      "u"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "invalid_request"
+  },
+  {
+    "args": [
+      "server",
+      "remove",
+      "missing"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "not_found"
+  },
+  {
+    "args": [
+      "add",
+      "--server",
+      "renamed-server",
+      "--local",
+      "--port",
+      "32100",
+      "--disabled",
+      "--timeout",
+      "1s"
+    ],
+    "exit": 2,
+    "single_json": true,
+    "error_code": "invalid_request"
+  },
+  {
+    "args": [
+      "config",
+      "export"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "args": [
+      "daemon",
+      "status"
+    ],
+    "exit": 0,
+    "single_json": true,
+    "error_code": null
+  },
+  {
+    "case": "api_replay_conflict_and_small_event_cursor",
+    "passed": true,
+    "status_fields": [
+      "config_revision",
+      "daemon_instance_id",
+      "forwards"
+    ],
+    "event_fields": [
+      "forward_id",
+      "message",
+      "sequence",
+      "timestamp_ms"
+    ]
+  }
+]

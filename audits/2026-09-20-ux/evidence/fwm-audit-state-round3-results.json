@@ -1,0 +1,45 @@
+[
+  {
+    "case": "server_events_unfilterable",
+    "all": [
+      {
+        "daemon_instance_id": "offline-7275cfdd-8589-4bf7-8a89-78f264269040",
+        "event": {
+          "forward_id": null,
+          "message": "server saved; daemon remains stopped.",
+          "sequence": 1,
+          "timestamp_ms": 1789894699659
+        },
+        "forward_name": null,
+        "group": null,
+        "server_id": null,
+        "server_name": null
+      },
+      {
+        "daemon_instance_id": "offline-2b112e12-3cd3-420e-a26f-58f66859fdc4",
+        "event": {
+          "forward_id": null,
+          "message": "server saved; daemon remains stopped.",
+          "sequence": 1,
+          "timestamp_ms": 1789894699676
+        },
+        "forward_name": null,
+        "group": null,
+        "server_id": null,
+        "server_name": null
+      }
+    ],
+    "filtered": []
+  },
+  {
+    "case": "final_mutation_matrix",
+    "noops": 3,
+    "invalid_atomic": 4,
+    "config_unchanged": true,
+    "daemon_stopped": true
+  },
+  {
+    "case": "valid_reload_and_queries",
+    "new_issues": 0
+  }
+]

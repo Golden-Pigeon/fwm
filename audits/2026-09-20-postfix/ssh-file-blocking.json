@@ -1,0 +1,120 @@
+{
+  "binary": "/workspace/fwm/target/release/fwm",
+  "sha256": "4b7e78e32fcdfc0b4b9cb55b3b4a8dca38b6f2b1059f972f3ca5b56b44d6b6db",
+  "configured_connect_timeout_secs": 1,
+  "forward_count": 0,
+  "foreground_pid": 42507,
+  "ping_before": {
+    "api_version": 1,
+    "request_id": "924ee8d2-2225-4150-96e5-aac282a14bb0",
+    "ok": true,
+    "data": {
+      "capabilities": [
+        "atomic_alias_add",
+        "verified_remote_cleanup",
+        "cli_ux_v3",
+        "cli_ux_v4",
+        "cli_ux_v5"
+      ],
+      "daemon_instance_id": "1bd9b210-21e2-420d-b5f0-0e4de773d6be",
+      "version": "0.1.0"
+    },
+    "error": null
+  },
+  "request": {
+    "api_version": 1,
+    "request_id": "45cf67af-921b-46e6-8f0a-b1dd81589764",
+    "expected_revision": 0,
+    "command": {
+      "method": "put_server",
+      "params": {
+        "server": {
+          "id": "bc890fe0-70df-40f3-b2c3-c3bfce4a7b53",
+          "name": "fifo-only",
+          "host": "127.0.0.1",
+          "port": 1,
+          "user": "fixture",
+          "ssh_config": "/private/tmp/fwm-fifo-audit-05b6hy_7/ssh_config.fifo"
+        }
+      }
+    }
+  },
+  "mutation_timed_out": true,
+  "ping_timed_out": true,
+  "seconds_before_fifo_release": 2.004340915940702,
+  "fifo_released": true,
+  "mutation_after_release": {
+    "api_version": 1,
+    "request_id": "45cf67af-921b-46e6-8f0a-b1dd81589764",
+    "ok": true,
+    "data": {
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 1,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "127.0.0.1",
+            "id": "bc890fe0-70df-40f3-b2c3-c3bfce4a7b53",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "fifo-only",
+            "port": 1,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-fifo-audit-05b6hy_7/ssh_config.fifo",
+            "user": "fixture"
+          }
+        ]
+      },
+      "message": "server saved",
+      "revision": 1
+    },
+    "error": null
+  },
+  "pending_ping_after_release": {
+    "api_version": 1,
+    "request_id": "8dba9513-e713-44c0-9649-a910f2e8bdbf",
+    "ok": true,
+    "data": {
+      "capabilities": [
+        "atomic_alias_add",
+        "verified_remote_cleanup",
+        "cli_ux_v3",
+        "cli_ux_v4",
+        "cli_ux_v5"
+      ],
+      "daemon_instance_id": "1bd9b210-21e2-420d-b5f0-0e4de773d6be",
+      "version": "0.1.0"
+    },
+    "error": null
+  },
+  "fresh_ping_after_release": {
+    "api_version": 1,
+    "request_id": "ea961a24-e01f-4a31-8810-abaca63320f0",
+    "ok": true,
+    "data": {
+      "capabilities": [
+        "atomic_alias_add",
+        "verified_remote_cleanup",
+        "cli_ux_v3",
+        "cli_ux_v4",
+        "cli_ux_v5"
+      ],
+      "daemon_instance_id": "1bd9b210-21e2-420d-b5f0-0e4de773d6be",
+      "version": "0.1.0"
+    },
+    "error": null
+  },
+  "foreground_returncode": 0,
+  "foreground_cleaned": true
+}

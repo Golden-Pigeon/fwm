@@ -1,0 +1,99 @@
+{
+  "request_ids": [
+    {
+      "method": "ping",
+      "id_length": 0,
+      "ok": false,
+      "error": {
+        "code": "invalid_request",
+        "message": "request_id must contain 1–128 bytes"
+      }
+    },
+    {
+      "method": "doctor",
+      "id_length": 0,
+      "ok": true,
+      "error": null
+    },
+    {
+      "method": "ping",
+      "id_length": 129,
+      "ok": false,
+      "error": {
+        "code": "invalid_request",
+        "message": "request_id must contain 1–128 bytes"
+      }
+    },
+    {
+      "method": "doctor",
+      "id_length": 129,
+      "ok": true,
+      "error": null
+    }
+  ],
+  "metadata_budgets": {
+    "server_id_length": 10000,
+    "save_ok": true,
+    "retained_server_logs": 0,
+    "log_warnings": [],
+    "live_server_events": 1,
+    "large_forward_save_ok": true,
+    "forward_id_length": 260500,
+    "runtime_state": "needs_attention",
+    "runtime_error_length": 7823,
+    "events_latest": 4,
+    "last_event_count": 0,
+    "next_sequence": 4,
+    "has_more": false,
+    "resync_required": false
+  },
+  "revision_race": {
+    "exit": 0,
+    "requests": [
+      "ping",
+      "get_config",
+      "status",
+      "get_config"
+    ],
+    "stdout": {
+      "config_revision": 2,
+      "daemon_instance_id": "mock",
+      "daemon_running": true,
+      "daemon_state": "running",
+      "forwards": [
+        {
+          "active_connections": 0,
+          "desired_state": "running",
+          "group": "old",
+          "id": "rule",
+          "kind": "local",
+          "last_error": null,
+          "listen": "127.0.0.1:31000",
+          "name": "web",
+          "next_retry_unix_ms": null,
+          "retry_count": 0,
+          "server": "dev",
+          "state": "established",
+          "target": "localhost:8080"
+        }
+      ],
+      "runtime_available": true,
+      "warnings": []
+    },
+    "stderr": ""
+  },
+  "huge_timeout": {
+    "exit": 0,
+    "requests": [
+      "ping",
+      "get_config",
+      "ping",
+      "ping",
+      "set_desired",
+      "ping",
+      "status"
+    ],
+    "stdout": "{\"api_version\":1,\"data\":{\"config\":{\"forwards\":[{\"connection_mode\":\"shared\",\"desired_state\":\"running\",\"group\":\"old\",\"id\":\"rule\",\"kind\":\"local\",\"listen\":\"127.0.0.1:31000\",\"name\":\"web\",\"remote_cleanup\":\"off\",\"server_id\":\"server\",\"target\":\"localhost:8080\"}],\"revision\":2,\"schema_version\":3,\"servers\":[{\"host\":\"127.0.0.1\",\"id\":\"server\",\"name\":\"dev\",\"port\":1,\"user\":\"fixture\"}]},\"message\":\"saved\",\"ready\":true,\"revision\":2,\"runtime\":{\"config_revision\":2,\"daemon_instance_id\":\"mock\",\"forwards\":[{\"active_connections\":0,\"desired_state\":\"running\",\"group\":\"old\",\"id\":\"rule\",\"kind\":\"local\",\"last_error\":null,\"listen\":\"127.0.0.1:31000\",\"name\":\"web\",\"next_retry_unix_ms\":null,\"retry_count\":0,\"server\":\"dev\",\"state\":\"established\",\"target\":\"localhost:8080\"}]},\"saved\":true,\"state\":\"established\"},\"error\":null,\"ok\":true,\"request_id\":\"aeaf235f-8555-43b5-af3c-d33f6de45756\"}\n",
+    "stderr": ""
+  }
+}

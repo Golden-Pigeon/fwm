@@ -1,0 +1,49 @@
+{
+  "cases": [
+    {
+      "cursor_fresh_count": 1,
+      "cursor_gap": false,
+      "highest_returned_sequence": 1,
+      "returned_count": 1,
+      "rotations_between_open_handles": 0,
+      "scope": "temporary files; production append/read and cursor; only scheduling hook added",
+      "sequence_regressions": [],
+      "stable_read_ordered": true,
+      "stable_tail_sequence": 1,
+      "tail_one_sequence": 1,
+      "warnings": []
+    },
+    {
+      "cursor_fresh_count": 490,
+      "cursor_gap": false,
+      "highest_returned_sequence": 490,
+      "returned_count": 490,
+      "rotations_between_open_handles": 1,
+      "scope": "temporary files; production append/read and cursor; only scheduling hook added",
+      "sequence_regressions": [],
+      "stable_read_ordered": true,
+      "stable_tail_sequence": 491,
+      "tail_one_sequence": 490,
+      "warnings": []
+    },
+    {
+      "cursor_fresh_count": 489,
+      "cursor_gap": true,
+      "highest_returned_sequence": 979,
+      "returned_count": 979,
+      "rotations_between_open_handles": 2,
+      "scope": "temporary files; production append/read and cursor; only scheduling hook added",
+      "sequence_regressions": [
+        [
+          979,
+          1
+        ]
+      ],
+      "stable_read_ordered": true,
+      "stable_tail_sequence": 980,
+      "tail_one_sequence": 490,
+      "warnings": []
+    }
+  ],
+  "storage_sha256": "26a875976fa2efce3d09a53d9360e5b2b1a8eab26db13916622dae2847df27f2"
+}

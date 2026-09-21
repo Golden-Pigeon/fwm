@@ -1,0 +1,153 @@
+[
+  {
+    "case": "include_scope",
+    "config": "Host audit\n Include /tmp/fwm-ssh-parser-audit-ccu1_j6k/included\n Port 23456\n User fixture\n",
+    "native_code": 0,
+    "native": [
+      "user fixture",
+      "hostname audit",
+      "port 23456",
+      "compression no",
+      "stricthostkeychecking ask",
+      "identityfile ~/.ssh/id_rsa",
+      "identityfile ~/.ssh/id_ecdsa",
+      "identityfile ~/.ssh/id_ecdsa_sk",
+      "identityfile ~/.ssh/id_ed25519",
+      "identityfile ~/.ssh/id_ed25519_sk",
+      "forwardagent no"
+    ],
+    "native_error": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n",
+    "fwm_code": 0,
+    "fwm": "ResolvedServer {\n    alias: \"audit\",\n    host: \"audit\",\n    user: \"fixture\",\n    port: 22,\n    identity_files: [\n        \"/home/fixture/.ssh/id_ed25519\",\n        \"/home/fixture/.ssh/id_ecdsa\",\n        \"/home/fixture/.ssh/id_rsa\",\n    ],\n    explicit_identity_files: false,\n    known_hosts: \"/home/fixture/.ssh/known_hosts\",\n    global_known_hosts: [\n        \"/etc/ssh/ssh_known_hosts\",\n        \"/etc/ssh/ssh_known_hosts2\",\n    ],\n    proxy_jump: [],\n    identity_agent: None,\n    identities_only: false,\n    host_key_alias: None,\n    ssh_config: \"/tmp/fwm-ssh-parser-audit-ccu1_j6k/include_scope\",\n}\n",
+    "fwm_error": ""
+  },
+  {
+    "case": "host_case",
+    "config": "Host AUDIT\n HostName 127.0.0.1\n User fixture\n Port 23456\n",
+    "native_code": 0,
+    "native": [
+      "user fixture",
+      "hostname audit",
+      "port 22",
+      "compression no",
+      "stricthostkeychecking ask",
+      "identityfile ~/.ssh/id_rsa",
+      "identityfile ~/.ssh/id_ecdsa",
+      "identityfile ~/.ssh/id_ecdsa_sk",
+      "identityfile ~/.ssh/id_ed25519",
+      "identityfile ~/.ssh/id_ed25519_sk",
+      "forwardagent no"
+    ],
+    "native_error": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n",
+    "fwm_code": 0,
+    "fwm": "ResolvedServer {\n    alias: \"audit\",\n    host: \"127.0.0.1\",\n    user: \"fixture\",\n    port: 23456,\n    identity_files: [\n        \"/home/fixture/.ssh/id_ed25519\",\n        \"/home/fixture/.ssh/id_ecdsa\",\n        \"/home/fixture/.ssh/id_rsa\",\n    ],\n    explicit_identity_files: false,\n    known_hosts: \"/home/fixture/.ssh/known_hosts\",\n    global_known_hosts: [\n        \"/etc/ssh/ssh_known_hosts\",\n        \"/etc/ssh/ssh_known_hosts2\",\n    ],\n    proxy_jump: [],\n    identity_agent: None,\n    identities_only: false,\n    host_key_alias: None,\n    ssh_config: \"/tmp/fwm-ssh-parser-audit-ccu1_j6k/host_case\",\n}\n",
+    "fwm_error": ""
+  },
+  {
+    "case": "forward_agent_first_value",
+    "config": "Host audit\n HostName 127.0.0.1\n ForwardAgent no\nHost *\n ForwardAgent yes\n",
+    "native_code": 0,
+    "native": [
+      "user fixture",
+      "hostname 127.0.0.1",
+      "port 22",
+      "compression no",
+      "stricthostkeychecking ask",
+      "identityfile ~/.ssh/id_rsa",
+      "identityfile ~/.ssh/id_ecdsa",
+      "identityfile ~/.ssh/id_ecdsa_sk",
+      "identityfile ~/.ssh/id_ed25519",
+      "identityfile ~/.ssh/id_ed25519_sk",
+      "forwardagent no"
+    ],
+    "native_error": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n",
+    "fwm_code": 2,
+    "fwm": "",
+    "fwm_error": "SSH configuration: forwardagent=yes is unsupported\n"
+  },
+  {
+    "case": "strict_host_first_value",
+    "config": "Host audit\n HostName 127.0.0.1\n StrictHostKeyChecking yes\nHost *\n StrictHostKeyChecking no\n",
+    "native_code": 0,
+    "native": [
+      "user fixture",
+      "hostname 127.0.0.1",
+      "port 22",
+      "compression no",
+      "stricthostkeychecking true",
+      "identityfile ~/.ssh/id_rsa",
+      "identityfile ~/.ssh/id_ecdsa",
+      "identityfile ~/.ssh/id_ecdsa_sk",
+      "identityfile ~/.ssh/id_ed25519",
+      "identityfile ~/.ssh/id_ed25519_sk",
+      "forwardagent no"
+    ],
+    "native_error": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n",
+    "fwm_code": 2,
+    "fwm": "",
+    "fwm_error": "SSH configuration: StrictHostKeyChecking may not disable explicit trust\n"
+  },
+  {
+    "case": "compression_first_value",
+    "config": "Host audit\n HostName 127.0.0.1\n Compression no\nHost *\n Compression yes\n",
+    "native_code": 0,
+    "native": [
+      "user fixture",
+      "hostname 127.0.0.1",
+      "port 22",
+      "compression no",
+      "stricthostkeychecking ask",
+      "identityfile ~/.ssh/id_rsa",
+      "identityfile ~/.ssh/id_ecdsa",
+      "identityfile ~/.ssh/id_ecdsa_sk",
+      "identityfile ~/.ssh/id_ed25519",
+      "identityfile ~/.ssh/id_ed25519_sk",
+      "forwardagent no"
+    ],
+    "native_error": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n",
+    "fwm_code": 2,
+    "fwm": "",
+    "fwm_error": "SSH configuration: compression=yes is unsupported\n"
+  },
+  {
+    "case": "agent_env_keyword",
+    "config": "Host audit\n HostName 127.0.0.1\n IdentityAgent $SSH_AUTH_SOCK\n",
+    "native_code": 0,
+    "native": [
+      "user fixture",
+      "hostname 127.0.0.1",
+      "port 22",
+      "compression no",
+      "stricthostkeychecking ask",
+      "identityagent $SSH_AUTH_SOCK",
+      "identityfile ~/.ssh/id_rsa",
+      "identityfile ~/.ssh/id_ecdsa",
+      "identityfile ~/.ssh/id_ecdsa_sk",
+      "identityfile ~/.ssh/id_ed25519",
+      "identityfile ~/.ssh/id_ed25519_sk",
+      "forwardagent no"
+    ],
+    "native_error": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n",
+    "fwm_code": 0,
+    "fwm": "ResolvedServer {\n    alias: \"audit\",\n    host: \"127.0.0.1\",\n    user: \"fixture\",\n    port: 22,\n    identity_files: [\n        \"/home/fixture/.ssh/id_ed25519\",\n        \"/home/fixture/.ssh/id_ecdsa\",\n        \"/home/fixture/.ssh/id_rsa\",\n    ],\n    explicit_identity_files: false,\n    known_hosts: \"/home/fixture/.ssh/known_hosts\",\n    global_known_hosts: [\n        \"/etc/ssh/ssh_known_hosts\",\n        \"/etc/ssh/ssh_known_hosts2\",\n    ],\n    proxy_jump: [],\n    identity_agent: Some(\n        \"/tmp/fwm-ssh-parser-audit-ccu1_j6k/$SSH_AUTH_SOCK\",\n    ),\n    identities_only: false,\n    host_key_alias: None,\n    ssh_config: \"/tmp/fwm-ssh-parser-audit-ccu1_j6k/agent_env_keyword\",\n}\n",
+    "fwm_error": ""
+  },
+  {
+    "case": "identity_windows_path",
+    "config": "Host audit\n HostName 127.0.0.1\n IdentityFile C:\\Users\\fixture\\key\n",
+    "native_code": 0,
+    "native": [
+      "user fixture",
+      "hostname 127.0.0.1",
+      "port 22",
+      "compression no",
+      "stricthostkeychecking ask",
+      "identityfile C:\\Users\\fixture\\key",
+      "forwardagent no"
+    ],
+    "native_error": "Pseudo-terminal will not be allocated because stdin is not a terminal.\n",
+    "fwm_code": 0,
+    "fwm": "ResolvedServer {\n    alias: \"audit\",\n    host: \"127.0.0.1\",\n    user: \"fixture\",\n    port: 22,\n    identity_files: [\n        \"/tmp/fwm-ssh-parser-audit-ccu1_j6k/C:Usersfixturekey\",\n    ],\n    explicit_identity_files: true,\n    known_hosts: \"/home/fixture/.ssh/known_hosts\",\n    global_known_hosts: [\n        \"/etc/ssh/ssh_known_hosts\",\n        \"/etc/ssh/ssh_known_hosts2\",\n    ],\n    proxy_jump: [],\n    identity_agent: None,\n    identities_only: false,\n    host_key_alias: None,\n    ssh_config: \"/tmp/fwm-ssh-parser-audit-ccu1_j6k/identity_windows_path\",\n}\n",
+    "fwm_error": ""
+  }
+]

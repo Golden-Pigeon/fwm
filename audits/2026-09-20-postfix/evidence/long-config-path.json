@@ -1,0 +1,8 @@
+{
+  "socket_path_bytes": 152,
+  "start_exit": 5,
+  "stdout": "",
+  "stderr": "{\"error\":{\"code\":\"daemon_unavailable\",\"message\":\"daemon_unavailable: daemon did not become ready; inspect /private/tmp/fwm-path-xst_1v3p/profile-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa/state/daemon.log\"},\"ok\":false}\n",
+  "daemon_log": "error: binding private daemon socket: path must be shorter than SUN_LEN\n",
+  "status": "{\"config_dir\":\"/private/tmp/fwm-path-xst_1v3p/profile-aaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaaa\",\"daemon_running\":false,\"daemon_state\":\"stopped\"}\n"
+}

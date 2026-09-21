@@ -1,0 +1,303 @@
+{
+  "cancel_and_restart": {
+    "active_count_zero_after_stop": true,
+    "local_clients_closed_on_stop": true,
+    "pending_open_after_first_stop": 1,
+    "pending_open_after_restart_and_one_new_client": 2,
+    "pending_open_after_transport_closed": 0,
+    "scope": "only two clients; demonstrates generations coexist, does not claim measured production capacity overrun"
+  },
+  "cancelled_remote_start": {
+    "active_count_returns_zero": true,
+    "application_payload_bytes": 0,
+    "attempts": 24,
+    "cancel_already_set_before_every_serve_remote": true,
+    "loopback_target_accepts_after_cancellation": 0,
+    "target_acceptor_on_two_worker_runtime": true,
+    "target_connect_futures_polled_after_cancellation": 10
+  },
+  "dynamic_failure": [
+    {
+      "permits_after_client_ended": 1,
+      "permits_after_transport_closed": 1,
+      "reply": [
+        5,
+        0,
+        5,
+        5,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "timeout": false
+    },
+    {
+      "permits_after_client_ended": 0,
+      "permits_after_transport_closed": 1,
+      "reply": [
+        5,
+        0,
+        5,
+        4,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ],
+      "timeout": true
+    }
+  ],
+  "dynamic_success_and_timeout": {
+    "handshake_timeout_permit_released": true,
+    "incomplete_handshake_opens_no_channel": true,
+    "incomplete_handshake_timeout_closes_client": true,
+    "pipelined_payload_preserved": true,
+    "remote_hostname_preserved": true,
+    "success_permit_released": true,
+    "success_reply_before_payload": true
+  },
+  "half_close": [
+    {
+      "client_half_closes_first": true,
+      "duplex_capacity": 64,
+      "permit_returned": true,
+      "request_bytes": 8192,
+      "response_bytes": 8192,
+      "shared_handle_open": true
+    },
+    {
+      "client_half_closes_first": false,
+      "duplex_capacity": 64,
+      "permit_returned": true,
+      "request_bytes": 8192,
+      "response_bytes": 8192,
+      "shared_handle_open": true
+    }
+  ],
+  "late_reply": {
+    "capacity_released": true,
+    "held_until_reply": true,
+    "late_stream_closed": true,
+    "shared_handle_open": true
+  },
+  "listener_target_failure": {
+    "active_count_zero": true,
+    "listener_released_on_stop": true,
+    "next_client_forwarded": true,
+    "shared_handle_open": true,
+    "target_failure_did_not_end_listener": true
+  },
+  "remote_target_failure": {
+    "active_count_released": true,
+    "channel_closed": true,
+    "error_event": "target connection failed: Connection refused (os error 61)",
+    "rule_remains_established": true
+  },
+  "remote_transfer_and_cancel": [
+    {
+      "active_count_zero": true,
+      "both_sides_closed": true,
+      "cancel_during_transfer": false,
+      "permit_returned": true
+    },
+    {
+      "active_count_zero": true,
+      "both_sides_closed": true,
+      "cancel_during_transfer": true,
+      "permit_returned": true
+    }
+  ],
+  "scope": "normal local TCP and memory duplex channel fixtures; production function logic; no SSH, authentication, remote helper, or real remote server",
+  "socks": [
+    {
+      "case": "ipv4",
+      "expected_endpoint": [
+        "127.0.0.1",
+        80
+      ],
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": []
+    },
+    {
+      "case": "domain",
+      "expected_endpoint": [
+        "example.org",
+        443
+      ],
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": []
+    },
+    {
+      "case": "ipv6",
+      "expected_endpoint": [
+        "::1",
+        80
+      ],
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": []
+    },
+    {
+      "case": "unsupported_command",
+      "expected_endpoint": null,
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": [
+        5,
+        7,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "case": "unsupported_address",
+      "expected_endpoint": null,
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": [
+        5,
+        8,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "case": "bad_reserved",
+      "expected_endpoint": null,
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": [
+        5,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "case": "zero_port",
+      "expected_endpoint": null,
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": [
+        5,
+        1,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "case": "empty_domain",
+      "expected_endpoint": null,
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": [
+        5,
+        8,
+        0,
+        1,
+        0,
+        0,
+        0,
+        0,
+        0,
+        0
+      ]
+    },
+    {
+      "case": "truncated_address",
+      "expected_endpoint": null,
+      "method_reply": [
+        5,
+        0
+      ],
+      "request_reply": []
+    },
+    {
+      "case": "no_acceptable_method",
+      "reply": [
+        5,
+        255
+      ]
+    }
+  ],
+  "exit_code": 0,
+  "stderr": "",
+  "temporary_source_adaptations": {
+    "channels.rs": [
+      "Replace only ChannelStream/client type import with in-memory adapter; russh errors stay real"
+    ],
+    "forward.rs": [
+      "Replace only ChannelStream/client type import with in-memory adapter; russh errors stay real",
+      "Expose private local/serve_local to sibling fixture; function bodies unchanged",
+      "Observe target-connect future polling with one atomic increment, then await the original Tokio TcpStream::connect with unchanged arguments"
+    ]
+  },
+  "libraries": {
+    "fwm_core": "/workspace/fwm/target/debug/deps/libfwm_core-d290914e6882c8f8.rlib",
+    "anyhow": "/workspace/fwm/target/debug/deps/libanyhow-6b7cad20ac8ad7e5.rlib",
+    "tokio": "/workspace/fwm/target/debug/deps/libtokio-87dc9c675008ecf5.rlib",
+    "tokio_util": "/workspace/fwm/target/debug/deps/libtokio_util-d7a51e000253ee7a.rlib",
+    "rand": "/workspace/fwm/target/debug/deps/librand-f19125605fb8e993.rlib",
+    "russh": "/workspace/fwm/target/debug/deps/librussh-8e372b8e706060f9.rlib",
+    "serde_json": "/workspace/fwm/target/debug/deps/libserde_json-4aaf3423c1ffbacd.rlib"
+  },
+  "source_sha256": {
+    "crates/fwm-core/src/engine/state.rs": "a66502858e2a5505658b50e0cb2b24713fd2eba481b9a397b7ea862e0025cb85",
+    "crates/fwm-core/src/engine/socks.rs": "890ece5765385ba384475b10e5598a9618dd44e81349208168bd9cf90696f11e",
+    "crates/fwm-core/src/engine/retry.rs": "f9f662c3581347c98c70d7e4f734b40edee1738e3350cf2499de494dc973596d",
+    "crates/fwm-core/src/engine/channels.rs": "d751fb6ccde8212f1fbc4b5572d31e923e931848dafdd2a2fa5ad9e3f8719baf",
+    "crates/fwm-core/src/engine/forward.rs": "93e9c02d92cf8fb3d26572e5c2e90d3dc3b5e4088935b211b1b6b3fcd6219a25"
+  },
+  "cancel_priority_counterfactual": false
+}

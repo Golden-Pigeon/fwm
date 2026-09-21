@@ -1,0 +1,27 @@
+    Finished `test` profile [unoptimized + debuginfo] target(s) in 0.38s
+     Running tests/audit_state_workflows.rs (target/debug/deps/audit_state_workflows-fb0ebb7ec40fb4dc)
+
+running 6 tests
+test damaged_snapshot_has_a_safe_explicit_recovery_command_with_backups ... ok
+test current_group_logs_cannot_be_shadowed_by_a_retired_rule_name ... ok
+test recovery_refuses_a_live_daemon_and_unreadable_intent_without_explicit_discard ... ok
+test server_changes_remain_filterable_offline_online_after_rename_and_removal ... ok
+test streaming::following_a_server_tracks_id_after_rename_without_changing_historical_labels ... ok
+test streaming::watch_survives_ipc_disconnect_and_resumes_live_updates ... ok
+
+test result: ok. 6 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 2.86s
+
+     Running tests/cli_streaming.rs (target/debug/deps/cli_streaming-1f443a1a27b2e5aa)
+
+running 8 tests
+test watch_rejects_initially_unknown_selectors_instead_of_waiting_forever ... ok
+test logs_follow_tail_zero_skips_old_events_deduplicates_warnings_and_exits_on_ctrl_c ... ok
+test offline_watch_reports_malformed_draft_in_json_then_recovers_when_repaired ... ok
+test server_status_watch_keeps_its_identity_after_server_rename_and_removal ... ok
+test named_status_watch_tracks_stable_id_across_rename_then_shows_deletion ... ok
+test logs_follow_old_name_survives_rename_deletion_restart_and_rotation_without_duplicates ... ok
+test group_status_watch_includes_new_members_and_survives_an_empty_group ... ok
+test status_watch_observes_offline_online_restart_rename_delete_and_ctrl_c ... ok
+
+test result: ok. 8 passed; 0 failed; 0 ignored; 0 measured; 0 filtered out; finished in 5.42s
+

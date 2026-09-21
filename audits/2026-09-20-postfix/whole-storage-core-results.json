@@ -1,0 +1,18 @@
+{
+  "scope": "pure local Store/FileOps fixtures; no daemon, API, SSH or services",
+  "returncode": 0,
+  "stdout": "\nrunning 4 tests\ntest store::deep_review::whole_legacy_schema_initialization_and_recovery_matrix ... CONTROL schema=1 prior_applied=false read_only_revision=5 recovered_revision=6 stable_ids=true stopped=true\nCONTROL schema=1 prior_applied=true read_only_revision=5 recovered_revision=6 stable_ids=true stopped=true\nCONTROL schema=2 prior_applied=false read_only_revision=5 recovered_revision=6 stable_ids=true stopped=true\nCONTROL schema=2 prior_applied=true read_only_revision=5 recovered_revision=6 stable_ids=true stopped=true\nok\ntest store::deep_review::whole_migration_preserves_pending_candidate_and_recovery_backs_up_originals ... CONTROL migration preserves pending edits; explicit recovery backs up exact bytes and stops rules\nok\ntest store::deep_review::whole_path_alias_and_final_file_symlink_keep_saved_identity ... CONTROL ancestor aliases share profile identity; final-file link target changes do not rewrite stored paths\nok\ntest store::deep_review::whole_readonly_identity_then_initialize_and_rename ... CONTROL read-only implicit IDs stable, no state created; initialized explicit ID survives rename\nok\n\ntest result: ok. 4 passed; 0 failed; 0 ignored; 0 measured; 25 filtered out; finished in 0.52s\n\n",
+  "stderr": "",
+  "source_sha256": {
+    "crates/fwm-core/src/store.rs": "1fd457d01a182e510b87df20cf6f197e738e2d6d1b502ba78d8eb21f6519fa38",
+    "crates/fwm-core/src/store/control/tests.rs": "74aeb8cd1b85567f3e74542f5de9c5b7235eefbaf83df6757ad7883a850efbe5",
+    "crates/fwm-core/src/store/control.rs": "95ae1a95c9279fce41727e801f10cb45c5e1c71ee0c7bf0319a9820319571dac",
+    "crates/fwm-core/src/store/failure_tests.rs": "8c33d7dc11f3c3f844e8eb898eae7459308cf0e9138eb6f1710bde5c50a494d3",
+    "crates/fwm-core/src/store/identity.rs": "694fbc2778b8f1abbb182345f4449312d699f5bd4f02b53831f083330e33311a",
+    "crates/fwm-core/src/store/io.rs": "222b46b2e6f75625342c16ee2ef5b813001c7bae9bd662ecedc51e9f7ced41fa",
+    "crates/fwm-core/src/store/migration_tests.rs": "09cacc545afdfc641c487de8da64ebb6333c68988a3f8f0a332481db959d6293",
+    "crates/fwm-core/src/store/recovery.rs": "2bea3286cc5c27138a63fcfbc862cbc9e26eb25e179ef6cc08838ea8066fc1f3",
+    "crates/fwm-core/src/store/recovery_tests.rs": "e33e34d2d479da1e16919ce99dfeb6b9dcf2af1a6e915c4811d832164aa58d5d"
+  },
+  "temporary_directory_cleaned": true
+}

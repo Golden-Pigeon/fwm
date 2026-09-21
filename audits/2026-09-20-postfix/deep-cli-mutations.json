@@ -1,0 +1,4292 @@
+{
+  "scope": "temporary offline stopped-only command sequences",
+  "passed": 96,
+  "failed": 0,
+  "cases": [
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "new_direct_server",
+      "args": [
+        "server",
+        "add",
+        "alpha",
+        "--host",
+        "alpha.invalid"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "second_direct_server",
+      "args": [
+        "server",
+        "add",
+        "beta",
+        "--host",
+        "beta.invalid"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "stopped_batch_deduplicates_ports",
+      "args": [
+        "add",
+        "batch",
+        "--server",
+        "alpha",
+        "--local",
+        "--port",
+        "35001-35002,35001",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 3,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "batch-35001",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:35001"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:35002"
+          }
+        ],
+        "revision": 3,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_target_edit_preserves_members_and_sources",
+      "args": [
+        "edit",
+        "batch",
+        "--tgt",
+        "8081"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "batch-35001",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_cannot_collapse_listeners",
+      "args": [
+        "edit",
+        "batch",
+        "--src",
+        "35003"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "listen addresses conflict within group \"batch\": batch-35001 and batch-35002; group members need distinct listening addresses to start together"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_edit_cannot_expand_members",
+      "args": [
+        "edit",
+        "batch",
+        "--port",
+        "35003-35004"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "expected one port between 1 and 65535, got \"35003-35004\""
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_rename_preserves_member_names_and_ids",
+      "args": [
+        "edit",
+        "batch",
+        "--rename",
+        "renamed"
+      ],
+      "exit": 0,
+      "revision": 5,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "renamed",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "batch-35001",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "renamed",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 5,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_rename_and_move_are_exclusive",
+      "args": [
+        "edit",
+        "renamed",
+        "--rename",
+        "again",
+        "--group",
+        "elsewhere"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "renaming a group cannot be combined with --group or --ungroup; use one operation at a time"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "single_rule_rename_and_move_is_valid",
+      "args": [
+        "edit",
+        "batch-35001",
+        "--rename",
+        "single",
+        "--group",
+        "other"
+      ],
+      "exit": 0,
+      "revision": 6,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "renamed",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 6,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_rename_cannot_merge_existing_group",
+      "args": [
+        "edit",
+        "renamed",
+        "--rename",
+        "other"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "group \"other\" already exists; use edit GROUP --group other to explicitly move its members"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "explicit_group_move_merges_members",
+      "args": [
+        "edit",
+        "renamed",
+        "--group",
+        "other"
+      ],
+      "exit": 0,
+      "revision": 7,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 7,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_move_to_existing_server_preserves_ids",
+      "args": [
+        "edit",
+        "other",
+        "--server",
+        "beta"
+      ],
+      "exit": 0,
+      "revision": 8,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 8,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "group_direction_change_sets_remote_defaults",
+      "args": [
+        "edit",
+        "other",
+        "--remote"
+      ],
+      "exit": 0,
+      "revision": 9,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "remote",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "verified",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "remote",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "verified",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 9,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "cleanup_off_and_explicit_shared_preserve_mapping",
+      "args": [
+        "edit",
+        "other",
+        "--remote-cleanup",
+        "off",
+        "--connection-mode",
+        "shared"
+      ],
+      "exit": 0,
+      "revision": 10,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "remote",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "remote",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 10,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "remote_to_local_clears_cleanup",
+      "args": [
+        "edit",
+        "other",
+        "--local"
+      ],
+      "exit": 0,
+      "revision": 11,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "other",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 11,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "local_cannot_enable_remote_cleanup",
+      "args": [
+        "edit",
+        "other",
+        "--remote-cleanup",
+        "verified"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "--remote-cleanup verified requires a remote forward; use --remote or --remote-cleanup off"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "ungroup_preserves_members",
+      "args": [
+        "edit",
+        "other",
+        "--ungroup"
+      ],
+      "exit": 0,
+      "revision": 12,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 12,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "rename_server_keeps_forward_server_ids",
+      "args": [
+        "server",
+        "edit",
+        "beta",
+        "--rename",
+        "production"
+      ],
+      "exit": 0,
+      "revision": 13,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "60810746-e304-4763-81bb-b048b09876d6",
+            "kind": "local",
+            "listen": "127.0.0.1:35001",
+            "name": "single",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "9f22073e-d4cf-45bb-b0d7-bab47597f74a",
+            "kind": "local",
+            "listen": "127.0.0.1:35002",
+            "name": "batch-35002",
+            "remote_cleanup": "off",
+            "server_id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "target": "localhost:8081"
+          }
+        ],
+        "revision": 13,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "production",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "cannot_remove_in_use_server",
+      "args": [
+        "server",
+        "remove",
+        "cbd909af-c12a-48ce-a224-0930873248dc"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "server_in_use",
+        "message": "server_in_use: remove this server's forwards before removing the server"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "remove_all_by_server_id",
+      "args": [
+        "remove",
+        "--server",
+        "cbd909af-c12a-48ce-a224-0930873248dc"
+      ],
+      "exit": 0,
+      "revision": 14,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 14,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "beta.invalid",
+            "id": "cbd909af-c12a-48ce-a224-0930873248dc",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "production",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "group_and_direction_sequences",
+      "case": "remove_now_empty_server_by_id",
+      "args": [
+        "server",
+        "remove",
+        "cbd909af-c12a-48ce-a224-0930873248dc"
+      ],
+      "exit": 0,
+      "revision": 15,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 15,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "alpha.invalid",
+            "id": "37cd5a2d-7bcd-4967-abd0-61a58f794240",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "cross_server_remote_group",
+      "case": "first_remote_member",
+      "args": [
+        "add",
+        "r1",
+        "--server",
+        "alpha",
+        "--remote",
+        "--port",
+        "36000",
+        "--group",
+        "pair",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "aac93344-69d9-47aa-abab-6e1e9da26248",
+            "kind": "remote",
+            "listen": "127.0.0.1:36000",
+            "name": "r1",
+            "remote_cleanup": "verified",
+            "server_id": "cde501c9-66d7-422a-b791-256ec022743b",
+            "target": "localhost:36000"
+          }
+        ],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "cde501c9-66d7-422a-b791-256ec022743b",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "alpha",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "cross_server_remote_group",
+      "case": "same_remote_port_on_other_server_allowed",
+      "args": [
+        "add",
+        "r2",
+        "--server",
+        "beta",
+        "--remote",
+        "--port",
+        "36000",
+        "--group",
+        "pair",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "aac93344-69d9-47aa-abab-6e1e9da26248",
+            "kind": "remote",
+            "listen": "127.0.0.1:36000",
+            "name": "r1",
+            "remote_cleanup": "verified",
+            "server_id": "cde501c9-66d7-422a-b791-256ec022743b",
+            "target": "localhost:36000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "6b638dbe-a572-4f6b-be0e-8ea62d75c247",
+            "kind": "remote",
+            "listen": "127.0.0.1:36000",
+            "name": "r2",
+            "remote_cleanup": "verified",
+            "server_id": "714562db-8835-4100-9f01-c003860e978e",
+            "target": "localhost:36000"
+          }
+        ],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "cde501c9-66d7-422a-b791-256ec022743b",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "alpha",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": null,
+            "id": "714562db-8835-4100-9f01-c003860e978e",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "beta",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "cross_server_remote_group",
+      "case": "moving_group_to_one_server_conflicts_atomically",
+      "args": [
+        "edit",
+        "pair",
+        "--server",
+        "newalias"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "listen addresses conflict within group \"pair\": r1 and r2; group members need distinct listening addresses to start together"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "cross_server_remote_group",
+      "case": "changing_group_to_local_conflicts_atomically",
+      "args": [
+        "edit",
+        "pair",
+        "--local"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "listen addresses conflict within group \"pair\": r1 and r2; group members need distinct listening addresses to start together"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "cross_server_remote_group",
+      "case": "member_source_edit_enables_later_group_move",
+      "args": [
+        "edit",
+        "r2",
+        "--src",
+        "36001"
+      ],
+      "exit": 0,
+      "revision": 3,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "aac93344-69d9-47aa-abab-6e1e9da26248",
+            "kind": "remote",
+            "listen": "127.0.0.1:36000",
+            "name": "r1",
+            "remote_cleanup": "verified",
+            "server_id": "cde501c9-66d7-422a-b791-256ec022743b",
+            "target": "localhost:36000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "6b638dbe-a572-4f6b-be0e-8ea62d75c247",
+            "kind": "remote",
+            "listen": "127.0.0.1:36001",
+            "name": "r2",
+            "remote_cleanup": "verified",
+            "server_id": "714562db-8835-4100-9f01-c003860e978e",
+            "target": "localhost:36000"
+          }
+        ],
+        "revision": 3,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "cde501c9-66d7-422a-b791-256ec022743b",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "alpha",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": null,
+            "id": "714562db-8835-4100-9f01-c003860e978e",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "beta",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "cross_server_remote_group",
+      "case": "move_group_to_new_alias_is_single_commit",
+      "args": [
+        "edit",
+        "pair",
+        "--server",
+        "newalias"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "aac93344-69d9-47aa-abab-6e1e9da26248",
+            "kind": "remote",
+            "listen": "127.0.0.1:36000",
+            "name": "r1",
+            "remote_cleanup": "verified",
+            "server_id": "f2eea8ad-a211-473a-8fd7-9f1c0c8dbbf9",
+            "target": "localhost:36000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "6b638dbe-a572-4f6b-be0e-8ea62d75c247",
+            "kind": "remote",
+            "listen": "127.0.0.1:36001",
+            "name": "r2",
+            "remote_cleanup": "verified",
+            "server_id": "f2eea8ad-a211-473a-8fd7-9f1c0c8dbbf9",
+            "target": "localhost:36000"
+          }
+        ],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "cde501c9-66d7-422a-b791-256ec022743b",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "alpha",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "alpha",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": null,
+            "id": "714562db-8835-4100-9f01-c003860e978e",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "beta",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": null,
+            "id": "f2eea8ad-a211-473a-8fd7-9f1c0c8dbbf9",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "newalias",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "newalias",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "cross_server_remote_group",
+      "case": "former_unused_server_can_be_removed",
+      "args": [
+        "server",
+        "remove",
+        "alpha"
+      ],
+      "exit": 0,
+      "revision": 5,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "aac93344-69d9-47aa-abab-6e1e9da26248",
+            "kind": "remote",
+            "listen": "127.0.0.1:36000",
+            "name": "r1",
+            "remote_cleanup": "verified",
+            "server_id": "f2eea8ad-a211-473a-8fd7-9f1c0c8dbbf9",
+            "target": "localhost:36000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "pair",
+            "id": "6b638dbe-a572-4f6b-be0e-8ea62d75c247",
+            "kind": "remote",
+            "listen": "127.0.0.1:36001",
+            "name": "r2",
+            "remote_cleanup": "verified",
+            "server_id": "f2eea8ad-a211-473a-8fd7-9f1c0c8dbbf9",
+            "target": "localhost:36000"
+          }
+        ],
+        "revision": 5,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "714562db-8835-4100-9f01-c003860e978e",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "beta",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "beta",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": null,
+            "id": "f2eea8ad-a211-473a-8fd7-9f1c0c8dbbf9",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "newalias",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "newalias",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "explicit_ipv6_mapping",
+      "args": [
+        "add",
+        "web",
+        "--server",
+        "dev",
+        "--local=[::1]:37000:[2001:db8::1]:8080",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "c3c517e6-22e5-44bf-8744-719278a38b9d",
+            "kind": "local",
+            "listen": "[::1]:37000",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "target": "[2001:db8::1]:8080"
+          }
+        ],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "dev",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "target_only_preserves_both_hosts",
+      "args": [
+        "edit",
+        "web",
+        "--tgt",
+        "8081"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "c3c517e6-22e5-44bf-8744-719278a38b9d",
+            "kind": "local",
+            "listen": "[::1]:37000",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "target": "[2001:db8::1]:8081"
+          }
+        ],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "dev",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "source_only_preserves_ipv6_hosts",
+      "args": [
+        "edit",
+        "web",
+        "--src",
+        "37001"
+      ],
+      "exit": 0,
+      "revision": 3,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "c3c517e6-22e5-44bf-8744-719278a38b9d",
+            "kind": "local",
+            "listen": "[::1]:37001",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "target": "[2001:db8::1]:8081"
+          }
+        ],
+        "revision": 3,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "dev",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "legacy_three_part_mapping_keeps_existing_bind",
+      "args": [
+        "edit",
+        "web",
+        "-R",
+        "37002:target.invalid:8082"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "c3c517e6-22e5-44bf-8744-719278a38b9d",
+            "kind": "remote",
+            "listen": "[::1]:37002",
+            "name": "web",
+            "remote_cleanup": "verified",
+            "server_id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "target": "target.invalid:8082"
+          }
+        ],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "dev",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "same_port_patch_keeps_target_host",
+      "args": [
+        "edit",
+        "web",
+        "--port",
+        "37003"
+      ],
+      "exit": 0,
+      "revision": 5,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "c3c517e6-22e5-44bf-8744-719278a38b9d",
+            "kind": "remote",
+            "listen": "[::1]:37003",
+            "name": "web",
+            "remote_cleanup": "verified",
+            "server_id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "target": "target.invalid:37003"
+          }
+        ],
+        "revision": 5,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "dev",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "switch_remote_to_dynamic_removes_target_and_cleanup",
+      "args": [
+        "edit",
+        "web",
+        "--dynamic",
+        "[::1]:37004"
+      ],
+      "exit": 0,
+      "revision": 6,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "c3c517e6-22e5-44bf-8744-719278a38b9d",
+            "kind": "dynamic",
+            "listen": "[::1]:37004",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "a33d9e71-b103-4254-bcf2-b61967a1ae35"
+          }
+        ],
+        "revision": 6,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "dev",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "dynamic_without_direction_rejects_target_patch",
+      "args": [
+        "edit",
+        "web",
+        "--tgt",
+        "8080"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "choose --local or --remote when using --port or --src/--tgt"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "dynamic_bare_local_requires_destination",
+      "args": [
+        "edit",
+        "web",
+        "--local"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "switching a SOCKS proxy to local/remote forwarding requires --tgt PORT"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "ipv6_and_dynamic_patch",
+      "case": "dynamic_to_local_keeps_bind_with_explicit_destination",
+      "args": [
+        "edit",
+        "web",
+        "--local",
+        "--tgt",
+        "8083"
+      ],
+      "exit": 0,
+      "revision": 7,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "c3c517e6-22e5-44bf-8744-719278a38b9d",
+            "kind": "local",
+            "listen": "[::1]:37004",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "target": "localhost:8083"
+          }
+        ],
+        "revision": 7,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "a33d9e71-b103-4254-bcf2-b61967a1ae35",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "dev",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "numeric_rule_name_with_explicit_ports",
+      "args": [
+        "add",
+        "--local",
+        "123",
+        "--server",
+        "456",
+        "--port",
+        "38000",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "092ffbbe-f832-4cf1-8b7a-fe36a996aaf4",
+            "kind": "local",
+            "listen": "127.0.0.1:38000",
+            "name": "123",
+            "remote_cleanup": "off",
+            "server_id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "target": "localhost:38000"
+          }
+        ],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "456",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "456",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "numeric_edit_name_after_direction_remains_name",
+      "args": [
+        "edit",
+        "--remote",
+        "123",
+        "--rename",
+        "789"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "092ffbbe-f832-4cf1-8b7a-fe36a996aaf4",
+            "kind": "remote",
+            "listen": "127.0.0.1:38000",
+            "name": "789",
+            "remote_cleanup": "verified",
+            "server_id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "target": "localhost:38000"
+          }
+        ],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "456",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "456",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "separated_scalar_before_later_name_is_spec",
+      "args": [
+        "edit",
+        "--local",
+        "38001",
+        "--server",
+        "456",
+        "789"
+      ],
+      "exit": 0,
+      "revision": 3,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "092ffbbe-f832-4cf1-8b7a-fe36a996aaf4",
+            "kind": "local",
+            "listen": "127.0.0.1:38001",
+            "name": "789",
+            "remote_cleanup": "off",
+            "server_id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "target": "localhost:38001"
+          }
+        ],
+        "revision": 3,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "456",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "456",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "numeric_name_before_legacy_scalar_spec",
+      "args": [
+        "edit",
+        "789",
+        "-R",
+        "38002"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "092ffbbe-f832-4cf1-8b7a-fe36a996aaf4",
+            "kind": "remote",
+            "listen": "127.0.0.1:38002",
+            "name": "789",
+            "remote_cleanup": "verified",
+            "server_id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "target": "localhost:38002"
+          }
+        ],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "456",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "456",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "attached_short_spec_with_global_flags",
+      "args": [
+        "edit",
+        "--json",
+        "-L38003:host.invalid:80",
+        "789"
+      ],
+      "exit": 0,
+      "revision": 5,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "092ffbbe-f832-4cf1-8b7a-fe36a996aaf4",
+            "kind": "local",
+            "listen": "127.0.0.1:38003",
+            "name": "789",
+            "remote_cleanup": "off",
+            "server_id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "target": "host.invalid:80"
+          }
+        ],
+        "revision": 5,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "57b0f0dd-f679-4051-9749-4e11eda15bb8",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "456",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "456",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "positional_and_named_add_names_are_exclusive",
+      "args": [
+        "add",
+        "pos",
+        "--name",
+        "opt",
+        "--server",
+        "456",
+        "--local",
+        "--port",
+        "38004",
+        "--disabled"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_arguments",
+        "message": "error: the argument '[NAME]' cannot be used with '--name <NAME>'\n\nUsage: fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src PORTS --tgt PORT\n       fwm add --server SERVER [OPTIONS] --dynamic PORT\n\nFor more information, try '--help'.\n"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "explicit_mapping_and_port_shorthand_are_exclusive",
+      "args": [
+        "edit",
+        "789",
+        "--local=38004:host.invalid:80",
+        "--src",
+        "38005"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "a --local/--remote value cannot be combined with --port or --src/--tgt; omit the direction's value"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "empty_group_rejected_without_mutation",
+      "args": [
+        "edit",
+        "789",
+        "--group",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "names must contain 1\u2013100 letters, numbers, dots, hyphens or underscores"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "empty_rename_rejected_without_mutation",
+      "args": [
+        "edit",
+        "789",
+        "--rename",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "names must contain 1\u2013100 letters, numbers, dots, hyphens or underscores"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "empty_server_rejected_without_mutation",
+      "args": [
+        "edit",
+        "789",
+        "--server",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "names must contain 1\u2013100 letters, numbers, dots, hyphens or underscores"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "numeric_names_and_option_order",
+      "case": "empty_port_rejected_without_mutation",
+      "args": [
+        "edit",
+        "789",
+        "--port",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "expected one port between 1 and 65535, got \"\""
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "profile_with_overrides",
+      "args": [
+        "server",
+        "add",
+        "dev",
+        "--host",
+        "dev.invalid",
+        "--user",
+        "alice",
+        "--port",
+        "2222",
+        "--identity",
+        "key-a",
+        "--identity",
+        "key-b",
+        "--ssh-config",
+        "ssh.conf",
+        "--known-hosts",
+        "hosts",
+        "--proxy-jump",
+        "jump-a,jump-b"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "92c91347-8a46-471e-82f5-557a19bcd05a",
+            "identity_files": [
+              "/private/tmp/fwm-deep-cli-v3qa4ln1/key-a",
+              "/private/tmp/fwm-deep-cli-v3qa4ln1/key-b"
+            ],
+            "known_hosts": "/private/tmp/fwm-deep-cli-v3qa4ln1/hosts",
+            "name": "dev",
+            "port": 2222,
+            "proxy_jump": [
+              "jump-a",
+              "jump-b"
+            ],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-deep-cli-v3qa4ln1/ssh.conf",
+            "user": "alice"
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "profile_unrelated_edit_preserves_all_overrides",
+      "args": [
+        "server",
+        "edit",
+        "dev",
+        "--rename",
+        "renamed"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "92c91347-8a46-471e-82f5-557a19bcd05a",
+            "identity_files": [
+              "/private/tmp/fwm-deep-cli-v3qa4ln1/key-a",
+              "/private/tmp/fwm-deep-cli-v3qa4ln1/key-b"
+            ],
+            "known_hosts": "/private/tmp/fwm-deep-cli-v3qa4ln1/hosts",
+            "name": "renamed",
+            "port": 2222,
+            "proxy_jump": [
+              "jump-a",
+              "jump-b"
+            ],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-deep-cli-v3qa4ln1/ssh.conf",
+            "user": "alice"
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "profile_identity_list_replaced_not_appended",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--identity",
+        "key-c"
+      ],
+      "exit": 0,
+      "revision": 3,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 3,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "92c91347-8a46-471e-82f5-557a19bcd05a",
+            "identity_files": [
+              "/private/tmp/fwm-deep-cli-v3qa4ln1/key-c"
+            ],
+            "known_hosts": "/private/tmp/fwm-deep-cli-v3qa4ln1/hosts",
+            "name": "renamed",
+            "port": 2222,
+            "proxy_jump": [
+              "jump-a",
+              "jump-b"
+            ],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-deep-cli-v3qa4ln1/ssh.conf",
+            "user": "alice"
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "profile_switch_to_alias_retains_other_overrides",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--ssh",
+        "some-alias"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "92c91347-8a46-471e-82f5-557a19bcd05a",
+            "identity_files": [
+              "/private/tmp/fwm-deep-cli-v3qa4ln1/key-c"
+            ],
+            "known_hosts": "/private/tmp/fwm-deep-cli-v3qa4ln1/hosts",
+            "name": "renamed",
+            "port": 2222,
+            "proxy_jump": [
+              "jump-a",
+              "jump-b"
+            ],
+            "ssh_alias": "some-alias",
+            "ssh_config": "/private/tmp/fwm-deep-cli-v3qa4ln1/ssh.conf",
+            "user": "alice"
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "profile_switch_to_host_clears_alias",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--host",
+        "other.invalid"
+      ],
+      "exit": 0,
+      "revision": 5,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 5,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "other.invalid",
+            "id": "92c91347-8a46-471e-82f5-557a19bcd05a",
+            "identity_files": [
+              "/private/tmp/fwm-deep-cli-v3qa4ln1/key-c"
+            ],
+            "known_hosts": "/private/tmp/fwm-deep-cli-v3qa4ln1/hosts",
+            "name": "renamed",
+            "port": 2222,
+            "proxy_jump": [
+              "jump-a",
+              "jump-b"
+            ],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-deep-cli-v3qa4ln1/ssh.conf",
+            "user": "alice"
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "unset_user_conflicts_with_explicit_value",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--unset",
+        "user",
+        "--user",
+        "bob"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "--user cannot be combined with --unset user"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "unset_port_conflicts_with_explicit_value",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--unset",
+        "port",
+        "--port",
+        "2200"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "--port cannot be combined with --unset port"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "unset_identity_conflicts_with_explicit_value",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--unset",
+        "identity",
+        "--identity",
+        "key-d"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "--identity cannot be combined with --unset identity"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "unset_ssh-config_conflicts_with_explicit_value",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--unset",
+        "ssh-config",
+        "--ssh-config",
+        "other.conf"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "--ssh-config cannot be combined with --unset ssh-config"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "unset_known-hosts_conflicts_with_explicit_value",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--unset",
+        "known-hosts",
+        "--known-hosts",
+        "other-hosts"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "--known-hosts cannot be combined with --unset known-hosts"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "unset_proxy-jump_conflicts_with_explicit_value",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--unset",
+        "proxy-jump",
+        "--proxy-jump",
+        "none"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "--proxy-jump cannot be combined with --unset proxy-jump"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "unset_multiple_fields_and_repeat",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--unset",
+        "user,port,identity",
+        "--unset",
+        "ssh-config,known-hosts,proxy-jump"
+      ],
+      "exit": 0,
+      "revision": 6,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 6,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "other.invalid",
+            "id": "92c91347-8a46-471e-82f5-557a19bcd05a",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "renamed",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "empty_profile_host_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--host",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "SSH host must not be empty or contain whitespace"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "empty_profile_ssh_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--ssh",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "SSH ssh_alias must not be empty or contain whitespace"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "empty_profile_user_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--user",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "SSH user must not be empty or contain whitespace"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "empty_profile_identity_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--identity",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_arguments",
+        "message": "error: a value is required for '--identity <IDENTITY_FILES>' but none was supplied\n\nFor more information, try '--help'.\n"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "empty_profile_ssh-config_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--ssh-config",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_arguments",
+        "message": "error: a value is required for '--ssh-config <SSH_CONFIG>' but none was supplied\n\nFor more information, try '--help'.\n"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "empty_profile_known-hosts_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--known-hosts",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_arguments",
+        "message": "error: a value is required for '--known-hosts <KNOWN_HOSTS>' but none was supplied\n\nFor more information, try '--help'.\n"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "empty_profile_proxy-jump_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--proxy-jump",
+        ""
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "SSH proxy_jump entries must be nonempty individual jump hosts"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "zero_server_port_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--port",
+        "0"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "SSH port must be positive"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "none_cannot_mix_with_jump",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--proxy-jump",
+        "none,jump"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "SSH proxy_jump 'none' cannot be combined with jump hosts"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "profile_replacement_and_unset",
+      "case": "two_profile_address_modes_rejected",
+      "args": [
+        "server",
+        "edit",
+        "renamed",
+        "--host",
+        "h.invalid",
+        "--ssh",
+        "alias"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_arguments",
+        "message": "error: the argument '--host <HOST>' cannot be used with '--ssh <SSH>'\n\nUsage: fwm server edit --host <HOST> <NAME>\n\nFor more information, try '--help'.\n"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "handwritten_defaults_and_identity",
+      "case": "initial_handwritten_export",
+      "args": [
+        "config",
+        "export"
+      ],
+      "exit": 0,
+      "passed": true
+    },
+    {
+      "fixture": "handwritten_defaults_and_identity",
+      "case": "repeat_handwritten_export",
+      "args": [
+        "config",
+        "export"
+      ],
+      "exit": 0,
+      "passed": true
+    },
+    {
+      "fixture": "handwritten_defaults_and_identity",
+      "case": "first_offline_edit_persists_stable_generated_identity",
+      "args": [
+        "edit",
+        "handwritten",
+        "--rename",
+        "persisted"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "ff253167-972a-5c84-b97a-a350535f7197",
+            "kind": "remote",
+            "listen": "127.0.0.1:39000",
+            "name": "persisted",
+            "remote_cleanup": "verified",
+            "server_id": "server-handwritten",
+            "target": "localhost:8000"
+          }
+        ],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "manual.invalid",
+            "id": "server-handwritten",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "manual",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "handwritten_defaults_and_identity",
+      "case": "noop_edit_does_not_increment_revision",
+      "args": [
+        "edit",
+        "persisted"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "ff253167-972a-5c84-b97a-a350535f7197",
+            "kind": "remote",
+            "listen": "127.0.0.1:39000",
+            "name": "persisted",
+            "remote_cleanup": "verified",
+            "server_id": "server-handwritten",
+            "target": "localhost:8000"
+          }
+        ],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "manual.invalid",
+            "id": "server-handwritten",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "manual",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "handwritten_defaults_and_identity",
+      "case": "saved_stopped_down_by_id",
+      "args": [
+        "down",
+        "ff253167-972a-5c84-b97a-a350535f7197"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "id": "ff253167-972a-5c84-b97a-a350535f7197",
+            "kind": "remote",
+            "listen": "127.0.0.1:39000",
+            "name": "persisted",
+            "remote_cleanup": "verified",
+            "server_id": "server-handwritten",
+            "target": "localhost:8000"
+          }
+        ],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "manual.invalid",
+            "id": "server-handwritten",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "manual",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "create_server_for_id_selection",
+      "args": [
+        "server",
+        "add",
+        "dev",
+        "--host",
+        "dev.invalid"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "add_by_existing_server_id_does_not_create_profile",
+      "args": [
+        "add",
+        "web",
+        "--server",
+        "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+        "--local=0.0.0.0:40000:host.invalid:80",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+            "kind": "local",
+            "listen": "0.0.0.0:40000",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "target": "host.invalid:80"
+          }
+        ],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "rule_name_cannot_shadow_existing_rule_id",
+      "args": [
+        "add",
+        "--name",
+        "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+        "--server",
+        "otheralias",
+        "--local",
+        "--port",
+        "40001",
+        "--disabled"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "forward \"b31bc579-12cf-4713-99fd-c2f90ad0e917\" already exists; use `fwm edit` or choose another --name"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "group_name_cannot_shadow_rule_id",
+      "args": [
+        "edit",
+        "web",
+        "--group",
+        "b31bc579-12cf-4713-99fd-c2f90ad0e917"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "group name \"b31bc579-12cf-4713-99fd-c2f90ad0e917\" conflicts with a forward ID (name \"web\"); choose a different group name, or repair the group in config.toml without changing forward IDs"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "server_name_cannot_shadow_existing_server_id",
+      "args": [
+        "server",
+        "add",
+        "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+        "--host",
+        "other.invalid"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "server \"88c0b22a-e00a-404f-aacf-277b03ea40f5\" already exists"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "stopped_ungrouped_overlapping_alternative_is_valid",
+      "args": [
+        "add",
+        "socks",
+        "--server",
+        "dev",
+        "--dynamic",
+        "127.0.0.1:40000",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 3,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+            "kind": "local",
+            "listen": "0.0.0.0:40000",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "target": "host.invalid:80"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "44365bae-a22f-4b51-930c-b63527bdbc8b",
+            "kind": "dynamic",
+            "listen": "127.0.0.1:40000",
+            "name": "socks",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5"
+          }
+        ],
+        "revision": 3,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "group_first_stopped_member",
+      "args": [
+        "edit",
+        "web",
+        "--group",
+        "batch"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+            "kind": "local",
+            "listen": "0.0.0.0:40000",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "target": "host.invalid:80"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "44365bae-a22f-4b51-930c-b63527bdbc8b",
+            "kind": "dynamic",
+            "listen": "127.0.0.1:40000",
+            "name": "socks",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5"
+          }
+        ],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "joining_overlapping_stopped_local_and_dynamic_group_rejected",
+      "args": [
+        "edit",
+        "socks",
+        "--group",
+        "batch"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "listen addresses conflict within group \"batch\": web and socks; group members need distinct listening addresses to start together"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "move_socks_then_join_group",
+      "args": [
+        "edit",
+        "socks",
+        "--dynamic",
+        "127.0.0.1:40001",
+        "--group",
+        "batch"
+      ],
+      "exit": 0,
+      "revision": 5,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+            "kind": "local",
+            "listen": "0.0.0.0:40000",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "target": "host.invalid:80"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "44365bae-a22f-4b51-930c-b63527bdbc8b",
+            "kind": "dynamic",
+            "listen": "127.0.0.1:40001",
+            "name": "socks",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5"
+          }
+        ],
+        "revision": 5,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "new_profile_not_saved_if_group_name_empty",
+      "args": [
+        "add",
+        "--server",
+        "never-added",
+        "--local",
+        "--port",
+        "40002",
+        "--group",
+        "",
+        "--disabled"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "names must contain 1\u2013100 letters, numbers, dots, hyphens or underscores"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "new_profile_not_saved_if_generated_batch_names_too_long",
+      "args": [
+        "add",
+        "--server",
+        "never-added",
+        "--local",
+        "--port",
+        "40002-40003",
+        "--name",
+        "nnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnnn",
+        "--disabled"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "names must contain 1\u2013100 letters, numbers, dots, hyphens or underscores"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "same_group_rename_is_noop",
+      "args": [
+        "edit",
+        "batch",
+        "--rename",
+        "batch"
+      ],
+      "exit": 0,
+      "revision": 5,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+            "kind": "local",
+            "listen": "0.0.0.0:40000",
+            "name": "web",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "target": "host.invalid:80"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "44365bae-a22f-4b51-930c-b63527bdbc8b",
+            "kind": "dynamic",
+            "listen": "127.0.0.1:40001",
+            "name": "socks",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5"
+          }
+        ],
+        "revision": 5,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "edit_by_rule_id_keeps_identity",
+      "args": [
+        "edit",
+        "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+        "--rename",
+        "renamed-web"
+      ],
+      "exit": 0,
+      "revision": 6,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "b31bc579-12cf-4713-99fd-c2f90ad0e917",
+            "kind": "local",
+            "listen": "0.0.0.0:40000",
+            "name": "renamed-web",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "target": "host.invalid:80"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "44365bae-a22f-4b51-930c-b63527bdbc8b",
+            "kind": "dynamic",
+            "listen": "127.0.0.1:40001",
+            "name": "socks",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5"
+          }
+        ],
+        "revision": 6,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "remove_individual_id_keeps_other_group_member",
+      "args": [
+        "remove",
+        "b31bc579-12cf-4713-99fd-c2f90ad0e917"
+      ],
+      "exit": 0,
+      "revision": 7,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "group": "batch",
+            "id": "44365bae-a22f-4b51-930c-b63527bdbc8b",
+            "kind": "dynamic",
+            "listen": "127.0.0.1:40001",
+            "name": "socks",
+            "remote_cleanup": "off",
+            "server_id": "88c0b22a-e00a-404f-aacf-277b03ea40f5"
+          }
+        ],
+        "revision": 7,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "name_identity_and_stopped_listener_boundaries",
+      "case": "remove_last_group_member_dissolves_group",
+      "args": [
+        "remove",
+        "--group",
+        "batch"
+      ],
+      "exit": 0,
+      "revision": 8,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [],
+        "revision": 8,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": "dev.invalid",
+            "id": "88c0b22a-e00a-404f-aacf-277b03ea40f5",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "dev",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "unicode_and_path_equivalence_controls",
+      "case": "long_unicode_server_auto_names_stay_valid",
+      "args": [
+        "add",
+        "--server",
+        "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+        "--remote",
+        "--port",
+        "41000-41001",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 1,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "b054ca2e-6c39-4504-ba40-fbc0fccb5846",
+            "kind": "remote",
+            "listen": "127.0.0.1:41000",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41000",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "2b902935-9da4-48ff-9e29-792a4d6fd901",
+            "kind": "remote",
+            "listen": "127.0.0.1:41001",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41001",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41001"
+          }
+        ],
+        "revision": 1,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "unicode_and_path_equivalence_controls",
+      "case": "auto_group_is_stable_across_subsequent_batches",
+      "args": [
+        "add",
+        "--server",
+        "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+        "--remote",
+        "--port",
+        "41002-41003",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 2,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "b054ca2e-6c39-4504-ba40-fbc0fccb5846",
+            "kind": "remote",
+            "listen": "127.0.0.1:41000",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41000",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "2b902935-9da4-48ff-9e29-792a4d6fd901",
+            "kind": "remote",
+            "listen": "127.0.0.1:41001",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41001",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41001"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "aeb845c6-ec22-46e5-b354-4f7febb758cf",
+            "kind": "remote",
+            "listen": "127.0.0.1:41002",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41002",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41002"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "6314ec92-a0e3-4f0a-a02d-fa9c710cc344",
+            "kind": "remote",
+            "listen": "127.0.0.1:41003",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41003",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41003"
+          }
+        ],
+        "revision": 2,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "ssh_config": null,
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "unicode_and_path_equivalence_controls",
+      "case": "profile_relative_path_is_saved_against_cli_cwd",
+      "args": [
+        "server",
+        "add",
+        "path-profile",
+        "--host",
+        "path.invalid",
+        "--ssh-config",
+        "ssh.conf"
+      ],
+      "exit": 0,
+      "revision": 3,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "b054ca2e-6c39-4504-ba40-fbc0fccb5846",
+            "kind": "remote",
+            "listen": "127.0.0.1:41000",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41000",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "2b902935-9da4-48ff-9e29-792a4d6fd901",
+            "kind": "remote",
+            "listen": "127.0.0.1:41001",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41001",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41001"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "aeb845c6-ec22-46e5-b354-4f7febb758cf",
+            "kind": "remote",
+            "listen": "127.0.0.1:41002",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41002",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41002"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "6314ec92-a0e3-4f0a-a02d-fa9c710cc344",
+            "kind": "remote",
+            "listen": "127.0.0.1:41003",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41003",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41003"
+          }
+        ],
+        "revision": 3,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "path.invalid",
+            "id": "ed73fab8-5c62-47c5-a319-4aef34853132",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "path-profile",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-deep-cli-3a81y1l9/ssh.conf",
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "unicode_and_path_equivalence_controls",
+      "case": "equivalent_absolute_path_can_reuse_profile",
+      "args": [
+        "add",
+        "absolute-path",
+        "--server",
+        "path-profile",
+        "--ssh-config",
+        "/private/tmp/fwm-deep-cli-3a81y1l9/ssh.conf",
+        "--local",
+        "--port",
+        "41100",
+        "--disabled"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "b054ca2e-6c39-4504-ba40-fbc0fccb5846",
+            "kind": "remote",
+            "listen": "127.0.0.1:41000",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41000",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "2b902935-9da4-48ff-9e29-792a4d6fd901",
+            "kind": "remote",
+            "listen": "127.0.0.1:41001",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41001",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41001"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "aeb845c6-ec22-46e5-b354-4f7febb758cf",
+            "kind": "remote",
+            "listen": "127.0.0.1:41002",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41002",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41002"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "6314ec92-a0e3-4f0a-a02d-fa9c710cc344",
+            "kind": "remote",
+            "listen": "127.0.0.1:41003",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41003",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41003"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "3d5edeae-1bfd-4d29-bf8f-992b26fa4f6c",
+            "kind": "local",
+            "listen": "127.0.0.1:41100",
+            "name": "absolute-path",
+            "remote_cleanup": "off",
+            "server_id": "ed73fab8-5c62-47c5-a319-4aef34853132",
+            "target": "localhost:41100"
+          }
+        ],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "path.invalid",
+            "id": "ed73fab8-5c62-47c5-a319-4aef34853132",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "path-profile",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-deep-cli-3a81y1l9/ssh.conf",
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "unicode_and_path_equivalence_controls",
+      "case": "equivalent_dot_relative_path_can_reuse_profile",
+      "args": [
+        "edit",
+        "absolute-path",
+        "--server",
+        "path-profile",
+        "--ssh-config",
+        "./ssh.conf"
+      ],
+      "exit": 0,
+      "revision": 4,
+      "config": {
+        "defaults": {
+          "retry": {
+            "connect_timeout_secs": 10,
+            "keepalive_interval_secs": 5,
+            "keepalive_max": 3,
+            "max_delay_secs": 30,
+            "stable_reset_secs": 60
+          }
+        },
+        "forwards": [
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "b054ca2e-6c39-4504-ba40-fbc0fccb5846",
+            "kind": "remote",
+            "listen": "127.0.0.1:41000",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41000",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41000"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "2b902935-9da4-48ff-9e29-792a4d6fd901",
+            "kind": "remote",
+            "listen": "127.0.0.1:41001",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41001",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41001"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "aeb845c6-ec22-46e5-b354-4f7febb758cf",
+            "kind": "remote",
+            "listen": "127.0.0.1:41002",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41002",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41002"
+          },
+          {
+            "connection_mode": "dedicated",
+            "desired_state": "stopped",
+            "group": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-bb524a6e3b449f7d-remote",
+            "id": "6314ec92-a0e3-4f0a-a02d-fa9c710cc344",
+            "kind": "remote",
+            "listen": "127.0.0.1:41003",
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d-remote-41003",
+            "remote_cleanup": "verified",
+            "server_id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "target": "localhost:41003"
+          },
+          {
+            "connection_mode": "shared",
+            "desired_state": "stopped",
+            "id": "3d5edeae-1bfd-4d29-bf8f-992b26fa4f6c",
+            "kind": "local",
+            "listen": "127.0.0.1:41100",
+            "name": "absolute-path",
+            "remote_cleanup": "off",
+            "server_id": "ed73fab8-5c62-47c5-a319-4aef34853132",
+            "target": "localhost:41100"
+          }
+        ],
+        "revision": 4,
+        "schema_version": 3,
+        "servers": [
+          {
+            "host": null,
+            "id": "46d1a821-36c8-4107-adf8-4c451e9d6ef2",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": "\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u670d\u7532",
+            "ssh_config": null,
+            "user": null
+          },
+          {
+            "host": "path.invalid",
+            "id": "ed73fab8-5c62-47c5-a319-4aef34853132",
+            "identity_files": [],
+            "known_hosts": null,
+            "name": "path-profile",
+            "port": null,
+            "proxy_jump": [],
+            "ssh_alias": null,
+            "ssh_config": "/private/tmp/fwm-deep-cli-3a81y1l9/ssh.conf",
+            "user": null
+          }
+        ]
+      },
+      "passed": true
+    },
+    {
+      "fixture": "unicode_and_path_equivalence_controls",
+      "case": "different_config_path_does_not_silently_replace_profile",
+      "args": [
+        "edit",
+        "absolute-path",
+        "--server",
+        "path-profile",
+        "--ssh-config",
+        "other.conf"
+      ],
+      "exit": 2,
+      "error": {
+        "code": "invalid_request",
+        "message": "server \"path-profile\" is already configured with a different SSH config; --ssh-config only configures new aliases (use `fwm server edit NAME --ssh-config PATH` to change it)"
+      },
+      "toml_unchanged": true,
+      "passed": true
+    }
+  ]
+}

@@ -1,0 +1,27 @@
+#compdef fwm
+# Source after compinit, or put this file in an fpath directory before compinit.
+
+_fwm() {
+    emulate -L zsh
+    local -a completion_words values directories
+    local candidate
+    completion_words=("${(@Q)words}")
+    completion_words[CURRENT]=${(Q)PREFIX}
+    while IFS= read -r candidate; do
+        [[ -n $candidate ]] || continue
+        if [[ $candidate == */ ]]; then
+            directories+=("$candidate")
+        else
+            values+=("$candidate")
+        fi
+    done < <("${completion_words[1]}" __complete "$((CURRENT - 1))" -- "${completion_words[@]}" 2>/dev/null)
+    (( ${#values} )) && compadd -a values
+    (( ${#directories} )) && compadd -S '' -a directories
+    return 0
+}
+
+if [[ ${zsh_eval_context[-1]} == file ]]; then
+    (( $+functions[compdef] )) && compdef _fwm fwm
+else
+    _fwm "$@"
+fi

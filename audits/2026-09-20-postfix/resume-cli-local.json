@@ -1,0 +1,225 @@
+{
+  "scope": "read-only CLI over temporary saved config/history; no service or network fixtures",
+  "binary": "/workspace/fwm/target/debug/fwm",
+  "passed": 17,
+  "failed": 0,
+  "fixture_files_unchanged": true,
+  "daemon_socket_created": false,
+  "cases": [
+    {
+      "case": "current_rule_name_over_reused_historical_name",
+      "args": [
+        "logs",
+        "web"
+      ],
+      "exit": 0,
+      "sequences": [
+        2,
+        3
+      ],
+      "passed": true
+    },
+    {
+      "case": "historical_rule_name_tracks_stable_id",
+      "args": [
+        "logs",
+        "earlier-web"
+      ],
+      "exit": 0,
+      "sequences": [
+        2,
+        3
+      ],
+      "passed": true
+    },
+    {
+      "case": "retired_rule_id_selects_retained_history",
+      "args": [
+        "logs",
+        "rule-retired"
+      ],
+      "exit": 0,
+      "sequences": [
+        1
+      ],
+      "passed": true
+    },
+    {
+      "case": "current_group_shorthand_uses_event_time_membership",
+      "args": [
+        "logs",
+        "batch"
+      ],
+      "exit": 0,
+      "sequences": [
+        3,
+        4
+      ],
+      "passed": true
+    },
+    {
+      "case": "explicit_group_matches_shorthand",
+      "args": [
+        "logs",
+        "--group",
+        "batch"
+      ],
+      "exit": 0,
+      "sequences": [
+        3,
+        4
+      ],
+      "passed": true
+    },
+    {
+      "case": "historical_group_remains_queryable",
+      "args": [
+        "logs",
+        "old"
+      ],
+      "exit": 0,
+      "sequences": [
+        1,
+        2
+      ],
+      "passed": true
+    },
+    {
+      "case": "current_server_name_over_reused_historical_name",
+      "args": [
+        "logs",
+        "--server",
+        "dev"
+      ],
+      "exit": 0,
+      "sequences": [
+        2,
+        3,
+        4,
+        5,
+        6
+      ],
+      "passed": true
+    },
+    {
+      "case": "retired_server_id_selects_retained_history",
+      "args": [
+        "logs",
+        "--server",
+        "server-retired"
+      ],
+      "exit": 0,
+      "sequences": [
+        1
+      ],
+      "passed": true
+    },
+    {
+      "case": "tail_applies_after_filter",
+      "args": [
+        "logs",
+        "--group",
+        "batch",
+        "--tail",
+        "1"
+      ],
+      "exit": 0,
+      "sequences": [
+        4
+      ],
+      "passed": true
+    },
+    {
+      "case": "tail_zero_returns_no_existing_records",
+      "args": [
+        "logs",
+        "--tail",
+        "0"
+      ],
+      "exit": 0,
+      "sequences": [],
+      "passed": true
+    },
+    {
+      "case": "missing_history_selector_is_empty_success",
+      "args": [
+        "logs",
+        "missing"
+      ],
+      "exit": 0,
+      "sequences": [],
+      "passed": true
+    },
+    {
+      "case": "offline_status_preserves_saved_rule",
+      "args": [
+        "status",
+        "web"
+      ],
+      "exit": 0,
+      "names": [
+        "web"
+      ],
+      "passed": true
+    },
+    {
+      "case": "offline_group_status",
+      "args": [
+        "status",
+        "--group",
+        "batch"
+      ],
+      "exit": 0,
+      "names": [
+        "web"
+      ],
+      "passed": true
+    },
+    {
+      "case": "offline_status_missing_selector_rejected",
+      "args": [
+        "status",
+        "missing"
+      ],
+      "exit": 2,
+      "error_code": "not_found",
+      "passed": true
+    },
+    {
+      "case": "status_query_selectors_are_exclusive",
+      "args": [
+        "status",
+        "web",
+        "--server",
+        "dev"
+      ],
+      "exit": 2,
+      "error_code": "invalid_arguments",
+      "passed": true
+    },
+    {
+      "case": "logs_query_selectors_are_exclusive",
+      "args": [
+        "logs",
+        "--server",
+        "dev",
+        "--group",
+        "batch"
+      ],
+      "exit": 2,
+      "error_code": "invalid_arguments",
+      "passed": true
+    },
+    {
+      "case": "negative_tail_is_rejected",
+      "args": [
+        "logs",
+        "--tail",
+        "-1"
+      ],
+      "exit": 2,
+      "error_code": "invalid_arguments",
+      "passed": true
+    }
+  ]
+}
