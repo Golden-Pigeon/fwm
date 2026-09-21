@@ -13,7 +13,7 @@ mod queries;
 mod server_selection;
 mod server_trust;
 mod servers;
-mod shell_completion;
+pub(crate) mod shell_completion;
 
 #[cfg(test)]
 mod contracts_tests;
@@ -29,9 +29,6 @@ pub async fn run(args: Cli) -> Result<()> {
     // directory creation, or validation of the command being completed.
     if let Command::Completions { shell } = &args.command {
         return shell_completion::script(*shell);
-    }
-    if let Command::Complete { cursor, words } = &args.command {
-        return shell_completion::write_candidates(words, *cursor);
     }
     let paths = Paths::new(args.config_dir)?;
     match args.command {
@@ -72,7 +69,7 @@ pub async fn run(args: Cli) -> Result<()> {
         Command::Config { command } => config(&paths, command, args.json).await,
         Command::Daemon { command } => daemon::run(paths, command, args.json).await,
         Command::Service { command } => daemon::service(&paths, command, args.json).await,
-        Command::Completions { .. } | Command::Complete { .. } => unreachable!(),
+        Command::Completions { .. } => unreachable!(),
     }
 }
 

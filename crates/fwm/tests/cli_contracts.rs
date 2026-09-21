@@ -16,6 +16,77 @@ fn run(directory: &Path, args: &[&str], json: bool) -> Output {
 }
 
 #[test]
+fn metadata_and_argument_errors_exit_without_starting_tokio() {
+    let temporary = tempfile::tempdir().unwrap();
+    let directory = temporary.path().join("never-created");
+    let run_without_runtime = |args: &[&str]| {
+        Command::new(env!("CARGO_BIN_EXE_fwm"))
+            // Tokio rejects zero workers when constructing its runtime. Set it
+            // only in the child so unrelated tests retain their environment.
+            .env("TOKIO_WORKER_THREADS", "0")
+            .arg("--config-dir")
+            .arg(&directory)
+            .args(args)
+            .output()
+            .unwrap()
+    };
+
+    for (args, expected) in [
+        (vec!["--version"], "fwm "),
+        (vec!["-V"], "fwm "),
+        (vec!["--json", "--version"], "fwm "),
+        (vec!["--help"], "Usage:"),
+        (vec!["-h"], "Usage:"),
+        (vec!["server", "edit", "--help"], "Usage:"),
+        (vec!["--json", "daemon", "run", "--help"], "Usage:"),
+    ] {
+        let output = run_without_runtime(&args);
+        assert!(
+            output.status.success(),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(output.stderr.is_empty(), "{args:?}");
+        assert!(
+            String::from_utf8_lossy(&output.stdout).contains(expected),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&output.stdout)
+        );
+        assert!(
+            !directory.exists(),
+            "{args:?} unexpectedly initialized configuration"
+        );
+    }
+
+    for args in [
+        vec!["--json", "not-a-command"],
+        vec!["--json", "add", "--local", "--port", "3000"],
+        vec!["--json", "status", "web", "--all"],
+    ] {
+        let output = run_without_runtime(&args);
+        assert_eq!(
+            output.status.code(),
+            Some(2),
+            "{args:?}: {}",
+            String::from_utf8_lossy(&output.stderr)
+        );
+        assert!(output.stdout.is_empty(), "{args:?}");
+        let error: Value = serde_json::from_slice(&output.stderr).unwrap();
+        assert_eq!(error["ok"], false);
+        assert_eq!(error["error"]["code"], "invalid_arguments");
+        let message = error["error"]["message"].as_str().unwrap();
+        assert!(
+            message.contains("error:") && message.contains("--help"),
+            "{args:?}: {message}"
+        );
+        assert!(
+            !directory.exists(),
+            "{args:?} unexpectedly initialized configuration"
+        );
+    }
+}
+
+#[test]
 fn help_and_version_for_every_command_family_do_not_initialize_configuration() {
     let temporary = tempfile::tempdir().unwrap();
     let directory = temporary.path().join("never-created");

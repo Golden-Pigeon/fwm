@@ -39,12 +39,6 @@ pub enum Command {
         #[arg(value_enum)]
         shell: CompletionShell,
     },
-    #[command(name = "__complete", hide = true)]
-    Complete {
-        cursor: usize,
-        #[arg(last = true, allow_hyphen_values = true)]
-        words: Vec<OsString>,
-    },
     /// Manage SSH server profiles and trusted host keys.
     Server {
         #[command(subcommand)]
@@ -202,13 +196,13 @@ pub enum ServerField {
 #[command(
     group(ArgGroup::new("tunnel").required(true).args(["local", "remote", "dynamic"])),
     override_usage = "fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src PORTS --tgt PORT\n       fwm add --server SERVER [OPTIONS] --dynamic PORT",
-    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n\nNames default to SERVER-DIRECTION-PORT. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or SERVER-DIRECTION by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
+    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n\nNames default to a random English word. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or a random English word by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
 )]
 pub struct AddArgs {
     /// Optional legacy positional name; --name is preferred.
     #[arg(value_name = "NAME", conflicts_with = "explicit_name")]
     pub name: Option<String>,
-    /// Rule name or multi-port name prefix; defaults to SERVER-DIRECTION-PORT.
+    /// Rule name or multi-port name prefix; defaults to a random English word.
     #[arg(long = "name", value_name = "NAME", conflicts_with = "name")]
     pub explicit_name: Option<String>,
     /// Put one or more new forwards in this group, creating it if needed.

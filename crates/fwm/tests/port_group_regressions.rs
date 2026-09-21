@@ -133,26 +133,47 @@ fn explicit_group_supports_single_batch_and_named_appends_with_consistent_select
         "--group",
         "web",
     ]);
+    cli.add(&["--local", "--port", "3005-3006", "--group", "web"]);
     cli.add(&["--dynamic", "1080", "--name", "socks", "--group", "web"]);
     let config = cli.config();
     let selected = config.select_group_forwards("web").unwrap();
-    assert_eq!(selected.len(), 6);
+    assert_eq!(selected.len(), 8);
     assert_eq!(
         cli.ok(&["status", "web"])["forwards"]
             .as_array()
             .unwrap()
             .len(),
-        6
+        8
     );
     assert_eq!(
         cli.ok(&["status", "--group", "web"])["forwards"]
             .as_array()
             .unwrap()
             .len(),
-        6
+        8
     );
     assert!(config.forward("api-3003").is_some());
-    assert!(config.forward("dev-local-3002").is_some());
+    let mut appended_names = std::collections::HashSet::new();
+    for source in [3002, 3005, 3006] {
+        let appended = config
+            .forwards
+            .iter()
+            .find(|rule| rule.tunnel.listen().port() == source)
+            .unwrap();
+        assert!((3..=8).contains(&appended.name.len()));
+        assert!(
+            appended
+                .name
+                .bytes()
+                .all(|letter| letter.is_ascii_lowercase())
+        );
+        assert!(appended_names.insert(&appended.name));
+        assert_eq!(appended.group.as_deref(), Some("web"));
+        assert_eq!(
+            cli.ok(&["status", &appended.name])["forwards"][0]["id"],
+            appended.id
+        );
+    }
     cli.ok(&["remove", "--group", "web"]);
     assert!(cli.config().forwards.is_empty());
 }

@@ -2,6 +2,7 @@ use anyhow::Result;
 use fwm_api::protocol::{MutationReply, Response, StatusSnapshot};
 use fwm_core::model::{Config, DesiredState, ForwardStatus, RuntimeState, unix_ms};
 use serde_json::{Value, json};
+use unicode_width::UnicodeWidthStr;
 
 pub fn json_value(value: &Value) -> Result<()> {
     println!("{}", serde_json::to_string(value)?);
@@ -115,33 +116,48 @@ pub fn status_with_state(
         println!("No matching forwards.");
         return Ok(());
     }
-    println!(
-        "{:<24} {:<18} {:<18} {:<17} {:<9} RETRY",
-        "NAME", "SERVER", "GROUP", "STATE", "INTENT"
-    );
-    for forward in &snapshot.forwards {
-        let retry = forward
-            .next_retry_unix_ms
-            .map(|when| format!("{}s", when.saturating_sub(unix_ms()).div_ceil(1000)))
-            .unwrap_or_else(|| "—".into());
-        println!(
-            "{:<24} {:<18} {:<18} {:<17} {:<9} {}",
-            forward.name,
-            forward.server,
-            forward.group.as_deref().unwrap_or("—"),
-            if daemon_running {
-                state_name(forward.state)
-            } else if stopped {
-                "daemon_offline"
-            } else {
-                "unverified"
-            },
-            match forward.desired_state {
-                DesiredState::Running => "running",
-                DesiredState::Stopped => "stopped",
-            },
-            retry
-        );
+    let headers = ["NAME", "SERVER", "GROUP", "STATE", "INTENT", "RETRY"].map(str::to_owned);
+    let now = unix_ms();
+    let rows: Vec<_> = snapshot
+        .forwards
+        .iter()
+        .map(|forward| {
+            [
+                forward.name.clone(),
+                forward.server.clone(),
+                forward.group.as_deref().unwrap_or("—").to_owned(),
+                if daemon_running {
+                    state_name(forward.state)
+                } else if stopped {
+                    "daemon_offline"
+                } else {
+                    "unverified"
+                }
+                .to_owned(),
+                match forward.desired_state {
+                    DesiredState::Running => "running",
+                    DesiredState::Stopped => "stopped",
+                }
+                .to_owned(),
+                forward
+                    .next_retry_unix_ms
+                    .map(|when| format!("{}s", when.saturating_sub(now).div_ceil(1000)))
+                    .unwrap_or_else(|| "—".into()),
+            ]
+        })
+        .collect();
+    // Rust's formatting width counts characters, not terminal columns. Measure
+    // the whole table so both long identifiers and wide Unicode names align.
+    let widths = std::array::from_fn(|column| {
+        std::iter::once(&headers)
+            .chain(&rows)
+            .map(|row| row[column].width())
+            .max()
+            .unwrap_or(0)
+    });
+    println!("{}", status_line(&headers, &widths));
+    for (forward, row) in snapshot.forwards.iter().zip(&rows) {
+        println!("{}", status_line(row, &widths));
         if daemon_running || stopped {
             println!(
                 "  {}  ({} active)",
@@ -156,6 +172,17 @@ pub fn status_with_state(
         }
     }
     Ok(())
+}
+
+fn status_line(cells: &[String; 6], widths: &[usize; 6]) -> String {
+    let mut line = String::new();
+    for (column, value) in cells.iter().enumerate() {
+        line.push_str(value);
+        if column + 1 < cells.len() {
+            line.push_str(&" ".repeat(widths[column] - value.width() + 2));
+        }
+    }
+    line
 }
 
 fn mapping(forward: &ForwardStatus) -> String {

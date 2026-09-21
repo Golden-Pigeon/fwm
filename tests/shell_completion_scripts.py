@@ -1,5 +1,10 @@
 #!/usr/bin/env python3
-"""Exercise the completion scripts with real Bash/Zsh line editors (no daemon)."""
+"""Exercise clap_complete's generated scripts with real line editors (no daemon).
+
+Only normal command execution is intercepted. Completion requests are delegated
+unchanged to the built fwm binary and read saved configuration from a temporary
+profile. Build first with `cargo build --locked -p fwm`.
+"""
 
 import json
 import os
@@ -18,7 +23,62 @@ import unittest
 
 
 ROOT = Path(__file__).resolve().parents[1]
+FWM_BINARY = Path(os.environ.get("FWM_TEST_BINARY", ROOT / "target/debug/fwm")).resolve()
 PROMPT = b"FWM_COMPLETION_READY> "
+
+
+def bash3_expected_failure(test):
+    """Track observed Bash 3.x limitations without hiding modern Bash failures."""
+    if shutil.which("bash"):
+        version = subprocess.run(
+            ["bash", "--noprofile", "--norc", "-c", 'printf "%s" "${BASH_VERSINFO[0]}"'],
+            check=True, capture_output=True, text=True,
+        ).stdout
+        if int(version) < 4:
+            return unittest.expectedFailure(test)
+    return test
+
+
+def write_config(directory, names=("web-prod", "orient", "生产转发")):
+    """Write an offline profile without invoking configuration or daemon commands."""
+    directory.mkdir(parents=True, exist_ok=True)
+    text = '''schema_version = 3
+[[servers]]
+id = "prod"
+name = "prod"
+host = "127.0.0.1"
+'''
+    records = [(name, "rule-" + str(index)) for index, name in enumerate(names)]
+    records += [("colon-id", "prefix:path"),
+                ("special-id", "literal$(touch SHOULD_NOT_EXIST);`touch SHOULD_NOT_EXIST`")]
+    for index, (name, identity) in enumerate(records):
+        text += f'''
+[[forwards]]
+id = {json.dumps(identity)}
+name = {json.dumps(name, ensure_ascii=False)}
+group = "apps"
+server_id = "prod"
+kind = "local"
+listen = "127.0.0.1:{31001 + index}"
+target = "localhost:8080"
+desired_state = "stopped"
+'''
+    (directory / "config.toml").write_text(text)
+
+
+def write_proxy(path):
+    """Delegate the official completion protocol; never execute ordinary commands."""
+    path.write_text(
+        f"#!{sys.executable}\n"
+        "import json, os, sys\n"
+        "args = sys.argv[1:]\n"
+        "mode = os.environ.get('FWM_COMPLETE')\n"
+        "with open(os.environ['FWM_COMPLETION_LOG'], 'a') as stream:\n"
+        "    stream.write(json.dumps({'args': args, 'complete': mode}) + '\\n')\n"
+        "if mode or args[:1] == ['completions']:\n"
+        f"    os.execv({str(FWM_BINARY)!r}, [{str(FWM_BINARY)!r}, *args])\n"
+    )
+    path.chmod(0o755)
 
 
 class Shell:
@@ -26,37 +86,35 @@ class Shell:
         self.kind = kind
         self.directory = directory
         self.log = directory / "invocations.jsonl"
-        self.candidates = directory / "candidates.json"
-        self.candidates.write_text("[]")
+        write_config(directory / "profile")
+        self.initial_config = (directory / "profile/config.toml").read_bytes()
         bindir = directory / "bin"
         bindir.mkdir()
         self.binary = bindir / "fwm"
-        self.binary.write_text(
-            f"#!{sys.executable}\n"
-            "import json, os, sys\n"
-            "with open(os.environ['FWM_COMPLETION_LOG'], 'a') as f:\n"
-            "    f.write(json.dumps(sys.argv[1:]) + '\\n')\n"
-            "if len(sys.argv) > 1 and sys.argv[1] == '__complete':\n"
-            "    for candidate in json.load(open(os.environ['FWM_COMPLETION_CANDIDATES'])):\n"
-            "        print(candidate)\n"
-        )
-        self.binary.chmod(0o755)
+        write_proxy(self.binary)
+        registration = subprocess.run(
+            [str(FWM_BINARY), "completions", kind], check=True,
+            capture_output=True, text=True,
+        ).stdout
+        completions = directory / "completions"
+        completions.mkdir()
+        script = completions / ("_fwm" if kind == "zsh" else "fwm")
+        script.write_text(registration)
         setup = directory / "setup"
         lines = [
             f"export PATH={shlex.quote(str(bindir))}:$PATH",
             f"export FWM_COMPLETION_LOG={shlex.quote(str(self.log))}",
-            f"export FWM_COMPLETION_CANDIDATES={shlex.quote(str(self.candidates))}",
+            f"export ZDOTDIR={shlex.quote(str(directory))}",
             "PS1='FWM_COMPLETION_READY> '",
         ]
         if kind == "bash":
-            lines += [f"source {shlex.quote(str(ROOT / 'completions/fwm.bash'))}",
-                      "bind 'set bell-style none'"]
+            lines += [f"source {shlex.quote(str(script))}", "bind 'set bell-style none'"]
         else:
             if autoload:
-                lines += [f"fpath=({shlex.quote(str(ROOT / 'completions'))} $fpath)"]
+                lines += [f"fpath=({shlex.quote(str(completions))} $fpath)"]
             lines += ["autoload -Uz compinit; compinit -D", "unsetopt beep"]
             if not autoload:
-                lines += [f"source {shlex.quote(str(ROOT / 'completions/_fwm'))}"]
+                lines += [f"source {shlex.quote(str(script))}"]
         setup.write_text("\n".join(lines) + "\n")
         self.pid, self.fd = pty.fork()
         if self.pid == 0:
@@ -79,8 +137,7 @@ class Shell:
                     return output
         raise AssertionError(f"{self.kind} did not return to prompt: {output!r}")
 
-    def complete(self, line, candidates, cursor=None, after_tab=""):
-        self.candidates.write_text(json.dumps(candidates))
+    def complete(self, line, cursor=None, after_tab=""):
         self.log.write_text("")
         keys = line.encode()
         if cursor is not None:
@@ -88,10 +145,15 @@ class Shell:
         os.write(self.fd, keys + b"\t" + after_tab.encode() + b"\n")
         screen = self.read_prompt()
         invocations = [json.loads(line) for line in self.log.read_text().splitlines()]
-        completions = [call for call in invocations if call and call[0] == "__complete"]
-        executions = [call for call in invocations if not call or call[0] != "__complete"]
+        completions = [call["args"] for call in invocations if call["complete"]]
+        executions = [call["args"] for call in invocations if not call["complete"]]
         if not completions or len(executions) != 1:
             raise AssertionError(f"{self.kind}: calls={invocations!r}, screen={screen!r}")
+        config = self.directory / "profile"
+        if sorted(path.name for path in config.iterdir()) != ["config.toml"]:
+            raise AssertionError("completion created state or daemon files")
+        if (config / "config.toml").read_bytes() != self.initial_config:
+            raise AssertionError("completion modified saved configuration")
         return completions[-1], executions[0]
 
     def close(self):
@@ -109,102 +171,167 @@ class Shell:
 
 
 class CompletionScripts(unittest.TestCase):
-    def check_shell(self, kind, autoload=False):
+    @classmethod
+    def setUpClass(cls):
+        if not FWM_BINARY.is_file():
+            raise RuntimeError("Build the test binary first: cargo build --locked -p fwm")
+
+    def check_shell(self, kind, check, autoload=False):
         if not shutil.which(kind):
             self.skipTest(f"{kind} is not installed")
         with tempfile.TemporaryDirectory(prefix="fwm-completions-") as directory:
             shell = Shell(kind, Path(directory), autoload)
             try:
-                call, result = shell.complete("fwm stop ", ["web-prod"])
-                self.assertEqual(result, ["stop", "web-prod"])
-                self.assertEqual(call[1:3], ["2", "--"])
-                self.assertEqual(call[-1], "")
-
-                _, result = shell.complete("fwm add web --server=pr", ["--server=prod"])
-                self.assertEqual(result, ["add", "web", "--server=prod"])
-                _, result = shell.complete("fwm add web --server=", ["--server=prod"])
-                self.assertEqual(result, ["add", "web", "--server=prod"])
-
-                path = str(Path(directory) / "config folder" / "fwm.json")
-                _, result = shell.complete("fwm --config " + str(Path(directory) / "con"), [path])
-                self.assertEqual(result, ["--config", path])
-                _, result = shell.complete("fwm --config=" + str(Path(directory) / "con"), ["--config=" + path])
-                self.assertEqual(result, ["--config=" + path])
-
-                Path(path).parent.mkdir()
-                _, result = shell.complete("fwm --config " + str(Path(directory) / "con"),
-                                           [str(Path(path).parent) + "/"], after_tab="fwm.json")
-                self.assertEqual(result, ["--config", path])
-                quoted_prefix = shlex.quote(str(Path(directory) / "config f"))
-                call, result = shell.complete("fwm --config " + quoted_prefix, [path])
-                self.assertEqual(result, ["--config", path])
-                self.assertEqual(call[-1], str(Path(directory) / "config f"))
-
-                _, result = shell.complete("fwm stop prefix:pa", ["prefix:path"])
-                self.assertEqual(result, ["stop", "prefix:path"])
-
-                marker = Path(directory) / "SHOULD_NOT_EXIST"
-                candidate = "$(touch SHOULD_NOT_EXIST);`touch SHOULD_NOT_EXIST`"
-                _, result = shell.complete("fwm stop ", [candidate])
-                self.assertEqual(result, ["stop", candidate])
-                self.assertFalse(marker.exists())
-
-                line = "fwm stop we --json"
-                call, result = shell.complete(line, ["web-prod"], cursor=len("fwm stop we"))
-                self.assertEqual(result, ["stop", "web-prod", "--json"])
-                self.assertEqual(call[1:3], ["2", "--"])
-
-                line = "fwm stop web-prod"
-                _, result = shell.complete(line, ["web-prod"], cursor=len("fwm stop we"))
-                self.assertEqual(result, ["stop", "web-prod"])
-
-                line = "fwm status we --config-dir profile"
-                call, result = shell.complete(line, ["web-prod"], cursor=len("fwm status we"))
-                self.assertEqual(call[-2:], ["--config-dir", "profile"])
-                self.assertEqual(result, ["status", "web-prod", "--config-dir", "profile"])
-
-                line = "fwm status 生产 --json"
-                _, result = shell.complete(line, ["生产转发"], cursor=len("fwm status 生产"))
-                self.assertEqual(result, ["status", "生产转发", "--json"])
-
-                command = shlex.quote(str(shell.binary))
-                _, result = shell.complete(command + " stop we", ["web-prod"])
-                self.assertEqual(result, ["stop", "web-prod"])
+                check(shell)
             finally:
                 shell.close()
 
-    def test_bash(self):
-        self.check_shell("bash")
+    def shells(self, check):
+        for kind in ["bash", "zsh"]:
+            with self.subTest(shell=kind):
+                self.check_shell(kind, check)
 
-    def test_zsh_source(self):
-        self.check_shell("zsh")
+    def test_saved_rules_servers_groups_and_options(self):
+        def check(shell):
+            for fragment, expected in [
+                ("status we", ["status", "web-prod"]),
+                ("server remove pr", ["server", "remove", "prod"]),
+                ("add web --server pr", ["add", "web", "--server", "prod"]),
+                ("status --group ap", ["status", "--group", "apps"]),
+                ("status --ser", ["status", "--server"]),
+                ("status 生产", ["status", "生产转发"]),
+            ]:
+                with self.subTest(fragment=fragment):
+                    _, result = shell.complete("fwm --config-dir profile " + fragment)
+                    self.assertEqual(result, ["--config-dir", "profile", *expected])
+        self.shells(check)
 
-    def test_zsh_autoload(self):
-        self.check_shell("zsh", autoload=True)
+    def test_unknown_rule_does_not_complete_unrelated_files(self):
+        def check(shell):
+            (shell.directory / "unknown-file").write_text("not a forwarding rule")
+            _, result = shell.complete("fwm --config-dir profile status unknown")
+            self.assertEqual(result, ["--config-dir", "profile", "status", "unknown"])
+        self.shells(check)
 
-    def test_bash_split_wordbreaks(self):
-        if not shutil.which("bash"):
-            self.skipTest("bash is not installed")
-        with tempfile.TemporaryDirectory(prefix="fwm-completions-") as directory:
-            log = Path(directory) / "args"
-            binary = Path(directory) / "fwm"
-            binary.write_text("#!/bin/sh\nprintf '%s\\n' \"$@\" > " + shlex.quote(str(log)) +
-                              "\nprintf '%s\\n' '--server=prod'\n")
-            binary.chmod(0o755)
-            program = f"""
-source {shlex.quote(str(ROOT / 'completions/fwm.bash'))}
-COMP_WORDS=({shlex.quote(str(binary))} add web --server = pr)
-COMP_CWORD=5
-COMP_LINE={shlex.quote(str(binary) + ' add web --server=pr')}
-COMP_POINT=${{#COMP_LINE}}
-_fwm fwm pr =
-printf '%s\\n' "${{COMPREPLY[@]}}"
-"""
-            result = subprocess.run(["bash", "--noprofile", "--norc", "-c", program],
-                                    check=True, capture_output=True, text=True)
-            self.assertEqual(result.stdout, "prod\n")
-            self.assertEqual(log.read_text().splitlines(),
-                             ["__complete", "3", "--", str(binary), "add", "web", "--server=pr"])
+    def test_configuration_directory_with_spaces(self):
+        def check(shell):
+            write_config(shell.directory / "custom profile")
+            for directory in ["'custom profile'", r"custom\ profile"]:
+                with self.subTest(directory=directory):
+                    _, result = shell.complete("fwm --config-dir " + directory + " status we")
+                    self.assertEqual(result, ["--config-dir", "custom profile", "status", "web-prod"])
+        self.shells(check)
+
+    def check_equals(self, shell):
+        for prefix in ["pr", ""]:
+            _, result = shell.complete("fwm --config-dir profile add web --server=" + prefix)
+            self.assertEqual(result, ["--config-dir", "profile", "add", "web", "--server=prod"])
+
+    def test_zsh_equals_server_value(self):
+        self.check_shell("zsh", self.check_equals)
+
+    @bash3_expected_failure
+    def test_upstream_bash_equals_value(self):
+        # clap_complete 4.6.11 duplicates the --server= prefix with Bash 3.2.
+        # Keep this regression visible so an upstream fix prompts its promotion.
+        self.check_shell("bash", self.check_equals)
+
+    def test_filesystem_completion(self):
+        def check(shell):
+            (shell.directory / "fixture_config").write_text("# SSH config")
+            _, result = shell.complete("fwm --config-dir profile server add new --ssh-config fixt")
+            self.assertEqual(result, ["--config-dir", "profile", "server", "add", "new", "--ssh-config", "fixture_config"])
+        self.shells(check)
+
+    def check_directory_spaces(self, shell):
+        folder = shell.directory / "config folder"
+        folder.mkdir()
+        (folder / "fwm.json").write_text("{}")
+        _, result = shell.complete("fwm --config-dir profile server add new --ssh-config con", after_tab="fwm.json")
+        self.assertEqual(result, ["--config-dir", "profile", "server", "add", "new", "--ssh-config", "config folder/fwm.json"])
+
+    def test_zsh_directory_spaces(self):
+        self.check_shell("zsh", self.check_directory_spaces)
+
+    def test_bash_directory_spaces(self):
+        # Readline's standard filenames option quotes candidates and preserves
+        # directory continuation without a custom shell-escaping adapter.
+        self.check_shell("bash", self.check_directory_spaces)
+
+    def check_quoted_path(self, shell):
+        folder = shell.directory / "config folder"
+        folder.mkdir()
+        (folder / "fwm.json").write_text("{}")
+        _, result = shell.complete("fwm --config-dir profile server add new --ssh-config 'config folder/f'")
+        self.assertEqual(result, ["--config-dir", "profile", "server", "add", "new", "--ssh-config", "config folder/fwm.json"])
+
+    @bash3_expected_failure
+    def test_upstream_bash_quoted_path(self):
+        # Upstream receives shell quote characters instead of an unquoted path.
+        self.check_shell("bash", self.check_quoted_path)
+
+    @unittest.expectedFailure
+    def test_upstream_zsh_quoted_path(self):
+        self.check_shell("zsh", self.check_quoted_path)
+
+    def check_colon(self, shell):
+        _, result = shell.complete("fwm --config-dir profile status prefix:pa")
+        self.assertEqual(result, ["--config-dir", "profile", "status", "prefix:path"])
+
+    def test_zsh_colon_in_id(self):
+        self.check_shell("zsh", self.check_colon)
+
+    @bash3_expected_failure
+    def test_upstream_bash_colon_in_id(self):
+        # Bash 3.2's word-break handling duplicates the colon prefix.
+        self.check_shell("bash", self.check_colon)
+
+    def test_shell_metacharacters_do_not_execute(self):
+        def check(shell):
+            _, result = shell.complete("fwm --config-dir profile status literal")
+            self.assertFalse((shell.directory / "SHOULD_NOT_EXIST").exists(),
+                             "completion candidate was executed as shell code")
+            self.assertEqual(result, ["--config-dir", "profile", "status",
+                                     "literal$(touch SHOULD_NOT_EXIST);`touch SHOULD_NOT_EXIST`"])
+        self.shells(check)
+
+    def test_completion_before_remaining_arguments(self):
+        def check(shell):
+            line = "fwm --config-dir profile status we --json"
+            _, result = shell.complete(line, cursor=len("fwm --config-dir profile status we"))
+            self.assertEqual(result, ["--config-dir", "profile", "status", "web-prod", "--json"])
+            line = "fwm status we --config-dir profile"
+            call, result = shell.complete(line, cursor=len("fwm status we"))
+            self.assertEqual(call[-2:], ["--config-dir", "profile"])
+            self.assertEqual(result, ["status", "web-prod", "--config-dir", "profile"])
+        self.shells(check)
+
+    def check_middle_word(self, shell):
+        line = "fwm --config-dir profile status web-prod"
+        _, result = shell.complete(line, cursor=len("fwm --config-dir profile status we"))
+        self.assertEqual(result, ["--config-dir", "profile", "status", "web-prod"])
+
+    def test_zsh_cursor_in_middle_of_word(self):
+        self.check_shell("zsh", self.check_middle_word)
+
+    @bash3_expected_failure
+    def test_upstream_bash_cursor_in_middle_of_word(self):
+        # Bash 3.2 preserves the suffix after the cursor when inserting a match.
+        self.check_shell("bash", self.check_middle_word)
+
+    def check_absolute_command(self, shell):
+        _, result = shell.complete(shlex.quote(str(shell.binary)) + " --config-dir profile status we")
+        self.assertEqual(result, ["--config-dir", "profile", "status", "web-prod"])
+
+    def test_absolute_command_path(self):
+        self.shells(self.check_absolute_command)
+
+    @unittest.expectedFailure
+    def test_upstream_zsh_fpath_autoload_first_tab(self):
+        # Dynamic registration is intended to be sourced at startup. A bare
+        # fpath autoload only registers its function on the first Tab; the
+        # installer therefore explicitly sources the generated registration.
+        self.check_shell("zsh", self.check_absolute_command, autoload=True)
 
 
 if __name__ == "__main__":

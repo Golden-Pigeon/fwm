@@ -29,8 +29,15 @@ async def check_direct_alias(cli, rpc, echo_test, root, proxy_port, user, identi
     after = (await rpc("get_config"))["data"]
     assert after["revision"] == before["revision"] + 1
     server = next(server for server in after["servers"] if server["name"] == "direct-test")
-    name = f"direct-test-remote-{source_port}"
-    rule = next(rule for rule in after["forwards"] if rule["name"] == name)
+    previous_ids = {rule["id"] for rule in before["forwards"]}
+    added = [rule for rule in after["forwards"] if rule["id"] not in previous_ids]
+    assert len(added) == 1
+    rule = added[0]
+    name = rule["name"]
+    assert 3 <= len(name) <= 8 and name.isascii() and name.isalpha() and name.islower()
+    assert name not in {rule["name"] for rule in before["forwards"]}
+    assert name not in previous_ids
+    assert name not in {rule.get("group") for rule in before["forwards"]}
     assert server["ssh_alias"] == "direct-test"
     assert rule["server_id"] == server["id"]
     assert rule["target"] == f"localhost:{target_port}"

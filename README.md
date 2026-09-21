@@ -20,9 +20,12 @@ cargo build --release --locked
 
 # 依赖已缓存时离线安装
 ./install-from-source.sh --offline
+
+# 仅安装程序和补全文件，自行管理 Shell 启动配置
+./install-from-source.sh --shell none
 ```
 
-`install-from-source.sh` 用于完整的本地源码仓库，支持 macOS/Linux 的 Bash（3.2 或更新版本）。可以从任意目录通过脚本路径调用；`--root` 的相对路径以调用时的工作目录为基准。内部使用 `cargo install --path … --locked --force --root …`，默认安装为 `~/.local/bin/fwm`，不受 Cargo 默认安装目录设置影响；`--root` 可显式覆盖，重复运行会更新已有安装。确保对应的 `bin` 目录在 PATH 中。
+`install-from-source.sh` 用于完整的本地源码仓库，支持 macOS/Linux 的 Bash（3.2 或更新版本）。可以从任意目录通过脚本路径调用；`--root` 的相对路径以调用时的工作目录为基准。内部使用 `cargo install --path … --locked --force --root …`，默认安装为 `~/.local/bin/fwm`，不受 Cargo 默认安装目录设置影响；`--root` 可显式覆盖，重复运行会更新已有安装。脚本同时安装补全文件，并默认按 `$SHELL` 配置 Bash 或 Zsh 的启动文件；加载补全时会将本次安装的 `bin` 目录置于 PATH 首位。
 
 此脚本专门用于源码构建。以后若提供从 GitHub Releases 下载预编译程序的一键安装脚本，会使用单独的名称和入口；当前尚未提供该下载脚本。`--offline` 只限制 Cargo 依赖下载，省略时 Cargo 可以获取缺少的依赖。
 
@@ -30,25 +33,27 @@ Windows 可直接执行 `cargo install --path crates/fwm --locked --force`；仅
 
 ## Shell 补全
 
-支持 Zsh 和 Bash。补全脚本随二进制分发；从源码更新已有安装后即可启用：
+补全使用 Clap 官方的 [`clap_complete`](https://docs.rs/clap_complete/4.6.11/clap_complete/env/index.html) 动态引擎；命令解析、文件候选和 Shell 适配由依赖提供，fwm 只提供保存的服务器、规则和分组候选。源码安装脚本会实际安装补全文件并配置自动加载：
 
 ```sh
 ./install-from-source.sh
 ```
 
-Zsh 在 `compinit` 初始化后加载补全：
+默认写入 Zsh 的 `${ZDOTDIR:-$HOME}/.zshrc`，或 Bash 的 `~/.bashrc` 和当前登录配置（首个已存在的 `.bash_profile`、`.bash_login`、`.profile`，均不存在则新建 `.bash_profile`）。已有文件在变更前备份为 `原路径.fwm-backup.*`，重复运行只更新 fwm 自己的标记块，不重复追加。可用 `--shell zsh` / `--shell bash` 显式选择，`--rc-file PATH` 指定单个启动文件，`--shell none` 只安装文件而不编辑启动配置。其他 Shell 只安装文件并提示手动加载。
+
+**新开终端会自动生效；安装进程无法修改已打开终端的状态。** 当前终端立即启用（默认安装路径）：
 
 ```zsh
-autoload -Uz compinit
-compinit
-source <(fwm completions zsh)
+source ~/.local/share/fwm/shell-init.zsh
 ```
 
-将最后一行加入 `~/.zshrc`，放在现有 `compinit` 或 shell 框架初始化之后。Bash 使用以下命令，也可加入 `~/.bashrc`：
+Bash：
 
 ```bash
-source <(fwm completions bash)
+source ~/.local/share/fwm/shell-init.bash
 ```
+
+使用自定义 `--root` 时按安装脚本输出的 `source` 路径加载。Zsh 加载器会在必要时初始化 `compinit`；已有 Oh My Zsh 等框架时直接复用。生成的补全文件分别安装在 `ROOT/share/zsh/site-functions/_fwm` 和 `ROOT/share/bash-completion/completions/fwm`。加载器会在每次 Shell 启动时从当前二进制重新生成注册代码，避免升级后的协议不匹配。自行管理配置时，可用 `source <(fwm completions zsh)` 或 Bash 的 `eval "$(fwm completions bash)"`；这里只执行 fwm 生成的注册代码，候选值不经过 eval。Zsh 应显式加载注册代码，不依赖单独把文件加入 fpath。
 
 按 Tab 会根据当前配置动态补全服务器、规则名称/ID 和分组，例如：
 
@@ -61,7 +66,9 @@ fwm logs --group <Tab>
 fwm --config-dir ~/work-fwm status <Tab>
 ```
 
-同时支持子命令、选项、枚举值、文件路径，以及 `--server=dev` 一类等号写法。补全读取所选实例的已保存配置，后台停止时也可使用；改名和删除在下一次补全立即反映。无有效配置时静默返回空的动态候选，静态命令/选项仍可补全。新建名称（`add --name`、`server add`）和 `--rename` 保持自由输入，不建议已有名称。补全不访问 SSH、启动后台或写入配置，也不依赖 jq、Python 或额外的 Bash 补全框架。仓库中的脚本位于 `completions/fwm.bash` 和 `completions/_fwm`。
+同时支持子命令、选项、枚举值和文件路径。补全读取所选实例的已保存配置，后台停止时也可使用；改名和删除在下一次补全立即反映。无有效配置时静默返回空的动态候选，静态命令/选项仍可补全。新建名称（`add --name`、`server add`）和 `--rename` 保持自由输入，不建议已有名称。补全不访问 SSH、启动后台或写入配置，也不依赖 jq、Python 或额外的 Bash 补全框架。
+
+当前固定使用 `clap_complete 4.6.11` 的 `unstable-dynamic` 接口，并保留上游边界回归：Bash 3.2 在等号参数、含冒号 ID、词中光标位置存在兼容限制，建议使用 `--server NAME` 并在词尾补全；Bash/Zsh 已闭合引号的当前路径词可能无法补全，含空格路径可从未引用的前缀开始，让 Shell 自动引用候选。Bash 的 Readline 引用使用标准 `fullquote` / `filenames` 选项，较旧 Bash 的 `filenames` 回退会把与当前目录下文件夹同名的候选按目录处理。项目不再维护独立的 Shell 解析或引用实现。
 
 ## 使用
 
@@ -78,7 +85,7 @@ fwm add --server example-cluster --local --port 3000
 fwm add --server example-cluster --remote --src 12223 --tgt 22 --name cluster-ssh-mac
 ```
 
-`--server` 始终必填，先匹配已保存的服务器；不存在时把它作为 SSH 别名，与规则一起自动保存。第一条命令自动命名为 `example-cluster-remote-12222`，并在输出中展示名称及转发路径。
+`--server` 始终必填，先匹配已保存的服务器；不存在时把它作为 SSH 别名，与规则一起自动保存。未指定名称时随机选取一个简短英文单词，例如 `maple`、`river`，并在输出中展示实际名称及转发路径；已用名称会自动避开。
 
 使用单独的 SSH 配置可在首次添加时传 `--ssh-config PATH`。新服务器和整批规则在一次配置事务中保存；无效规则不会留下空服务器条目。`server add` 仍可用于预先组织名称，或配置地址、用户名、密钥等细节：
 
@@ -122,6 +129,8 @@ fwm server trust dev --hop bastion --fingerprint SHA256:...
 
 CLI 给出的相对 SSH 配置、identity、known_hosts 路径以本次调用的工作目录为基准保存；手写 `config.toml` 中的相对路径以 fwm 配置目录为基准。普通路径会规范化父目录，末级文件符号链接保留，方便更换密钥或配置的链接目标；判断两个配置路径是否指向同一文件时会解析链接目标。因此 `ssh.conf`、`./ssh.conf` 和指向同一文件的绝对路径可以复用已有服务器。
 
+支持 `CanonicalizeHostname no/yes/always`（含 `false/true`）：启用后，标准 IP 地址会规范化，普通主机名转为小写，再按最终目标重新匹配 `Host`，保留已取得选项的优先级。身份文件按顺序去重，路径 token 在最终匹配后展开。当前支持不需要 DNS 名称改写的默认场景；`CanonicalDomains`、`CanonicalizePermittedCNAMEs` 等高级规则、需要 DNS 处理的尾点域名及非标准数字地址仍明确报错，不会静默忽略。语义依据见 [OpenSSH 配置说明](https://man.openbsd.org/ssh_config#CanonicalizeHostname)。
+
 建立转发：
 
 ```sh
@@ -154,9 +163,9 @@ fwm add --server dev --remote --port 9000-9002 --group services --name extra
 
 简写默认监听 `127.0.0.1`，目标主机是 `localhost`，其所在侧仍由 Local/Remote 方向决定。范围包含两端，重叠和重复端口自动去重并排序；端口必须在 1–65535，一次最多展开 512 条规则，且总规则数仍受现有限制。
 
-未指定名称时，每条规则自动命名为 `服务器-方向-源端口`。指定名称时，展开一条保留名称，多条按源端口加后缀，并保存组名。例如 `--name services --port 3000-3003` 创建组 `services`，成员为 `services-3000` 等；省略名称的多端口组为 `服务器-方向`。可以直接 `down services`、`restart services`、`edit services --tgt 8080`、`remove services`。启停、重启、重试、删除与查询命令也可以显式使用 `--group services`；编辑使用位置参数中的组名。单独操作成员名称只影响该成员。
+未指定名称时，每条规则随机使用一个 3–8 字母的英文单词。未指定 `--name` 和 `--group` 的多端口批次另选一个随机单词作为组名，成员各自使用不同单词；每个新批次创建独立组。指定名称时，展开一条保留名称，多条按源端口加后缀，并保存组名。例如 `--name services --port 3000-3003` 创建组 `services`，成员为 `services-3000` 等。可以直接 `down services`、`restart services`、`edit services --tgt 8080`、`remove services`。启停、重启、重试、删除与查询命令也可以显式使用 `--group services`；编辑使用位置参数中的组名。单独操作成员名称只影响该成员。
 
-`--group` 显式指定所属组，对一个或多个端口都有效；`--name` 仍控制单条名称或批次前缀。不写 `--name` 时成员继续按 `服务器-方向-源端口` 命名。新建组遇到超长服务器名时，自动组名会缩短前缀并附加稳定标识，避免把不同服务器的批次截断成同一组；实际名称可用 `group list` 查看。
+`--group` 显式指定所属组，对一个或多个端口都有效；`--name` 仍控制单条名称或批次前缀。不写 `--name` 时成员随机选词，并避开既有规则名、规则 ID、组名以及同批次已选名称。词表内置，离线可用；实际名称和组可用 `status`、`group list` 查看。保存后的随机名称不会在重启或 reload 时重新生成。
 
 ```sh
 fwm group list                         # 组名、成员和所属服务器
@@ -282,7 +291,7 @@ fwm add --server example-cluster --remote --src 12222 --tgt 22 --wait
 
 新旧操作通过单调递增的持久代次隔离；旧任务不能删除新登记。正常 down/remove 会取消监听并释放自己的登记；连接异常中断保留登记供恢复。helper 意外退出也会触发该独占连接的恢复，避免留下无人监督的监听。
 
-其他程序或另一管理器占用端口时不会被终止，状态会给出 `unmanaged_conflict` 并退避重试，端口释放后自动恢复。无法核验进程、权限不足或不支持 helper 时进入 `needs_attention`，不静默降级。升级前产生、没有归属登记的旧 SSH 会话也不会被当作本工具可回收的会话。
+普通进程占用端口时，无论属于当前 SSH 用户还是其他用户，都不会被终止。规则报告 `unmanaged_conflict` 并退避重试，端口释放后自动恢复。主动回收仅限当前 SSH 用户拥有、已登记且再次核验为同一管理器、同一规则旧连接的 `sshd` / `sshd-session` 会话；不能仅凭进程名或端口号终止进程。另一管理器或未登记的 SSH 会话也按外部占用处理。无法核验登记归属、权限不足或不支持 helper 时进入 `needs_attention`，不静默降级。
 
 配置版本 1 的反向规则会自动迁移为 verified/dedicated，保留规则 ID、启停意图和原配置备份；未应用的手工修改不会被覆盖。确需连接禁止远端命令执行的服务器时，可以明确选择只等待服务端释放的模式：
 

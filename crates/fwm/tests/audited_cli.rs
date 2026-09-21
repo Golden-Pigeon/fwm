@@ -247,7 +247,7 @@ fn u13_u14_invalid_ipv6_and_ambiguous_object_names_fail_atomically() {
 }
 
 #[test]
-fn u15_automatic_long_groups_are_distinct_stable_and_never_merge_unrelated_profiles() {
+fn u15_automatic_groups_are_short_unique_words_and_never_merge_separate_batches() {
     let cli = Fixture::new();
     let first = format!("{}AAAAAAA", "s".repeat(93));
     let second = format!("{}BBBBBBB", "s".repeat(93));
@@ -276,7 +276,6 @@ fn u15_automatic_long_groups_are_distinct_stable_and_never_merge_unrelated_profi
     let before = cli.config();
     let group = before.forwards[0].group.clone().unwrap();
     assert_ne!(before.forwards[0].group, before.forwards[2].group);
-    assert!(group.len() <= 100);
     cli.ok(&[
         "add",
         "--server",
@@ -291,20 +290,66 @@ fn u15_automatic_long_groups_are_distinct_stable_and_never_merge_unrelated_profi
             .as_array()
             .unwrap()
             .len(),
-        4
+        2
     );
+    // A legacy automatic group on another server must neither absorb nor
+    // block a new unnamed batch on this server.
     cli.add("other", "foreign", "dev-local", "--remote", "9000");
-    cli.unchanged_failure(
-        &[
-            "add",
-            "--server",
-            "dev",
-            "--local",
-            "--port",
-            "4000-4001",
-            "--disabled",
-        ],
-        "automatic group",
+    cli.ok(&[
+        "add",
+        "--server",
+        "dev",
+        "--local",
+        "--port",
+        "4000-4001",
+        "--disabled",
+    ]);
+    let after = cli.config();
+    for rule in &before.forwards {
+        assert_eq!(after.forward(&rule.id), Some(rule));
+    }
+    let mut generated_names = std::collections::HashSet::new();
+    let mut generated_groups = std::collections::HashSet::new();
+    for (first_port, second_port) in [(3000, 3001), (3002, 3003), (3004, 3005), (4000, 4001)] {
+        let first_rule = after
+            .forwards
+            .iter()
+            .find(|rule| rule.tunnel.listen().port() == first_port)
+            .unwrap();
+        let second_rule = after
+            .forwards
+            .iter()
+            .find(|rule| rule.tunnel.listen().port() == second_port)
+            .unwrap();
+        let group = first_rule.group.as_deref().unwrap();
+        assert_eq!(second_rule.group.as_deref(), Some(group));
+        assert!(generated_groups.insert(group), "separate batches merged");
+        assert_eq!(after.select_group_forwards(group).unwrap().len(), 2);
+        for name in [&first_rule.name, &second_rule.name] {
+            assert!(generated_names.insert(name.as_str()), "duplicate name");
+        }
+    }
+    assert!(generated_names.is_disjoint(&generated_groups));
+    for word in generated_names.union(&generated_groups) {
+        assert!((3..=8).contains(&word.len()), "not a short word: {word}");
+        assert!(word.bytes().all(|letter| letter.is_ascii_lowercase()));
+        assert!(after.forwards.iter().all(|rule| rule.id != *word));
+    }
+    assert_eq!(
+        after.select_group_forwards("dev-local").unwrap().len(),
+        1,
+        "the existing group must keep only its explicitly assigned member"
+    );
+    assert_eq!(
+        after.forward("foreign").unwrap().group.as_deref(),
+        Some("dev-local")
+    );
+    cli.ok(&["daemon", "start"]);
+    cli.ok(&["daemon", "stop"]);
+    assert_eq!(
+        cli.config(),
+        after,
+        "random names must persist across restart"
     );
 }
 

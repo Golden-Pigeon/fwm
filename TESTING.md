@@ -22,12 +22,13 @@
 | 管理 API | `fwm-api/tests/` | 帧边界、截断、坏 JSON/UTF-8、版本与请求 ID、写失败不污染流、命令版本保护分类 |
 | 输出与输入契约 | `cli/contracts_tests.rs`、`tests/cli_contracts.rs`、`tests/ux_commands.rs` | JSON 最终结果、退出码、时间单位与溢出、帮助零副作用、保存和就绪区分 |
 | 持续查询 | `tests/cli_streaming.rs` | 真实 CLI watch/follow 子进程、规则/服务器重命名和删除、空组与新增成员、后台启停、轮转后旧名关联、警告去重、草稿修复、Ctrl-C |
-| 动态 Shell 补全 | `tests/shell_completions.rs`、`tests/shell_completion_scripts.py` | 本地服务器/规则/组、ID、独立配置目录、坏草稿与无配置、零写入、路径和枚举；真实 Bash/Zsh Tab 引用、等号参数、光标位置与 source/autoload |
+| 动态 Shell 补全 | `tests/shell_completions.rs`、`tests/shell_completion_scripts.py` | 官方 clap_complete 协议及生成脚本，本地服务器/规则/组、ID、独立配置目录、坏草稿与无配置、零写入、路径和枚举；真实 Bash/Zsh Tab 和安全引用；上游已知兼容边界单独标记 expectedFailure |
+| 源码安装及补全启用 | `tests/install_from_source.py` | 临时安装目录及启动文件、补全文件落盘、幂等加载块、原文件备份、构建失败保护、路径引用、安装后真实 Bash/Zsh Tab 补全 |
 | 历史日志 | `history/`、`tests/history_cli.rs` | 重命名/删除后查询、轮转、有界存储、UTC、跨后台去重、离线读取；超大文件/元数据、UTF-8 截断、读/定位/写失败、部分写后恢复 |
 | 配置提交故障 | `store/failure_tests.rs`、`store/io.rs` | 注入部分写、文件同步、原子替换、目录同步失败；提交前保持双文件不变，提交后报告已保存并保留停止保护；不会真实填满磁盘 |
 | IPC 与启动故障 | `client_failure_tests.rs`、`cli/completion_tests.rs` | 测试私有 IPC 对端返回坏数据/断开/缺少错误/超时；虚拟时钟验证超时上限；启动失败保留 saved:true，等待失败保留最近快照 |
 | 后台及平台适配 | `tests/daemon_restart.rs`、`platform/service_tests.rs`、`cli/service_lifecycle.rs`、`fwm-core/tests/paths.rs` | 配置隔离、实例替换、路径权限；三平台服务命令参数/顺序/重复安装/卸载/失败回滚、已安装服务与残留非托管后台接管；系统执行器使用模拟对象 |
-| 分组与身份歧义回归 | `tests/audited_cli.rs`、`tests/port_group_regressions.rs`、`model.rs`、`store/migration_tests.rs` | 组改名保留成员名、拒绝隐式合并、显式入组退组、UUID 名称冲突、长自动组名区分、旧分组迁移不制造 ID 冲突 |
+| 分组与身份歧义回归 | `tests/audited_cli.rs`、`tests/port_group_regressions.rs`、`model.rs`、`store/migration_tests.rs` | 组改名保留成员名、拒绝隐式合并、显式入组退组、UUID 名称冲突、随机短名称与批次组不冲突、旧分组迁移不制造 ID 冲突 |
 | SSH 路径、认证与刷新回归 | `ssh/path_options.rs`、`ssh/config_override_tests.rs`、`ssh/auth_tests.rs`、`tests/ssh_refresh.py` | 相对路径基准、配置符号链接切换、OpenSSH 布尔值、公钥选择 agent 身份、显式缺失私钥；CLI 服务器重启和 reload 读取新端点，同时保留其他服务器长连接 |
 | 信任上下文和诊断回归 | `tests/trust_recovery.py`、`ssh_actions.rs`、`ssh/tests.rs`、`tests/ssh_path_ux.rs` | 已信任密钥无交互幂等、目标 known_hosts 内的 hop 信任、记录日志失败不否认已提交信任、实际认证进程/agent 来源、POSIX 和 PowerShell 恢复命令引用 |
 | 服务事务与故障回归 | `platform/service_tests.rs`、`platform/service_windows_tests.rs`、`platform/service_definition.rs`、`platform/service_command.rs`、`cli/service_lifecycle_tests.rs` | 状态化三平台假服务管理器；旧定义与 OS 注册独立恢复、部分写失败、原子替换、回滚所有权、整个事务互斥、命令超时、旧路径发现、失配 marker、禁用任务、升级后可执行文件刷新、失败退出码 |
@@ -48,6 +49,7 @@ python3 -m unittest discover -s crates/fwm-core/src/cleanup -p 'test_*.py' -v
 cargo build --release --locked
 python3 tests/postfix_queries.py target/release/fwm
 python3 tests/shell_completion_scripts.py
+python3 tests/install_from_source.py -v
 python3 tests/smoke.py target/release/fwm
 ```
 

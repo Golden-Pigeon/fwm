@@ -8,8 +8,9 @@ mod ssh_actions;
 #[cfg(test)]
 mod test_support;
 
-#[tokio::main]
-async fn main() -> std::process::ExitCode {
+fn main() -> std::process::ExitCode {
+    cli::shell_completion::complete();
+    // Help, version and argument errors exit before creating runtime threads.
     let raw: Vec<_> = std::env::args_os().collect();
     let json_requested = raw
         .iter()
@@ -26,6 +27,11 @@ async fn main() -> std::process::ExitCode {
         }
         Err(error) => error.exit(),
     };
+    execute(args)
+}
+
+#[tokio::main]
+async fn execute(args: cli::args::Cli) -> std::process::ExitCode {
     let json_output = args.json;
     let daemon_run = matches!(
         &args.command,

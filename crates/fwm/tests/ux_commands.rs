@@ -9,6 +9,7 @@ use std::{
 
 use fwm_core::model::{Config, DesiredState};
 use serde_json::Value;
+use unicode_width::UnicodeWidthStr;
 
 struct Cli {
     directory: tempfile::TempDir,
@@ -316,6 +317,114 @@ fn status_text_displays_complete_local_and_remote_mappings() {
         text.contains("remote 127.0.0.1:31001 -> local app.internal.example:8080"),
         "{text}"
     );
+}
+
+#[test]
+fn status_columns_align_for_long_and_wide_names_without_changing_json() {
+    let cli = Cli::new();
+    let cases = [
+        (
+            "example-cluster-remote-12222",
+            "example-cluster",
+            None,
+            "12222",
+        ),
+        (
+            "database",
+            "production-example-cluster-server-with-a-long-name",
+            Some("production-services-with-a-long-group-name"),
+            "12223",
+        ),
+        (
+            "远程数据库转发服务专用线路",
+            "学校服务器",
+            Some("数据库同步服务分组"),
+            "12224",
+        ),
+    ];
+    for (name, server, group, port) in cases {
+        cli.json(&[
+            "server",
+            "add",
+            server,
+            "--ssh",
+            "dev",
+            "--ssh-config",
+            cli.ssh_config.to_str().unwrap(),
+        ]);
+        let mut arguments = vec![
+            "add",
+            "--name",
+            name,
+            "--server",
+            server,
+            "--remote",
+            "--src",
+            port,
+            "--tgt",
+            "22",
+            "--disabled",
+        ];
+        if let Some(group) = group {
+            arguments.extend(["--group", group]);
+        }
+        cli.json(&arguments);
+    }
+
+    // Compare terminal columns rather than bytes, codepoints, or fixed padding.
+    let column_starts = |line: &str| {
+        let mut offset = 0;
+        line.split_whitespace()
+            .map(|cell| {
+                let start = offset + line[offset..].find(cell).unwrap();
+                offset = start + cell.len();
+                line[..start].width()
+            })
+            .collect::<Vec<_>>()
+    };
+    let text = cli.text(&["status"]);
+    let header = text.lines().find(|line| line.starts_with("NAME")).unwrap();
+    assert_eq!(
+        header.split_whitespace().collect::<Vec<_>>(),
+        ["NAME", "SERVER", "GROUP", "STATE", "INTENT", "RETRY"]
+    );
+    let expected_columns = column_starts(header);
+    let snapshot = cli.json(&["status"]);
+    assert_eq!(snapshot["daemon_running"], false);
+    let forwards = snapshot["forwards"].as_array().unwrap();
+    assert_eq!(forwards.len(), cases.len());
+    for (name, server, group, port) in cases {
+        let row = text
+            .lines()
+            .find(|line| line.split_whitespace().next() == Some(name))
+            .unwrap_or_else(|| panic!("missing complete rule name {name:?}: {text}"));
+        assert_eq!(
+            row.split_whitespace().collect::<Vec<_>>(),
+            [
+                name,
+                server,
+                group.unwrap_or("—"),
+                "daemon_offline",
+                "stopped",
+                "—"
+            ],
+            "{text}"
+        );
+        assert_eq!(column_starts(row), expected_columns, "{text}");
+        assert!(
+            text.contains(&format!(
+                "  remote 127.0.0.1:{port} -> local localhost:22  (0 active)"
+            )),
+            "{text}"
+        );
+        let forward = forwards
+            .iter()
+            .find(|forward| forward["name"].as_str() == Some(name))
+            .unwrap();
+        assert_eq!(forward["server"], server);
+        assert_eq!(forward["group"], serde_json::json!(group));
+        assert_eq!(forward["desired_state"], "stopped");
+    }
 }
 
 #[test]

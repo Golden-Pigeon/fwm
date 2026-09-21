@@ -40,6 +40,56 @@ async fn wait_state(rule: &crate::engine::state::Rule, expected: RuntimeState) {
 }
 
 #[tokio::test]
+async fn unmanaged_port_conflict_keeps_retrying_without_requesting_a_listener() {
+    let behaviour = Behaviour::default();
+    let listens = behaviour.listens.clone();
+    let mut fixture = Fixture::with_behaviour(behaviour).await;
+    let mut rule = test_rule();
+    rule.spec = lease_spec();
+    let (session, mut failures) = SessionControl::new(Some(cleanup(&fixture)));
+    let cancel = CancellationToken::new();
+    let worker = tokio::spawn(forward::run(
+        rule.clone(),
+        fixture.handle.clone(),
+        fixture.routes.clone(),
+        RetryPolicy::default(),
+        cancel.clone(),
+        session.clone(),
+    ));
+    let channel = fixture.session_channels.recv().await.unwrap();
+    let mut io = BufReader::new(channel.into_stream());
+    let mut line = String::new();
+    io.read_line(&mut line).await.unwrap();
+    let request: Value = serde_json::from_str(&line).unwrap();
+    assert_eq!(request["op"], "claim");
+    let reply = json!({"protocol":1,"op":"claim","ok":false,
+        "code":"unmanaged_conflict","message":"port occupied by an unregistered process"});
+    io.get_mut()
+        .write_all(format!("{reply}\n").as_bytes())
+        .await
+        .unwrap();
+    let failure = tokio::time::timeout(Duration::from_secs(2), failures.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(
+        !failure.needs_attention,
+        "external port conflicts should remain retryable"
+    );
+    assert!(failure.message.contains("unmanaged_conflict"));
+    assert!(session.blocked.lock().unwrap().is_none());
+    wait_state(&rule, RuntimeState::Backoff).await;
+    assert_eq!(listens.load(std::sync::atomic::Ordering::SeqCst), 0);
+    assert!(fixture.routes.lock().unwrap().is_empty());
+    assert!(fixture.session_channels.try_recv().is_err());
+    session.disconnected.cancel();
+    tokio::time::timeout(Duration::from_secs(2), worker)
+        .await
+        .unwrap()
+        .unwrap();
+}
+
+#[tokio::test]
 async fn helper_startup_denial_missing_python_disconnect_and_timeout_are_actionable() {
     for (mode, needle) in [
         (ExecMode::Reject, "exec_denied"),

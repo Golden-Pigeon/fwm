@@ -30,7 +30,9 @@ jobs:
         run: python3 tests/postfix_queries.py target/debug/fwm
       - name: Shell completion line editor regressions
         if: runner.os != 'Windows'
-        run: python3 tests/shell_completion_scripts.py
+        run: |
+          python3 tests/shell_completion_scripts.py
+          python3 tests/install_from_source.py -v
       - name: Real OpenSSH smoke (Linux)
         if: runner.os == 'Linux'
         run: |

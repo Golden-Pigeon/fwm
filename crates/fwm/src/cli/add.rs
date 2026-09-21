@@ -8,6 +8,10 @@ use fwm_core::{
     paths::Paths,
 };
 
+#[path = "random_names.rs"]
+mod random_names;
+use random_names::RandomNames;
+
 pub async fn run(paths: &Paths, args: AddArgs, json_output: bool) -> Result<()> {
     if args.disabled && (args.wait || args.timeout.is_some()) {
         bail!("--wait cannot be combined with --disabled; --timeout also implies --wait");
@@ -102,12 +106,23 @@ pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Res
     }
     let selected = server_selection::select(config, &args.server, args.ssh_config.as_deref())?;
     let multiple = tunnels.len() > 1;
+    let mut names = RandomNames::new(config, args.group.as_deref());
+    let group = if let Some(group) = &args.group {
+        Some(group.clone())
+    } else if multiple {
+        Some(match explicit_name {
+            Some(name) => name.to_owned(),
+            None => names.take()?,
+        })
+    } else {
+        None
+    };
     let mut forwards = Vec::with_capacity(tunnels.len());
     for tunnel in tunnels {
         let name = match explicit_name {
             Some(name) if multiple => format!("{name}-{}", tunnel.listen().port()),
             Some(name) => name.to_owned(),
-            None => automatic_name(&selected.profile.name, &tunnel),
+            None => names.take()?,
         };
         validate_name(&name).map_err(anyhow::Error::msg)?;
         if config
@@ -128,31 +143,10 @@ pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Res
             Some(args.connection_mode),
             args.remote_cleanup,
         )?;
-        let group = args.group.clone().or_else(|| {
-            multiple.then(|| {
-                explicit_name.map_or_else(
-                    || automatic_group(&selected.profile, tunnel.kind()),
-                    str::to_owned,
-                )
-            })
-        });
-        if args.group.is_none()
-            && explicit_name.is_none()
-            && let Some(group) = &group
-            && config.forwards.iter().any(|forward| {
-                forward.group.as_ref() == Some(group)
-                    && (forward.server_id != selected.profile.id
-                        || forward.tunnel.kind() != tunnel.kind())
-            })
-        {
-            bail!(
-                "automatic group {group:?} is already used by another server or direction; choose --group GROUP explicitly"
-            );
-        }
         forwards.push(ForwardSpec {
             id: new_id(),
             name,
-            group,
+            group: group.clone(),
             server_id: selected.profile.id.clone(),
             tunnel,
             desired_state: if args.disabled {
@@ -170,36 +164,6 @@ pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Res
     candidate.forwards.extend(forwards.iter().cloned());
     candidate.validate().map_err(anyhow::Error::msg)?;
     Ok(AddPlan { forwards, server })
-}
-
-fn automatic_name(server: &str, tunnel: &Tunnel) -> String {
-    append_name(
-        server,
-        &format!("-{}-{}", tunnel.kind(), tunnel.listen().port()),
-    )
-}
-
-fn automatic_group(server: &ServerProfile, direction: &str) -> String {
-    let suffix = format!("-{direction}");
-    if server.name.len() + suffix.len() <= 100 {
-        return format!("{}{suffix}", server.name);
-    }
-    // Stable FNV-1a over the full server identity avoids losing distinct tails
-    // when the readable prefix must be shortened. Collision checks still run.
-    let hash = server.id.bytes().fold(0xcbf29ce484222325u64, |hash, byte| {
-        (hash ^ u64::from(byte)).wrapping_mul(0x100000001b3)
-    });
-    append_name(&server.name, &format!("-{hash:016x}{suffix}"))
-}
-
-fn append_name(server: &str, suffix: &str) -> String {
-    // Names have a 100-byte limit; do not split a Unicode server name when adding
-    // the automatic suffix. A collision still produces an explicit rename error.
-    let mut end = server.len().min(100 - suffix.len());
-    while !server.is_char_boundary(end) {
-        end -= 1;
-    }
-    format!("{}{suffix}", &server[..end])
 }
 
 #[cfg(test)]
@@ -254,11 +218,13 @@ mod tests {
             &["--server", "dev", "--remote", "--port", "3000-3002"],
         )
         .unwrap();
+        let group = automatic.forwards[0].group.as_deref().unwrap();
+        assert_word(group);
         assert!(
             automatic
                 .forwards
                 .iter()
-                .all(|rule| rule.group.as_deref() == Some("dev-remote"))
+                .all(|rule| rule.group.as_deref() == Some(group) && rule.name != group)
         );
         let single = create(
             &Config::default(),
@@ -346,9 +312,14 @@ mod tests {
         }
     }
 
+    fn assert_word(name: &str) {
+        assert!((3..=8).contains(&name.len()), "{name}");
+        assert!(name.bytes().all(|byte| byte.is_ascii_lowercase()), "{name}");
+    }
+
     #[test]
-    fn auto_names_all_directions_and_batch_ports() {
-        for (direction, expected) in [("--local", "local"), ("--remote", "remote")] {
+    fn automatic_names_are_short_unique_words_for_every_direction() {
+        for direction in ["--local", "--remote"] {
             let batch = create(
                 &Config::default(),
                 &[
@@ -360,27 +331,53 @@ mod tests {
                 ],
             )
             .unwrap();
+            let mut names = std::collections::HashSet::new();
+            for forward in &batch.forwards {
+                assert_word(&forward.name);
+                assert!(names.insert(&forward.name));
+                assert_eq!(forward.server_id, batch.server.as_ref().unwrap().id);
+            }
             assert_eq!(
                 batch
                     .forwards
                     .iter()
-                    .map(|forward| forward.name.clone())
+                    .map(|rule| rule.tunnel.listen().port())
                     .collect::<Vec<_>>(),
-                [3000, 3001, 3002].map(|port| format!("example-cluster-{expected}-{port}"))
-            );
-            assert!(
-                batch
-                    .forwards
-                    .iter()
-                    .all(|forward| forward.server_id == batch.server.as_ref().unwrap().id)
+                [3000, 3001, 3002]
             );
         }
-        let batch = create(
+        let single = create(
             &Config::default(),
             &["--server", "dev", "--dynamic", "1080"],
         )
         .unwrap();
-        assert_eq!(batch.forwards[0].name, "dev-dynamic-1080");
+        assert_word(&single.forwards[0].name);
+        assert!(single.forwards[0].group.is_none());
+    }
+
+    #[test]
+    fn maximum_unnamed_batch_has_distinct_words_and_a_separate_group() {
+        let batch = create(
+            &Config::default(),
+            &[
+                "--server",
+                "dev",
+                "--local",
+                "--port",
+                "10000-10511",
+                "--disabled",
+            ],
+        )
+        .unwrap();
+        assert_eq!(batch.forwards.len(), 512);
+        let group = batch.forwards[0].group.as_deref().unwrap();
+        assert_word(group);
+        let mut names = std::collections::HashSet::from([group]);
+        for rule in &batch.forwards {
+            assert_word(&rule.name);
+            assert_eq!(rule.group.as_deref(), Some(group));
+            assert!(names.insert(&rule.name));
+        }
     }
 
     #[test]
@@ -412,22 +409,22 @@ mod tests {
     }
 
     #[test]
-    fn auto_name_uses_resolved_profile_name_and_respects_unicode_length() {
+    fn automatic_names_are_independent_of_server_name_length_or_selector() {
         let mut server = ServerProfile::new("dev");
         server.ssh_alias = Some("dev-host".into());
         let config = Config {
             servers: vec![server.clone()],
             ..Default::default()
         };
-        let batch = create(&config, &["--server", "dev", "--remote", "--port", "7890"]).unwrap();
-        assert!(batch.server.is_none());
-        assert_eq!(batch.forwards[0].name, "dev-remote-7890");
-        let batch = create(
-            &config,
-            &["--server", &server.id, "--local", "--port", "7890"],
-        )
-        .unwrap();
-        assert_eq!(batch.forwards[0].name, "dev-local-7890");
+        for selector in ["dev", server.id.as_str()] {
+            let batch = create(
+                &config,
+                &["--server", selector, "--local", "--port", "7890"],
+            )
+            .unwrap();
+            assert!(batch.server.is_none());
+            assert_word(&batch.forwards[0].name);
+        }
         let batch = create(
             &Config::default(),
             &[
@@ -439,8 +436,7 @@ mod tests {
             ],
         )
         .unwrap();
-        validate_name(&batch.forwards[0].name).unwrap();
-        assert!(batch.forwards[0].name.ends_with("-local-65535"));
+        assert_word(&batch.forwards[0].name);
     }
 
     #[test]

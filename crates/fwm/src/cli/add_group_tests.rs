@@ -34,7 +34,13 @@ fn explicit_group_creates_and_appends_one_or_many_members() {
         )
         .unwrap(),
     );
-    assert_eq!(config.forwards[0].name, "dev-local-3000");
+    assert!(
+        config.forwards[0]
+            .name
+            .bytes()
+            .all(|byte| byte.is_ascii_lowercase())
+    );
+    assert_ne!(config.forwards[0].name, "web");
     for ports in ["3001", "3002-3003"] {
         let plan = create(&config, &["--local", "--port", ports, "--group", "web"]).unwrap();
         assert!(plan.server.is_none());

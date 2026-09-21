@@ -144,6 +144,25 @@ fn assert_tcp(config: &Config, name: &str, remote: bool, source: u16, target_por
     }
 }
 
+fn assert_random_word(name: &str) {
+    assert!((3..=8).contains(&name.len()), "not a short word: {name}");
+    assert!(
+        name.bytes().all(|letter| letter.is_ascii_lowercase()),
+        "not a lowercase English word: {name}"
+    );
+}
+
+fn automatic_rule(config: &Config, source: u16) -> &ForwardSpec {
+    let rule = config
+        .forwards
+        .iter()
+        .find(|rule| rule.tunnel.listen().port() == source)
+        .unwrap_or_else(|| panic!("missing rule for port {source}"));
+    assert_random_word(&rule.name);
+    assert_eq!(rule.desired_state, DesiredState::Stopped);
+    rule
+}
+
 #[test]
 fn first_add_accepts_an_ssh_alias_without_name_or_preregistration_atomically() {
     let cli = Cli::new();
@@ -170,7 +189,9 @@ fn first_add_accepts_an_ssh_alias_without_name_or_preregistration_atomically() {
         server.ssh_config.as_ref(),
         Some(&cli.ssh_config.canonicalize().unwrap())
     );
-    assert_tcp(&config, "example-cluster-remote-12222", true, 12222, 22);
+    let first = automatic_rule(&config, 12222);
+    assert_tcp(&config, &first.name, true, 12222, 22);
+    assert!(first.group.is_none());
     assert_eq!(config.forwards[0].server_id, server.id);
 
     cli.add_success(&[
@@ -189,7 +210,11 @@ fn first_add_accepts_an_ssh_alias_without_name_or_preregistration_atomically() {
         "reuse the existing server identity"
     );
     assert_eq!(second.forwards.len(), 2);
-    assert_tcp(&second, "example-cluster-remote-12223", true, 12223, 22);
+    let added = automatic_rule(&second, 12223);
+    assert_tcp(&second, &added.name, true, 12223, 22);
+    assert_ne!(added.name, first.name);
+    assert!(added.group.is_none());
+    assert_eq!(second.forward(&first.id), Some(first));
     assert!(
         second
             .forwards
@@ -280,7 +305,7 @@ fn positional_and_named_rule_names_work_around_direction_flags() {
 }
 
 #[test]
-fn automatic_names_include_direction_and_port_and_explicit_batches_keep_name_prefix() {
+fn automatic_names_are_short_unique_words_and_explicit_batches_keep_name_prefix() {
     let cli = Cli::new();
     cli.add_success(&["--server", "example-cluster", "--remote", "--port", "12000"]);
     let before = cli.config();
@@ -319,13 +344,28 @@ fn automatic_names_include_direction_and_port_and_explicit_batches_keep_name_pre
     assert_eq!(config.revision, before.revision + 3);
     assert_eq!(config.servers, before.servers);
     assert_eq!(config.forwards.len(), 6);
-    assert_tcp(&config, "example-cluster-local-3000", false, 3000, 3000);
-    assert_tcp(&config, "example-cluster-local-3001", false, 3001, 3001);
-    let dynamic = rule(&config, "example-cluster-dynamic-1080");
+    let first_local = automatic_rule(&config, 3000);
+    let second_local = automatic_rule(&config, 3001);
+    assert_tcp(&config, &first_local.name, false, 3000, 3000);
+    assert_tcp(&config, &second_local.name, false, 3001, 3001);
+    let group = first_local.group.as_deref().unwrap();
+    assert_random_word(group);
+    assert_eq!(second_local.group.as_deref(), Some(group));
+    assert_eq!(config.select_group_forwards(group).unwrap().len(), 2);
+    let dynamic = automatic_rule(&config, 1080);
     assert!(matches!(dynamic.tunnel, Tunnel::Dynamic { .. }));
     assert_eq!(dynamic.tunnel.listen().to_string(), "127.0.0.1:1080");
+    assert!(dynamic.group.is_none());
+    automatic_rule(&config, 12000);
+    let mut names = std::collections::HashSet::new();
+    for rule in &config.forwards {
+        assert!(names.insert(&rule.name), "duplicate name: {}", rule.name);
+        assert_ne!(rule.name, group, "a rule name must not shadow its group");
+        assert!(config.forwards.iter().all(|other| other.id != rule.name));
+    }
     assert_tcp(&config, "fan-13000", true, 13000, 22);
     assert_tcp(&config, "fan-13001", true, 13001, 22);
+    assert_eq!(config.select_group_forwards("fan").unwrap().len(), 2);
     assert!(
         config
             .forwards

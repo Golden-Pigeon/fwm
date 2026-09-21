@@ -78,7 +78,11 @@ impl Fixture {
         let before = contents(self.directory.path());
         let output = Command::new(env!("CARGO_BIN_EXE_fwm"))
             .current_dir(self.directory.path())
-            .args(["__complete", &cursor.to_string(), "--"])
+            .env("FWM_COMPLETE", "bash")
+            .env("TOKIO_WORKER_THREADS", "0")
+            .env("_CLAP_COMPLETE_INDEX", cursor.to_string())
+            .env("_CLAP_IFS", "\n")
+            .arg("--")
             .args(words)
             .output()
             .unwrap();
@@ -255,13 +259,13 @@ fn config_directory_is_honored_at_global_and_nested_positions() {
 }
 
 #[test]
-fn cursor_can_precede_other_words_or_represent_an_omitted_empty_word() {
+fn cursor_can_precede_other_words_or_represent_an_empty_word() {
     let fixture = Fixture::new();
     let directory = fixture.paths.config_dir.to_str().unwrap();
     let words = ["fwm", "up", "we", "--config-dir", directory];
     assert_eq!(fixture.complete_at(&words, 2), ["web"]);
-    let words = ["fwm", "--config-dir", directory, "up", "--group"];
-    assert_eq!(fixture.complete_at(&words, words.len()), ["apps"]);
+    let words = ["fwm", "--config-dir", directory, "up", "--group", ""];
+    assert_eq!(fixture.complete_at(&words, words.len() - 1), ["apps"]);
 }
 
 #[test]
@@ -401,7 +405,8 @@ fn scripts_are_generated_without_reading_or_creating_configuration() {
         );
         assert!(output.stderr.is_empty());
         let script = String::from_utf8(output.stdout).unwrap();
-        assert!(script.contains("__complete"));
+        assert!(script.contains("FWM_COMPLETE"));
+        assert!(!script.contains("__complete"));
         assert!(!config.exists());
         #[cfg(unix)]
         {

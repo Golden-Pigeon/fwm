@@ -132,6 +132,61 @@ class RegistryTests(unittest.TestCase):
         self.assertEqual(self.adapter.signals, [])
         self.assertEqual(list(Path(self.directory.name).rglob("*.json")), [])
 
+    def test_same_and_other_user_services_are_never_signaled(self):
+        for uid in (os.geteuid(), os.geteuid() + 1):
+            with self.subTest(uid=uid):
+                service = dict(process(999, 1, "python3"), uid=uid)
+                self.adapter.processes[999] = service
+                self.adapter.listen(999, 12345)
+                sockets = list(self.adapter.tcp)
+                with mock.patch.object(self.adapter, "open_process") as open_process:
+                    self.assert_error("unmanaged_conflict", self.manager().claim, command())
+                open_process.assert_not_called()
+                self.assertEqual(self.adapter.signals, [])
+                self.assertEqual(self.adapter.process(999), service)
+                self.assertEqual(self.adapter.tcp, sockets)
+                self.assertEqual(list(Path(self.directory.name).rglob("*.json")), [])
+                self.adapter.tcp = [item for item in self.adapter.tcp if item["pid"] != 999]
+
+    def test_an_unregistered_sshd_name_does_not_authorize_termination(self):
+        for name in ("sshd", "sshd-session"):
+            for uid in (os.geteuid(), os.geteuid() + 1):
+                with self.subTest(name=name, uid=uid):
+                    self.adapter.processes[999] = dict(process(999, 1, name), uid=uid)
+                    self.adapter.listen(999, 12345)
+                    with mock.patch.object(self.adapter, "open_process") as open_process:
+                        self.assert_error("unmanaged_conflict", self.manager().claim, command())
+                    open_process.assert_not_called()
+                    self.assertEqual(self.adapter.signals, [])
+                    self.assertIsNotNone(self.adapter.process(999))
+                    self.assertEqual(list(Path(self.directory.name).rglob("*.json")), [])
+                    self.adapter.tcp = [item for item in self.adapter.tcp if item["pid"] != 999]
+
+    def test_conflict_retries_wait_for_service_to_release_port_without_signaling_it(self):
+        for uid in (os.geteuid(), os.geteuid() + 1):
+            with self.subTest(uid=uid):
+                service = dict(process(999, 1, "python3"), uid=uid)
+                self.adapter.processes[999] = service
+                self.adapter.listen(999, 12345)
+                request = command()
+                with mock.patch.object(self.adapter, "open_process") as open_process:
+                    for generation in range(1, 6):
+                        self.assert_error("unmanaged_conflict", self.manager().claim,
+                                          dict(request, generation=generation, session_id=str(uuid.uuid4())))
+                        self.assertEqual(self.adapter.signals, [])
+                        self.assertEqual(self.adapter.process(999), service)
+                        self.assertEqual(list(Path(self.directory.name).rglob("*.json")), [])
+                    # The service closes its listener but continues running.
+                    self.adapter.tcp = [item for item in self.adapter.tcp if item["pid"] != 999]
+                    replacement = self.manager()
+                    result = replacement.claim(dict(request, generation=6, session_id=str(uuid.uuid4())))
+                open_process.assert_not_called()
+                self.assertTrue(result["ok"])
+                self.assertFalse(result["reclaimed"])
+                self.assertEqual(self.adapter.signals, [])
+                self.assertEqual(self.adapter.process(999), service)
+                replacement.release()
+
     def test_another_device_cannot_reclaim_the_first_devices_listener(self):
         old = self.manager()
         request = command()
@@ -150,6 +205,43 @@ class RegistryTests(unittest.TestCase):
         self.assert_error("unmanaged_conflict", self.manager(200).claim,
                           dict(request, generation=2, session_id=str(uuid.uuid4())))
         self.assertEqual(self.adapter.signals, [])
+
+    def test_registered_pid_with_changed_name_or_uid_is_never_signaled(self):
+        for changed in ({"name": "python3"}, {"uid": os.geteuid() + 1},
+                        {"name": "python3", "uid": os.geteuid() + 1}):
+            with self.subTest(changed=changed):
+                old = self.manager()
+                request = command()
+                old.claim(request)
+                self.adapter.listen(100, 12345)
+                original = self.adapter.processes[100]
+                self.adapter.processes[100] = dict(original, **changed)
+                with mock.patch.object(self.adapter, "open_process") as open_process:
+                    self.assert_error("unmanaged_conflict", self.manager(200).claim,
+                                      dict(request, generation=2, session_id=str(uuid.uuid4())))
+                open_process.assert_not_called()
+                self.assertEqual(self.adapter.signals, [])
+                self.assertEqual(self.adapter.process(100), dict(original, **changed))
+                self.adapter.processes[100] = original
+                self.adapter.tcp = [item for item in self.adapter.tcp if not item["listening"]]
+
+    def test_registered_session_does_not_authorize_signaling_another_service(self):
+        for uid in (os.geteuid(), os.geteuid() + 1):
+            with self.subTest(uid=uid):
+                old = self.manager()
+                request = command()
+                old.claim(request)
+                service = dict(process(999, 1, "python3"), uid=uid)
+                self.adapter.processes[999] = service
+                self.adapter.listen(999, 12345)
+                with mock.patch.object(self.adapter, "open_process") as open_process:
+                    self.assert_error("unmanaged_conflict", self.manager(200).claim,
+                                      dict(request, generation=2, session_id=str(uuid.uuid4())))
+                open_process.assert_not_called()
+                self.assertEqual(self.adapter.signals, [])
+                self.assertEqual(self.adapter.process(999), service)
+                self.assertIsNotNone(self.adapter.process(100))
+                self.adapter.tcp = [item for item in self.adapter.tcp if item["pid"] != 999]
 
     def test_a_gone_session_and_free_port_allow_a_new_lease(self):
         old = self.manager()

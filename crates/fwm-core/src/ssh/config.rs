@@ -1,6 +1,7 @@
 use std::{
     collections::HashMap,
     io::Read,
+    net::IpAddr,
     path::{Path, PathBuf},
 };
 
@@ -73,19 +74,52 @@ fn resolve_with_home(profile: &ServerProfile, home: &Path) -> Result<ResolvedSer
             ssh_config.display()
         )));
     }
-    let user = profile
+    let initial_user = profile
         .user
         .clone()
         .or_else(|| parsed.one("user"))
         .or_else(|| std::env::var("USER").ok())
-        .or_else(|| std::env::var("USERNAME").ok())
-        .ok_or_else(|| config_error("no SSH user configured and USER/USERNAME is unset"))?;
+        .or_else(|| std::env::var("USERNAME").ok());
     let host = profile
         .host
         .clone()
         .or_else(|| parsed.one("hostname"))
         .unwrap_or_else(|| alias.to_owned());
-    let host = expand_tokens(&host, alias, alias, &user, profile.port.unwrap_or(22), home)?;
+    let mut host = expand_tokens(
+        &host,
+        alias,
+        alias,
+        initial_user.as_deref().unwrap_or_default(),
+        profile.port.unwrap_or(22),
+        home,
+    )?;
+    if let Some(mode) = parsed
+        .one("canonicalizehostname")
+        .filter(|mode| mode != "no")
+    {
+        // No CanonicalDomains/CNAME rules are accepted yet, so the supported
+        // default needs no DNS here. Keep resolution out of the control lock.
+        let proxied = !effective_proxy_jump(profile, &parsed).is_empty();
+        host = canonical_host(&host, &mode, proxied)?;
+        // OpenSSH pins the final destination before the second pass. Scalars
+        // already obtained keep precedence; matching Host blocks can fill gaps.
+        parsed.values.insert("hostname".into(), vec![host.clone()]);
+        let mut active = true;
+        parse_file(
+            &ssh_config,
+            &host,
+            home,
+            &mut active,
+            &mut parsed,
+            &mut Vec::new(),
+        )?;
+    }
+    let user = profile
+        .user
+        .clone()
+        .or_else(|| parsed.one("user"))
+        .or(initial_user)
+        .ok_or_else(|| config_error("no SSH user configured and USER/USERNAME is unset"))?;
     let port = profile
         .port
         .or(parsed
@@ -162,18 +196,7 @@ fn resolve_with_home(profile: &ServerProfile, home: &Path) -> Result<ResolvedSer
             vec![]
         }
     };
-    let proxy_jump =
-        if profile.proxy_jump.len() == 1 && profile.proxy_jump[0].eq_ignore_ascii_case("none") {
-            vec![]
-        } else if !profile.proxy_jump.is_empty() {
-            profile.proxy_jump.clone()
-        } else {
-            parsed
-                .one("proxyjump")
-                .filter(|v| !v.eq_ignore_ascii_case("none"))
-                .map(|v| v.split(',').map(str::to_owned).collect())
-                .unwrap_or_default()
-        };
+    let proxy_jump = effective_proxy_jump(profile, &parsed);
     let identity_agent = parsed
         .one("identityagent")
         .map(|s| {
@@ -215,6 +238,56 @@ impl Parsed {
     fn one(&self, key: &str) -> Option<String> {
         self.values.get(key).and_then(|v| v.first()).cloned()
     }
+}
+
+fn effective_proxy_jump(profile: &ServerProfile, parsed: &Parsed) -> Vec<String> {
+    if profile.proxy_jump.len() == 1 && profile.proxy_jump[0].eq_ignore_ascii_case("none") {
+        vec![]
+    } else if !profile.proxy_jump.is_empty() {
+        profile.proxy_jump.clone()
+    } else {
+        parsed
+            .one("proxyjump")
+            .filter(|value| !value.eq_ignore_ascii_case("none"))
+            .map(|value| value.split(',').map(str::to_owned).collect())
+            .unwrap_or_default()
+    }
+}
+
+fn canonical_host(host: &str, mode: &str, proxied: bool) -> Result<String, SshError> {
+    if let Ok(address) = host.parse::<IpAddr>() {
+        // OpenSSH's numeric resolver uses mixed notation for IPv4-compatible
+        // IPv6 addresses when the first nonzero 16-bit group is the seventh.
+        if let IpAddr::V6(ipv6) = address
+            && ipv6.segments()[..6] == [0; 6]
+            && ipv6.segments()[6] != 0
+            && let Some(ipv4) = ipv6.to_ipv4()
+        {
+            return Ok(format!("::{ipv4}"));
+        }
+        return Ok(address.to_string());
+    }
+    let legacy_numeric = host.split('.').all(|part| {
+        let part = part.to_ascii_lowercase();
+        if let Some(hex) = part.strip_prefix("0x") {
+            !hex.is_empty() && hex.bytes().all(|byte| byte.is_ascii_hexdigit())
+        } else {
+            !part.is_empty() && part.bytes().all(|byte| byte.is_ascii_digit())
+        }
+    });
+    if host.contains(':') || legacy_numeric {
+        return Err(config_error(
+            "CanonicalizeHostname requires a standard IPv4/IPv6 literal; scoped or legacy numeric address forms are unsupported",
+        ));
+    }
+    // For a direct absolute DNS name, OpenSSH removes the trailing dot only
+    // after a successful DNS lookup. Do not silently emulate a different host.
+    if host.ends_with('.') && (mode == "always" || !proxied) {
+        return Err(config_error(
+            "CanonicalizeHostname for a trailing-dot DNS name requires DNS canonicalization, which is unsupported; use a standard IP address or a dedicated --ssh-config with CanonicalizeHostname no",
+        ));
+    }
+    Ok(host.to_ascii_lowercase())
 }
 
 fn parse_file(
@@ -294,6 +367,7 @@ fn parse_file(
                     | "forwardx11trusted"
                     | "compression"
                     | "usekeychain"
+                    | "canonicalizehostname"
             )
         {
             return Err(config_error(format!(
@@ -334,7 +408,10 @@ fn parse_file(
             _ if !*active => {}
             "identityfile" => {
                 for arg in args {
-                    result.identities.push(source_path(arg, &canonical)?);
+                    let path = source_path(arg, &canonical)?;
+                    if !result.identities.contains(&path) {
+                        result.identities.push(path);
+                    }
                 }
             }
             "identityagent" | "userknownhostsfile" | "globalknownhostsfile" => {
@@ -359,6 +436,21 @@ fn parse_file(
                     .values
                     .entry(key)
                     .or_insert_with(|| vec![if value { "yes" } else { "no" }.into()]);
+            }
+            "canonicalizehostname" => {
+                let value = match args[0].to_ascii_lowercase().as_str() {
+                    "no" | "false" => "no",
+                    "yes" | "true" => "yes",
+                    "always" => "always",
+                    _ => {
+                        return Err(config_error(format!(
+                            "{}:{}: CanonicalizeHostname expects no, yes or always",
+                            path.display(),
+                            line_number + 1
+                        )));
+                    }
+                };
+                result.values.insert(key, vec![value.into()]);
             }
             // These control the OpenSSH process/UI or features the forwarding
             // manager itself owns. They do not weaken authentication or trust.
@@ -671,3 +763,7 @@ mod tests {
         );
     }
 }
+
+#[cfg(test)]
+#[path = "config_canonical_tests.rs"]
+mod canonical_tests;
