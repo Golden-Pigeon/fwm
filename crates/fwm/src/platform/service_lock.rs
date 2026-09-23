@@ -28,7 +28,7 @@ impl OperationLock {
         let file = options.open(path)?;
         match file.try_lock_exclusive() {
             Ok(()) => Ok(Self { _file: file }),
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => Err(ServiceError::new("service_busy", "another service or daemon lifecycle operation owns this profile; no service change was made, retry after it finishes").into()),
+            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock || error.raw_os_error() == fs2::lock_contended_error().raw_os_error() => Err(ServiceError::new("service_busy", "another service or daemon lifecycle operation owns this profile; no service change was made, retry after it finishes").into()),
             Err(error) => Err(error.into()),
         }
     }

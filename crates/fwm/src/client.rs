@@ -201,7 +201,12 @@ pub fn instance_lock_held(paths: &Paths) -> Result<bool> {
             fs2::FileExt::unlock(&file)?;
             Ok(false)
         }
-        Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => Ok(true),
+        Err(error)
+            if error.kind() == std::io::ErrorKind::WouldBlock
+                || error.raw_os_error() == fs2::lock_contended_error().raw_os_error() =>
+        {
+            Ok(true)
+        }
         Err(error) => Err(error.into()),
     }
 }

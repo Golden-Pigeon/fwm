@@ -765,10 +765,17 @@ fn foreign_profile_at_legacy_service_name_is_rejected_without_mutations() {
             let original = fs::read_to_string(old.definition_path()).unwrap();
             let body = match platform {
                 Platform::Macos => original.replace(&xml_escape(&own), &xml_escape(&other)),
-                Platform::Linux => {
-                    original.replace(&own.replace('%', "%%").replace('$', "$$"), &other)
-                }
+                Platform::Linux => original.replace(
+                    &own.replace('\\', "\\\\")
+                        .replace('%', "%%")
+                        .replace('$', "$$"),
+                    &other.replace('\\', "\\\\"),
+                ),
             };
+            assert_ne!(
+                body, original,
+                "fixture must actually replace the profile path"
+            );
             let saved = if disk_foreign { &body } else { &original };
             fs::write(old.definition_path(), saved).unwrap();
             if loaded_foreign {

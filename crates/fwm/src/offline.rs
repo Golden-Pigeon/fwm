@@ -60,7 +60,9 @@ pub async fn mutate(paths: &Paths, command: Command, revision: Option<u64>) -> R
         let lock = options.open(&paths.lock_file)?;
         match lock.try_lock_exclusive() {
             Ok(()) => return apply_locked(paths, command, revision),
-            Err(error) if error.kind() == std::io::ErrorKind::WouldBlock => {}
+            Err(error)
+                if error.kind() == std::io::ErrorKind::WouldBlock
+                    || error.raw_os_error() == fs2::lock_contended_error().raw_os_error() => {}
             Err(error) => return Err(error.into()),
         }
         if tokio::time::Instant::now() >= deadline {

@@ -1,6 +1,7 @@
 name: Rust
 on:
   push:
+    branches: [master]
   pull_request:
 
 permissions:
@@ -34,18 +35,23 @@ jobs:
       - name: Status, watch and IPC budget regressions
         if: runner.os != 'Windows'
         run: python3 tests/postfix_queries.py target/debug/fwm
+      - name: Install Zsh for completion tests
+        if: runner.os == 'Linux'
+        run: sudo apt-get update && sudo apt-get install -y zsh
       - name: Shell completion line editor regressions
         if: runner.os != 'Windows'
         run: |
           python3 tests/shell_completion_scripts.py
           python3 tests/install_from_source.py -v
+          python3 tests/install_release.py -v
       - name: Real OpenSSH smoke (Linux)
         if: runner.os == 'Linux'
         run: |
           sudo apt-get update
           sudo apt-get install -y openssh-server
           sudo mkdir -p /run/sshd
-          sudo env FWM_SSH_TEST_USER="$USER" python3 tests/smoke.py "$PWD/target/debug/fwm"
+          sudo useradd --create-home --shell /bin/bash --password '*' fwm-test
+          sudo env FWM_SSH_TEST_USER=fwm-test python3 tests/smoke.py "$PWD/target/debug/fwm"
 
   coverage:
     runs-on: ubuntu-latest
@@ -61,7 +67,8 @@ jobs:
           sudo apt-get update
           sudo apt-get install -y openssh-server
           sudo mkdir -p /run/sshd
-          sudo env FWM_SSH_TEST_USER="$USER" LLVM_PROFILE_FILE="$PWD/target/coverage/raw/fwm-%8m.profraw" python3 tests/smoke.py "$PWD/target/coverage/build/debug/fwm"
+          sudo useradd --create-home --shell /bin/bash --password '*' fwm-test
+          sudo env FWM_SSH_TEST_USER=fwm-test LLVM_PROFILE_FILE="$PWD/target/coverage/raw/fwm-%8m.profraw" python3 tests/smoke.py "$PWD/target/coverage/build/debug/fwm"
       - name: Enforce line and function coverage floors
         run: python3 tests/coverage.py --report-only --fail-under-lines 80 --fail-under-functions 80
       - uses: actions/upload-artifact@v4

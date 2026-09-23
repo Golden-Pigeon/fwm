@@ -10,16 +10,19 @@ server; you do not need to install fwm there.
 
 ## Install
 
-From a source checkout, with Rust 1.90+ and a C compiler:
+On macOS or Linux, download and install the latest prebuilt release:
 
 ```sh
-./install-from-source.sh     # macOS / Linux
+curl -fsSL https://github.com/Golden-Pigeon/fwm/releases/latest/download/install.sh | bash
 ```
 
-This installs to `~/.local/bin`, sets up Bash/Zsh completion, and starts or
-restarts the default daemon. Open a new terminal afterward. On Windows, use
-`cargo install --path crates/fwm --locked --force`.
-[Installation options](docs/installation.md) cover custom paths and manual builds.
+The installer verifies SHA-256 checksums, installs to `~/.local/bin`, enables
+Bash/Zsh completion, and starts or restarts the default daemon. Open a new
+terminal afterward. No Rust toolchain is needed.
+
+On Windows, extract the x64 zip from [Releases](https://github.com/Golden-Pigeon/fwm/releases)
+and add its directory to PATH. For a specific version, a custom install path,
+or a source build, see [installation options](docs/installation.md).
 
 ## Quick start
 

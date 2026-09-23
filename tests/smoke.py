@@ -7,7 +7,7 @@ ssh-keygen. No existing SSH configuration or system service is changed.
 """
 import asyncio
 import contextlib
-import getpass
+import pwd
 import json
 import os
 from pathlib import Path
@@ -67,16 +67,15 @@ async def run(binary):
         executable = root / "fwm-test-bin"
         shutil.copy2(binary, executable)
         binary = executable
-        ssh_user = os.environ.get("FWM_SSH_TEST_USER", getpass.getuser())
-        if ssh_user != getpass.getuser():
+        ssh_user = os.environ.get("FWM_SSH_TEST_USER", pwd.getpwuid(os.geteuid()).pw_name)
+        account = pwd.getpwnam(ssh_user)
+        if account.pw_uid != os.geteuid():
             # In Linux CI sshd runs as root and authenticates the unlocked
             # runner account. That account must traverse to its public key.
             root.chmod(0o711)
         remote_state = root / "remote-state"
         remote_state.mkdir(mode=0o700)
-        if ssh_user != getpass.getuser():
-            import pwd
-            account = pwd.getpwnam(ssh_user)
+        if account.pw_uid != os.geteuid():
             os.chown(remote_state, account.pw_uid, account.pw_gid)
         config_dir = root / "manager"
         client_config = root / "direct-host-ssh-config"

@@ -2,11 +2,47 @@
 
 [Back to README](../README.md)
 
+## Prebuilt releases
+
+On macOS or Linux:
+
+```sh
+curl -fsSL https://github.com/Golden-Pigeon/fwm/releases/latest/download/install.sh -o install.sh
+bash install.sh
+bash install.sh --version v0.1.0 --root "$HOME/apps/fwm"
+bash install.sh --shell none --no-start
+```
+
+The installer supports Intel and ARM64 on macOS/Linux. It resolves the latest
+tag once, downloads the matching archive, and checks its SHA-256 against the
+release manifest before running or installing the binary. It uses Bash 3.2+,
+`curl`, `tar`, and either `sha256sum` or `shasum`; Rust is not required.
+
+Installation defaults to `~/.local/bin/fwm` and sets up Bash/Zsh completion with
+backups of changed startup files. `--root`, `--shell`, and `--rc-file` work as
+shown in the shell-completion section below. It starts or restarts the default
+`~/.fwm` daemon after installation; pass `--no-start` to install without doing so.
+`--shell none` alone only disables startup-file edits.
+
+On Windows, download `fwm-x86_64-pc-windows-msvc.zip` from
+[Releases](https://github.com/Golden-Pigeon/fwm/releases), compare its SHA-256 with
+`SHA256SUMS` using `Get-FileHash`, extract it, and add the directory containing
+`fwm.exe` to your user PATH. Keep the included license and dependency-source
+files with the executable. Run `fwm daemon restart` after upgrading an existing
+installation.
+
+Linux packages use musl and do not require a particular glibc version. macOS
+packages require macOS 11 or newer. The Windows package targets Windows x64.
+These describe the machine running fwm; supported remote recovery helpers are
+listed in [operations](operations.md#reverse-tunnel-recovery).
+
+## Build from source
+
 Build requirements are Rust/Cargo 1.90 or newer and a platform C compiler. The
 `ring` dependency includes native code. fwm uses a Rust SSH implementation and
 does not need the local `ssh` executable for normal operation.
 
-## macOS and Linux
+### macOS and Linux
 
 Run the installer from a complete source checkout:
 
@@ -25,8 +61,7 @@ Bash 3.2 or newer.
 The script builds a release binary with `cargo install --locked --force`,
 installs completion files, and configures Bash or Zsh according to `$SHELL`.
 Repeating it updates the installation. `--offline` uses cached Cargo dependencies
-only; otherwise Cargo may download missing dependencies. There is no prebuilt
-release download installer.
+only; otherwise Cargo may download missing dependencies.
 
 After installation, the script starts or restarts the daemon for `~/.fwm`, keeping
 saved rules and their running/stopped settings. It also refreshes an installed
@@ -40,7 +75,7 @@ It preserves explicit toolchain overrides, including `SDKROOT` and
 `DEVELOPER_DIR`. If linking fails with an SDK or architecture error, check
 `xcode-select -p` and any compiler/SDK overrides for a mismatched toolchain.
 
-## Windows or manual installation
+### Windows or manual installation
 
 ```sh
 cargo install --path crates/fwm --locked --force
@@ -63,7 +98,9 @@ binary, run `fwm daemon restart` to load it into the background process. See
 configuration or starting the daemon. The text is embedded in the executable,
 including on Windows and after a manual Cargo installation. The source installer
 also saves a copy in `ROOT/share/licenses/fwm/THIRD_PARTY_NOTICES.txt`.
-See [third-party notices](../THIRD_PARTY_NOTICES.md) when redistributing binaries.
+Release installations also keep `DEPENDENCY_LICENSES.txt` and
+`dependency-sources/` in that directory. See
+[third-party notices](../THIRD_PARTY_NOTICES.md) when redistributing binaries.
 
 ## Shell completion
 
@@ -102,8 +139,10 @@ source <(fwm completions zsh)
 eval "$(fwm completions bash)"
 ```
 
-On Bash 3.2, prefer `--server NAME` over `--server=NAME` and complete at the end of
+With the pinned completion engine (including Bash 3.2 and 5.2), prefer `--server NAME` over `--server=NAME` and complete at the end of
 the word. Colon-containing IDs and completion in the middle of a word have
-upstream limitations. If a quoted path does not complete in Bash or Zsh, start
+upstream limitations. Shell metacharacters in a candidate can also cause Bash
+to reject the completed command; enter such IDs as a quoted argument manually.
+If a quoted path does not complete in Bash or Zsh, start
 with an unquoted prefix and let the shell quote the result. On older Bash, a
 candidate matching a local directory can be treated as a directory.

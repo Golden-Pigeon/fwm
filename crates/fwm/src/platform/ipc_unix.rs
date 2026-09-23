@@ -78,7 +78,20 @@ fn socket_metadata(path: &Path) -> Result<std::fs::Metadata> {
 
 fn authenticate_peer(stream: &UnixStream, uid: libc::uid_t) -> Result<()> {
     let peer = stream.peer_cred().map_err(|error| {
-        auth_error(format!("cannot determine socket peer credentials: {error}"))
+        if matches!(
+            error.kind(),
+            std::io::ErrorKind::NotConnected
+                | std::io::ErrorKind::ConnectionReset
+                | std::io::ErrorKind::ConnectionAborted
+        ) {
+            // The peer can exit between connect() and getpeereid(), notably
+            // during shutdown on macOS. No request was sent to this stream.
+            // Keep the transport error so callers recheck the instance lock;
+            // wrong credentials and permission failures remain fatal below.
+            error.into()
+        } else {
+            auth_error(format!("cannot determine socket peer credentials: {error}"))
+        }
     })?;
     if peer.uid() != uid {
         return Err(auth_error(format!(
@@ -167,6 +180,16 @@ mod auth_tests;
 mod tests {
     use super::*;
     use tokio::io::{AsyncReadExt, AsyncWriteExt};
+
+    #[tokio::test]
+    async fn disconnected_peer_is_transport_failure_not_identity_failure() {
+        let (stream, peer) = UnixStream::pair().unwrap();
+        drop(peer);
+        if let Err(error) = authenticate_peer(&stream, current_uid()) {
+            assert!(!super::super::is_authentication_error(&error));
+            assert!(error.downcast_ref::<std::io::Error>().is_some());
+        }
+    }
 
     #[tokio::test]
     async fn socket_is_private_and_transports_frames() {

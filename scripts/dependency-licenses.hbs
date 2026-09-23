@@ -1,0 +1,14 @@
+fwm Rust dependency licenses
+============================
+Generated from the release Cargo.lock by cargo-about.
+
+{{#each licenses}}
+{{name}}
+{{#each used_by}}
+- {{crate.name}} {{crate.version}} ({{crate.repository}})
+{{/each}}
+
+{{{text}}}
+
+------------------------------------------------------------------------
+{{/each}}

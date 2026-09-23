@@ -48,7 +48,7 @@ cargo test --workspace --locked
 Additional checks by area:
 
 - Status/watch/history: `python3 tests/postfix_queries.py target/debug/fwm` after `cargo build --locked`.
-- Completion/install scripts: `python3 tests/shell_completion_scripts.py` and `python3 tests/install_from_source.py -v`.
+- Completion/install scripts: `python3 tests/shell_completion_scripts.py` and `python3 tests/install_from_source.py -v`, and `python3 tests/install_release.py -v`.
 - Remote helpers: `python3 -m unittest discover -s crates/fwm-core/src/cleanup -p 'test_*.py' -v` and `python3 tests/native_helper.py -v`.
 - Native helper changes also require regenerating checked-in artifacts with the three `scripts/build-native-remote-helper*.sh` scripts. They require Zig and the relevant SDK/target support; see `TESTING.md`.
 - Real SSH/recovery changes: `python3 tests/smoke.py target/debug/fwm`. It requires Unix, `sshd`, and `ssh-keygen`; Linux may need a test-environment `/run/sshd`. Use isolated temporary keys/configuration and loopback listeners. VM tests must use an explicitly selected isolated SSH endpoint.
@@ -59,3 +59,9 @@ matrix. Cross-compilation and mocked service tests do not establish native
 runtime behavior. Report the actual environment and checks used rather than
 copying historical pass counts. On macOS, keep the compiler, linker, and SDK
 from a compatible Apple toolchain; the source installer shows the `xcrun` setup.
+
+## Releases
+
+- `install.sh` downloads tagged GitHub releases; `install-from-source.sh` builds the checkout. Keep their names and documentation distinct, and reuse `scripts/install-shell-completions.sh`.
+- Release tags must equal `v` plus the workspace version. `.github/workflows/release.yml` builds and tests each native target before publishing all archives and `SHA256SUMS` together. Never replace a published version's assets.
+- Release archives carry the bundled-component notices, cargo-about's dependency notices, and unchanged MPL dependency sources. Preserve these files in packaging and installation tests.
