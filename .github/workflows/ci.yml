@@ -38,6 +38,14 @@ jobs:
       - name: Install Zsh for completion tests
         if: runner.os == 'Linux'
         run: sudo apt-get update && sudo apt-get install -y zsh
+      - name: Secure runner Zsh completion directories
+        if: runner.os != 'Windows'
+        shell: bash
+        run: |
+          while IFS= read -r directory; do
+            test -z "$directory" || sudo chmod go-w "$directory"
+          done < <(zsh -fc 'autoload -Uz compaudit; compaudit' 2>/dev/null || true)
+          zsh -fc 'autoload -Uz compaudit; compaudit'
       - name: Shell completion line editor regressions
         if: runner.os != 'Windows'
         run: |
