@@ -202,6 +202,8 @@ fwm edit backend --group another-group  # 明确把整组成员移入另一组
 
 目标地址由转发方向决定：Local 的 target 从远端访问，Remote 的 target 从本地访问。SOCKS5 支持 CONNECT；`--dynamic` 的目标连接和域名解析在远端，`--remote-dynamic` 则在本机。UDP ASSOCIATE 和 BIND 不受支持。
 
+`fwm status` 每条规则显示一行，列出名称、服务器、分组、方向、源地址、目标地址和状态。`L→R` 表示本地监听、远端目标，`R→L` 表示远端监听、本地目标。`localhost`、`127.0.0.1` 和 `::1` 只显示端口；其他 IP（包括 `0.0.0.0`）和域名保留完整地址，动态代理的目标显示为 `SOCKS5`。顶部显示状态汇总，异常规则置顶，错误详情集中在表格下方。终端中用颜色辅助区分状态，设置 `NO_COLOR=1` 可关闭颜色；重定向输出时自动关闭颜色。`--json` 保留完整地址和原有结构。
+
 ```sh
 fwm status
 fwm status --watch

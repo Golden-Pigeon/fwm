@@ -188,8 +188,13 @@ fn partial_rule_edits_preserve_addresses_identity_and_batch_membership() {
     assert_eq!(changed.id, original.id);
     assert_eq!(changed.desired_state, DesiredState::Stopped);
     let text = cli.text(&["status", "web-31000"]);
-    assert!(
-        text.contains("remote [::1]:31005 -> local db.internal.example:8080"),
+    let row = text
+        .lines()
+        .find(|line| line.split_whitespace().nth(1) == Some("web-31000"))
+        .unwrap();
+    assert_eq!(
+        &row.split_whitespace().collect::<Vec<_>>()[4..7],
+        &["R→L", "31005", "db.internal.example:8080"],
         "{text}"
     );
 }
@@ -309,14 +314,18 @@ fn status_text_displays_complete_local_and_remote_mappings() {
         "--remote=31001:app.internal.example:8080",
     ]);
     let text = cli.text(&["status"]);
-    assert!(
-        text.contains("local 127.0.0.1:31000 -> remote db.internal.example:5432"),
-        "{text}"
-    );
-    assert!(
-        text.contains("remote 127.0.0.1:31001 -> local app.internal.example:8080"),
-        "{text}"
-    );
+    for (name, direction, source, target) in [
+        ("local", "L→R", "31000", "db.internal.example:5432"),
+        ("remote", "R→L", "31001", "app.internal.example:8080"),
+    ] {
+        let row = text
+            .lines()
+            .find(|line| line.split_whitespace().nth(1) == Some(name))
+            .unwrap();
+        let cells: Vec<_> = row.split_whitespace().collect();
+        assert_eq!(&cells[4..7], &[direction, source, target], "{text}");
+    }
+    assert!(!text.contains("127.0.0.1:"), "{text}");
 }
 
 #[test]
@@ -383,10 +392,15 @@ fn status_columns_align_for_long_and_wide_names_without_changing_json() {
             .collect::<Vec<_>>()
     };
     let text = cli.text(&["status"]);
-    let header = text.lines().find(|line| line.starts_with("NAME")).unwrap();
+    let header = text
+        .lines()
+        .find(|line| line.trim_start().starts_with("NAME"))
+        .unwrap();
     assert_eq!(
         header.split_whitespace().collect::<Vec<_>>(),
-        ["NAME", "SERVER", "GROUP", "STATE", "INTENT", "RETRY"]
+        [
+            "NAME", "SERVER", "GROUP", "DIR", "SOURCE", "TARGET", "STATUS"
+        ]
     );
     let expected_columns = column_starts(header);
     let snapshot = cli.json(&["status"]);
@@ -396,27 +410,23 @@ fn status_columns_align_for_long_and_wide_names_without_changing_json() {
     for (name, server, group, port) in cases {
         let row = text
             .lines()
-            .find(|line| line.split_whitespace().next() == Some(name))
+            .find(|line| line.split_whitespace().nth(1) == Some(name))
             .unwrap_or_else(|| panic!("missing complete rule name {name:?}: {text}"));
         assert_eq!(
             row.split_whitespace().collect::<Vec<_>>(),
             [
+                "○",
                 name,
                 server,
                 group.unwrap_or("—"),
-                "daemon_offline",
-                "stopped",
-                "—"
+                "R→L",
+                port,
+                "22",
+                "offline"
             ],
             "{text}"
         );
-        assert_eq!(column_starts(row), expected_columns, "{text}");
-        assert!(
-            text.contains(&format!(
-                "  remote 127.0.0.1:{port} -> local localhost:22  (0 active)"
-            )),
-            "{text}"
-        );
+        assert_eq!(&column_starts(row)[1..], expected_columns, "{text}");
         let forward = forwards
             .iter()
             .find(|forward| forward["name"].as_str() == Some(name))
