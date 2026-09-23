@@ -29,6 +29,11 @@ from shell_completion_scripts import FWM_BINARY, write_config, write_proxy
 REPO = Path(__file__).resolve().parents[1]
 INSTALLER = REPO / "install-from-source.sh"
 PROMPT = b"FWM_INSTALL_READY> "
+TOOLCHAIN_VARIABLES = (
+    "PATH", "CC", "CXX", "SDKROOT", "DEVELOPER_DIR", "RUSTFLAGS",
+    "CARGO_ENCODED_RUSTFLAGS", "CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER",
+    "CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER",
+)
 
 
 class InteractiveShell:
@@ -92,10 +97,19 @@ class InstallFromSource(unittest.TestCase):
         self.log = self.directory / "fwm-calls.jsonl"
         self.daemon_log = self.directory / "daemon-calls.jsonl"
         self.cargo_log = self.directory / "cargo-calls.jsonl"
+        self.cargo_env_log = self.directory / "cargo-env.jsonl"
+        self.fwm_env_log = self.directory / "fwm-env.jsonl"
+        self.xcrun_log = self.directory / "xcrun-calls.jsonl"
         self.fake_bin = self.directory / "fake-bin"
         self.fake_bin.mkdir()
         fake_fwm = self.directory / "fake-fwm"
         write_proxy(fake_fwm)
+        fake_fwm.write_text(fake_fwm.read_text().replace(
+            "mode = os.environ.get('FWM_COMPLETE')\n",
+            "with open(os.environ['FWM_INSTALL_TEST_FWM_ENV_LOG'], 'a') as stream:\n"
+            f"    stream.write(json.dumps({{key: os.environ.get(key) for key in {TOOLCHAIN_VARIABLES!r}}}) + '\\n')\n"
+            "mode = os.environ.get('FWM_COMPLETE')\n",
+        ))
         with fake_fwm.open("a") as stream:
             stream.write(
                 "if args == ['daemon', 'restart']:\n"
@@ -111,6 +125,10 @@ class InstallFromSource(unittest.TestCase):
             "args = sys.argv[1:]\n"
             "with open(os.environ['FWM_INSTALL_TEST_CARGO_LOG'], 'a') as stream:\n"
             "    stream.write(json.dumps(args) + '\\n')\n"
+            "with open(os.environ['FWM_INSTALL_TEST_CARGO_ENV_LOG'], 'a') as stream:\n"
+            f"    environment = {{key: os.environ.get(key) for key in {TOOLCHAIN_VARIABLES!r}}}\n"
+            "    tools = {name: shutil.which(name) for name in ['clang', 'ld']}\n"
+            "    stream.write(json.dumps({'environment': environment, 'tools': tools}) + '\\n')\n"
             "if os.environ.get('FWM_INSTALL_TEST_FAIL_CARGO'):\n"
             "    sys.exit(23)\n"
             "root = next((arg.split('=', 1)[1] for arg in args if arg.startswith('--root=')), None)\n"
@@ -121,12 +139,39 @@ class InstallFromSource(unittest.TestCase):
             "shutil.copy2(os.environ['FWM_INSTALL_TEST_BINARY'], bindir / 'fwm')\n"
         )
         cargo.chmod(0o755)
+        # Most installer tests do not need the host's Apple developer tools.
+        uname = self.fake_bin / "uname"
+        uname.write_text(
+            f"#!{sys.executable}\n"
+            "import os\n"
+            "print(os.environ.get('FWM_INSTALL_TEST_UNAME', 'Linux'))\n"
+        )
+        uname.chmod(0o755)
+        xcrun = self.fake_bin / "xcrun"
+        xcrun.write_text(
+            f"#!{sys.executable}\n"
+            "import json, os, sys\n"
+            "args = sys.argv[1:]\n"
+            "with open(os.environ['FWM_INSTALL_TEST_XCRUN_LOG'], 'a') as stream:\n"
+            "    stream.write(json.dumps({'args': args, 'developer_dir': os.environ.get('DEVELOPER_DIR')}) + '\\n')\n"
+            "queries = {('--sdk', 'macosx', '--find', 'clang'): 'CLANG',\n"
+            "           ('--sdk', 'macosx', '--find', 'ld'): 'LD',\n"
+            "           ('--sdk', 'macosx', '--show-sdk-path'): 'SDK'}\n"
+            "query = queries.get(tuple(args))\n"
+            "if query is None or query == os.environ.get('FWM_INSTALL_TEST_FAIL_XCRUN'):\n"
+            "    sys.exit(24)\n"
+            "print(os.environ['FWM_INSTALL_TEST_APPLE_' + query])\n"
+        )
+        xcrun.chmod(0o755)
         self.env = dict(os.environ)
         self.env.update({
             "PATH": str(self.fake_bin) + os.pathsep + os.environ.get("PATH", ""),
             "FWM_COMPLETION_LOG": str(self.log),
             "FWM_INSTALL_TEST_DAEMON_LOG": str(self.daemon_log),
             "FWM_INSTALL_TEST_CARGO_LOG": str(self.cargo_log),
+            "FWM_INSTALL_TEST_CARGO_ENV_LOG": str(self.cargo_env_log),
+            "FWM_INSTALL_TEST_FWM_ENV_LOG": str(self.fwm_env_log),
+            "FWM_INSTALL_TEST_XCRUN_LOG": str(self.xcrun_log),
             "FWM_INSTALL_TEST_BINARY": str(fake_fwm),
             # If compinit writes a dump, keep that dump inside this fixture.
             "ZDOTDIR": str(self.directory),
@@ -149,6 +194,106 @@ class InstallFromSource(unittest.TestCase):
 
     def daemon_calls(self):
         return [json.loads(line) for line in self.daemon_log.read_text().splitlines()] if self.daemon_log.exists() else []
+
+    def configure_apple_toolchain(self):
+        self.env["FWM_INSTALL_TEST_UNAME"] = "Darwin"
+        for key in TOOLCHAIN_VARIABLES:
+            if key != "PATH":
+                self.env.pop(key, None)
+        for name, relative in [("CLANG", "Selected Developer/Toolchain/usr/bin/clang"),
+                               ("LD", "Selected Developer/Platform/usr/bin/ld")]:
+            tool = self.directory / relative
+            tool.parent.mkdir(parents=True, exist_ok=True)
+            tool.write_text("#!/bin/sh\nexit 0\n")
+            tool.chmod(0o755)
+            self.env["FWM_INSTALL_TEST_APPLE_" + name] = str(tool)
+        sdk = self.directory / "Selected Developer/SDKs/MacOSX.sdk"
+        sdk.mkdir(parents=True)
+        self.env["FWM_INSTALL_TEST_APPLE_SDK"] = str(sdk)
+        # This represents an old Conda linker preceding Apple's tools on PATH.
+        stale_ld = self.fake_bin / "ld"
+        stale_ld.write_text("#!/bin/sh\nexit 93\n")
+        stale_ld.chmod(0o755)
+
+    def last_cargo_environment(self):
+        return json.loads(self.cargo_env_log.read_text().splitlines()[-1])
+
+    def test_darwin_selects_matching_linker_and_sdk_only_for_cargo(self):
+        self.configure_apple_toolchain()
+        for original_sdk in [None, ""]:
+            with self.subTest(sdkroot=original_sdk):
+                if original_sdk is None:
+                    self.env.pop("SDKROOT", None)
+                else:
+                    self.env["SDKROOT"] = original_sdk
+                self.fwm_env_log.unlink(missing_ok=True)
+                self.install(kind="none")
+                captured = self.last_cargo_environment()
+                self.assertEqual(captured["tools"], {
+                    "clang": self.env["FWM_INSTALL_TEST_APPLE_CLANG"],
+                    "ld": self.env["FWM_INSTALL_TEST_APPLE_LD"],
+                })
+                environment = captured["environment"]
+                self.assertEqual(environment["SDKROOT"], self.env["FWM_INSTALL_TEST_APPLE_SDK"])
+                for key in TOOLCHAIN_VARIABLES:
+                    if key not in ["PATH", "SDKROOT"]:
+                        self.assertIsNone(environment[key], key)
+                # Completion generation and daemon restart inherit the caller's
+                # environment, not the temporary build toolchain selection.
+                runtime_environments = [json.loads(line) for line in self.fwm_env_log.read_text().splitlines()]
+                self.assertEqual(len(runtime_environments), 3)
+                for runtime in runtime_environments:
+                    self.assertEqual(runtime["PATH"], self.env["PATH"])
+                    self.assertEqual(runtime["SDKROOT"], original_sdk)
+
+    def test_darwin_preserves_explicit_toolchain_overrides(self):
+        self.configure_apple_toolchain()
+        overrides = {
+            "CC": str(self.directory / "Custom Tools/cc"),
+            "CXX": str(self.directory / "Custom Tools/c++"),
+            "SDKROOT": str(self.directory / "Custom SDK/MacOSX.sdk"),
+            "DEVELOPER_DIR": str(self.directory / "Custom Xcode.app/Contents/Developer"),
+            "RUSTFLAGS": "-C debuginfo=1",
+            "CARGO_ENCODED_RUSTFLAGS": "-C\x1flink-arg=-custom-option",
+            "CARGO_TARGET_AARCH64_APPLE_DARWIN_LINKER": str(self.directory / "Custom Tools/arm-linker"),
+            "CARGO_TARGET_X86_64_APPLE_DARWIN_LINKER": str(self.directory / "Custom Tools/intel-linker"),
+        }
+        self.env.update(overrides)
+        self.install(kind="none")
+        environment = self.last_cargo_environment()["environment"]
+        for key, value in overrides.items():
+            self.assertEqual(environment[key], value, key)
+        probes = [json.loads(line) for line in self.xcrun_log.read_text().splitlines()]
+        self.assertEqual([probe["args"] for probe in probes], [
+            ["--sdk", "macosx", "--find", "clang"],
+            ["--sdk", "macosx", "--find", "ld"],
+        ])
+        self.assertTrue(all(probe["developer_dir"] == overrides["DEVELOPER_DIR"] for probe in probes))
+
+    def test_non_darwin_preserves_environment_without_apple_probes(self):
+        self.env["FWM_INSTALL_TEST_UNAME"] = "Linux"
+        self.env["SDKROOT"] = str(self.directory / "custom-sysroot")
+        self.env["CC"] = "custom-cc"
+        expected = {key: self.env.get(key) for key in TOOLCHAIN_VARIABLES}
+        self.install(kind="none")
+        self.assertEqual(self.last_cargo_environment()["environment"], expected)
+        self.assertFalse(self.xcrun_log.exists())
+
+    def test_apple_toolchain_probe_failure_does_not_install_or_restart(self):
+        self.configure_apple_toolchain()
+        original = "# preserve startup configuration\n"
+        self.rc.write_text(original)
+        for query in ["CLANG", "LD", "SDK"]:
+            with self.subTest(failing_query=query):
+                self.env["FWM_INSTALL_TEST_FAIL_XCRUN"] = query
+                result = self.install(check=False)
+                self.assertNotEqual(result.returncode, 0)
+                self.assertFalse(self.cargo_log.exists())
+                self.assertFalse(self.root.exists())
+                self.assertEqual(self.daemon_calls(), [])
+                self.assertFalse(self.fwm_env_log.exists())
+                self.assertEqual(self.rc.read_text(), original)
+                self.assertIn("error:", result.stderr)
 
     def run_shell(self, kind, program):
         executable = shutil.which(kind)

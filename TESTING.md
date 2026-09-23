@@ -48,6 +48,7 @@ cargo fmt --all -- --check
 cargo clippy --workspace --all-targets --locked -- -D warnings
 cargo test --workspace --all-targets --locked
 python3 -m unittest discover -s crates/fwm-core/src/cleanup -p 'test_*.py' -v
+python3 tests/native_helper.py -v
 cargo build --release --locked
 python3 tests/postfix_queries.py target/release/fwm
 python3 tests/shell_completion_scripts.py
@@ -60,6 +61,16 @@ When a native helper changes, regenerate the checked-in artifacts with
 `./scripts/build-native-remote-helper-macos.sh`, and
 `./scripts/build-native-remote-helper-windows.sh`; these require Zig and the
 corresponding SDK/target support.
+
+`tests/native_helper.py` 编译并测试实际 Linux C helper 的 TCP 表解析、进程身份、旧版 lease 和归属证据，避免只测试保留的 Python 实现。`tests/native_linux_recovery.py` 则用实际 fwm 二进制验证 Linux 原生 helper；必须显式提供隔离虚拟机的 SSH 配置和别名，且目标只能是回环地址：
+
+```sh
+python3 tests/native_linux_recovery.py --ssh-config /path/to/fixture/ssh_config --alias linux-fixture --binary target/release/fwm
+```
+
+该测试不需要虚拟机安装 Python，覆盖实际数据传输、保留旧 SSH 会话的网络黑洞、旧 Python lease 迁移、helper 异常退出恢复、其他管理器隔离，以及未登记的手动 SSH 转发占用端口时仍保持正常。
+
+2026-09-22 原生 Linux helper 修复验证：10 项实际 C 解析/记录回归、568 项 Rust 测试、33 项旧 Python helper 测试通过；严格 Clippy 和 Release 构建通过。最终二进制在 Linux 4.14.167／OpenSSH 9.9、UID 1000、未安装 Python 的隔离虚拟机上通过上述完整流程，包括真实占用端口的旧会话回收和手动 SSH 转发保护。
 
 真实 SSH 测试仅使用临时密钥、临时配置和回环监听。要求 Unix、sshd 和 ssh-keygen；macOS 的嵌套沙箱可能阻止 sshd 初始化，需在允许该测试的环境执行。测试清理其创建的后台和 SSH 服务，不读取或更改默认 fwm 配置。
 

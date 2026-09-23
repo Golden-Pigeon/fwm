@@ -110,7 +110,29 @@ fi
 printf 'Building and installing fwm from %s\n' "$source_dir"
 # Keep the caller's working directory so relative --root paths keep their meaning.
 # Cargo install builds release binaries by default; --force also updates the same version.
-cargo "${install_args[@]}" "--root=$install_root" --path "$source_dir/crates/fwm"
+(
+    if [[ $(uname -s) == Darwin ]]; then
+        # PATH may contain an older Conda/Homebrew linker, and /usr/bin/cc can
+        # otherwise pick an SDK from a different Command Line Tools install.
+        # Resolve the compiler, linker and default SDK from the same selected
+        # Apple developer directory. Keep explicit compiler/linker/SDK overrides.
+        if ! apple_clang=$(xcrun --sdk macosx --find clang) ||
+            ! apple_ld=$(xcrun --sdk macosx --find ld); then
+            printf 'error: cannot locate the selected Apple toolchain; check xcode-select -p and DEVELOPER_DIR\n' >&2
+            exit 1
+        fi
+        if [[ -z ${SDKROOT:-} ]]; then
+            if ! SDKROOT=$(xcrun --sdk macosx --show-sdk-path); then
+                printf 'error: cannot locate the selected macOS SDK; check xcode-select -p and DEVELOPER_DIR\n' >&2
+                exit 1
+            fi
+        fi
+        export SDKROOT
+        export PATH="${apple_clang%/*}:${apple_ld%/*}:$PATH"
+        printf 'Using macOS SDK: %s\n' "$SDKROOT"
+    fi
+    cargo "${install_args[@]}" "--root=$install_root" --path "$source_dir/crates/fwm"
+)
 
 install_root=$(CDPATH= cd -- "$install_root" && pwd -P)
 source "$source_dir/scripts/install-shell-completions.sh"

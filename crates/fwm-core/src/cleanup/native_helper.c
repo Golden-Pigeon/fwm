@@ -8,13 +8,17 @@
  * helper.  Linux IPv4 is supported; IPv6 returns an explicit unsupported
  * protocol error rather than silently weakening ownership checks.
  *
- * The source is kept small and auditable.  It is not a general JSON parser:
- * values accepted from the manager are restricted UUID/IP/decimal fields and
- * records are written by this program with those same restrictions.
+ * JSON object boundaries are parsed by the vendored MIT-licensed jsmn
+ * tokenizer; protocol fields remain restricted UUID/IP/decimal values.
  */
 #define _GNU_SOURCE
 #include <arpa/inet.h>
 #include <dirent.h>
+#include <ctype.h>
+#define JSMN_STATIC
+#define JSMN_STRICT
+#define JSMN_PARENT_LINKS
+#include "vendor/jsmn.h"
 #include <errno.h>
 #include <fcntl.h>
 #include <limits.h>
@@ -65,6 +69,8 @@ struct helper_state {
     int lock_fd;
     unsigned transport_uid;
     unsigned long transport_inode;
+    unsigned listener_uid;
+    unsigned long listener_inode;
     int claimed;
 };
 
@@ -119,62 +125,73 @@ static int read_at(int dirfd, const char *name, char *buf, size_t cap) {
     int r = read_all_fd(fd, buf, cap), saved = errno;
     close(fd); errno = saved; return r;
 }
-static int json_value(const char *json, const char *key, char *out, size_t cap, int string) {
-    char needle[96];
-    if (snprintf(needle, sizeof(needle), "\"%s\"", key) >= (int)sizeof(needle)) return -1;
-    const char *p = strstr(json, needle);
-    if (!p) return -1;
-    p += strlen(needle); while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
-    if (*p++ != ':') return -1;
-    while (*p == ' ' || *p == '\t' || *p == '\r' || *p == '\n') p++;
-    if (string) {
-        if (*p++ != '"') return -1;
-        size_t n = 0;
-        while (*p && *p != '"') {
-            if (*p == '\\' || (unsigned char)*p < 32 || n + 1 >= cap) return -1;
-            out[n++] = *p++;
-        }
-        if (*p != '"') return -1;
-        out[n] = 0; return 0;
+/* Decode only the exact field in this object, never a similarly named field
+ * in a sibling/nested object. Counts and byte sizes are bounded by the protocol. */
+static int json_value(const char *json, const char *key, char *out, size_t cap, int kind) {
+    jsmn_parser parser; jsmntok_t tokens[512];
+    size_t length = strlen(json), key_length = strlen(key);
+    jsmn_init(&parser);
+    int count = jsmn_parse(&parser, json, length, tokens, 512);
+    if (count < 1 || tokens[0].type != JSMN_OBJECT) return -1;
+    for (size_t i = (size_t)tokens[0].end; i < length; i++)
+        if (!isspace((unsigned char)json[i])) return -1;
+    int found = -1;
+    for (int i = 1; i + 1 < count; i++) {
+        jsmntok_t *token = &tokens[i];
+        if (token->parent != 0 || token->type != JSMN_STRING ||
+            (size_t)(token->end - token->start) != key_length ||
+            memcmp(json + token->start, key, key_length)) continue;
+        if (found != -1 || tokens[i + 1].parent != i) return -1;
+        found = i + 1;
     }
-    size_t n = 0;
-    while (*p && *p != ',' && *p != '}' && *p != '\n' && *p != ' ' && *p != '\t') {
-        if (n + 1 >= cap) return -1; out[n++] = *p++;
+    if (found < 0) return -1;
+    jsmntok_t *value = &tokens[found];
+    jsmntype_t wanted = kind == 1 ? JSMN_STRING : kind == 2 ? JSMN_OBJECT :
+                        kind == 3 ? JSMN_ARRAY : JSMN_PRIMITIVE;
+    if (value->type != wanted) return -1;
+    size_t n = (size_t)(value->end - value->start);
+    if (n >= cap) return -1;
+    if (kind == 1) {
+        /* UUIDs, IP literals, process names and proof sources need no escapes.
+         * Reject unsupported escaping rather than treating raw text as identity. */
+        for (size_t i = 0; i < n; i++)
+            if (json[value->start + i] == '\\' || (unsigned char)json[value->start + i] < 32) return -1;
     }
-    out[n] = 0; return n ? 0 : -1;
+    memcpy(out, json + value->start, n); out[n] = 0;
+    return 0;
 }
 static int json_string(const char *json, const char *key, char *out, size_t cap) {
     return json_value(json, key, out, cap, 1);
 }
-static int json_nested(const char *json, const char *object, const char *key, char *out, size_t cap, int string) {
-    char needle[96]; if (snprintf(needle, sizeof(needle), "\"%s\"", object) >= (int)sizeof(needle)) return -1;
-    const char *p = strstr(json, needle); if (!p) return -1; p = strchr(p, '{'); if (!p) return -1;
-    return json_value(p, key, out, cap, string);
-}
-static int json_nested_u64(const char *json, const char *object, const char *key, unsigned long long *out) {
-    char buf[64]; char *end; if (json_nested(json, object, key, buf, sizeof(buf), 0) < 0) return -1;
-    errno = 0; *out = strtoull(buf, &end, 10); return errno || *end ? -1 : 0;
-}
-static int json_nested_string(const char *json, const char *object, const char *key, char *out, size_t cap) {
-    return json_nested(json, object, key, out, cap, 1);
+static int decimal_u64(const char *text, unsigned long long *out) {
+    if (!*text) return -1;
+    for (const char *p = text; *p; p++) if (*p < '0' || *p > '9') return -1;
+    char *end; errno = 0; *out = strtoull(text, &end, 10);
+    return errno || *end ? -1 : 0;
 }
 static int json_u64(const char *json, const char *key, unsigned long long *out) {
-    char buf[64]; char *end;
-    if (json_value(json, key, buf, sizeof(buf), 0) < 0 || !buf[0]) return -1;
-    errno = 0; *out = strtoull(buf, &end, 10);
-    return errno || *end ? -1 : 0;
+    char buf[32];
+    return json_value(json, key, buf, sizeof(buf), 0) == 0 ? decimal_u64(buf, out) : -1;
+}
+static int json_inode(const char *json, unsigned long long *out) {
+    char buf[32];
+    if (json_u64(json, "inode", out) == 0) return *out ? 0 : -1;
+    if (json_string(json, "inode", buf, sizeof(buf)) < 0 || decimal_u64(buf, out) < 0) return -1;
+    return *out ? 0 : -1;
+}
+static int json_nested_u64(const char *json, const char *object, const char *key, unsigned long long *out) {
+    char value[MAX_LINE];
+    return json_value(json, object, value, sizeof(value), 2) == 0 ? json_u64(value, key, out) : -1;
+}
+static int json_nested_string(const char *json, const char *object, const char *key, char *out, size_t cap) {
+    char value[MAX_LINE];
+    return json_value(json, object, value, sizeof(value), 2) == 0 ? json_string(value, key, out, cap) : -1;
 }
 static int json_bool(const char *json, const char *key, int *out) {
     char buf[8]; if (json_value(json, key, buf, sizeof(buf), 0) < 0) return -1;
     if (!strcmp(buf, "true")) { *out = 1; return 0; }
     if (!strcmp(buf, "false")) { *out = 0; return 0; }
     return -1;
-}
-static int named_u64_after(const char *start, const char *key, unsigned long long *value) {
-    char needle[64]; if (snprintf(needle,sizeof(needle),"\"%s\"",key) >= (int)sizeof(needle)) return -1;
-    const char *p=strstr(start,needle); if(!p)return -1; p+=strlen(needle); while(*p==' '||*p=='\t'||*p==':')p++;
-    int quoted=0; if(*p=='"'){quoted=1;p++;} char *end; errno=0; *value=strtoull(p,&end,10);
-    if(errno||end==p||(quoted&&*end!='"'))return -1; return 0;
 }
 static int uuid_ok(const char *s) {
     if (strlen(s) != 36) return 0;
@@ -189,62 +206,92 @@ static int parse_ipv4(const char *s, struct in_addr *out) {
     if (strchr(s, ':')) return -2; /* explicit unsupported IPv6 */
     return -1;
 }
+struct tcp4_row {
+    struct in_addr local, remote;
+    unsigned local_port, remote_port, state, uid;
+    unsigned long inode;
+};
+
+/* procfs prints IPv4 addresses as native-endian hexadecimal words. Assign
+ * the parsed word directly to s_addr; htonl would reverse it a second time.
+ * The three fields between state and UID are tx:rx, timer, and retransmits.
+ * https://docs.kernel.org/networking/proc_net_tcp.html
+ */
+static int parse_tcp4_row(const char *line, struct tcp4_row *row) {
+    unsigned local, remote;
+    int count = sscanf(line,
+        " %*u: %8x:%4x %8x:%4x %2x %*s %*s %*s %u %*u %lu",
+        &local, &row->local_port, &remote, &row->remote_port,
+        &row->state, &row->uid, &row->inode);
+    if (count != 7) return -1;
+    row->local.s_addr = local;
+    row->remote.s_addr = remote;
+    return 0;
+}
+
 static int transport_inode(const struct transport *t, unsigned *uid_out, unsigned long *inode_out) {
+    struct in_addr client, server;
+    if (parse_ipv4(t->client, &client) || parse_ipv4(t->server, &server)) return -1;
     FILE *f = fopen("/proc/net/tcp", "r");
     if (!f) return -1;
-    char line[512]; unsigned wanted_client, wanted_server;
-    struct in_addr client, server;
-    if (inet_pton(AF_INET, t->client, &client) != 1 || inet_pton(AF_INET, t->server, &server) != 1) { fclose(f); return -2; }
-    wanted_client = client.s_addr; wanted_server = server.s_addr;
-    (void)wanted_client; (void)wanted_server;
-    (void)fgets(line, sizeof(line), f);
+    char line[512]; int result = 0;
     while (fgets(line, sizeof(line), f)) {
-        unsigned la, lp, ra, rp, state; unsigned long inode; int uid;
-        if (sscanf(line, " %*d: %8X:%4X %8X:%4X %2X %*s %*s %*s %*s %d %*d %lu",
-                   &la, &lp, &ra, &rp, &state, &uid, &inode) == 7 && state == 1 &&
-            la == wanted_server && ra == wanted_client && lp == t->server_port && rp == t->client_port) {
-            if (uid_out) *uid_out=(unsigned)uid; if (inode_out) *inode_out=inode; fclose(f); return 1;
+        struct tcp4_row row;
+        if (parse_tcp4_row(line, &row) != 0 || row.state != 1 || !row.inode) continue;
+        if (row.local.s_addr == server.s_addr && row.remote.s_addr == client.s_addr &&
+            row.local_port == t->server_port && row.remote_port == t->client_port) {
+            if (uid_out) *uid_out = row.uid;
+            if (inode_out) *inode_out = row.inode;
+            result = 1;
+            break;
         }
     }
-    fclose(f); return 0;
+    if (ferror(f)) result = -1;
+    fclose(f);
+    return result;
 }
-static int transport_present(const struct transport *t) { return transport_inode(t,NULL,NULL); }
-static int transport_owned_by(pid_t pid, const struct transport *t) {
-    FILE *f = fopen("/proc/net/tcp", "r"); if (!f) return -1;
-    struct in_addr client, server; if (inet_pton(AF_INET,t->client,&client) != 1 || inet_pton(AF_INET,t->server,&server) != 1) { fclose(f); return -1; }
-    char line[512]; unsigned want_client=client.s_addr, want_server=server.s_addr; (void)fgets(line,sizeof(line),f);
-    int result = 0;
-    while (fgets(line,sizeof(line),f)) {
-        unsigned la,lp,ra,rp,state; int uid; unsigned long inode;
-        if (sscanf(line," %*d: %8X:%4X %8X:%4X %2X %*s %*s %*s %*s %d %*d %lu",&la,&lp,&ra,&rp,&state,&uid,&inode) != 7 || state != 1 ||
-            la != want_server || ra != want_client || lp != t->server_port || rp != t->client_port) continue;
-        char path[64], wanted[64], link[128]; snprintf(path,sizeof(path),"/proc/%ld/fd",(long)pid); snprintf(wanted,sizeof(wanted),"socket:[%lu]",inode);
-        DIR *d=opendir(path); if (!d) { result=-2; break; }
-        struct dirent *e; while((e=readdir(d))) { if(e->d_name[0]=='.')continue; char item[PATH_CAP]; snprintf(item,sizeof(item),"%s/%s",path,e->d_name); ssize_t n=readlink(item,link,sizeof(link)-1); if(n>=0){link[n]=0;if(!strcmp(link,wanted)){result=1;break;}} }
-        closedir(d); break;
-    }
-    fclose(f); return result;
-}
+
+/* -2 means the kernel denied fd inspection (normal for a privsep sshd).
+ * Other errors must not authorize the opaque-descriptor proof path. */
 static int listener_owned_by(pid_t pid, unsigned long inode) {
     char path[64], wanted[64], link[128];
+    if (!inode) return 0;
     snprintf(path, sizeof(path), "/proc/%ld/fd", (long)pid);
     snprintf(wanted, sizeof(wanted), "socket:[%lu]", inode);
     DIR *directory = opendir(path);
-    if (!directory) return -2;
+    if (!directory) {
+        if (errno == EACCES || errno == EPERM) return -2;
+        return errno == ENOENT || errno == ESRCH ? 0 : -1;
+    }
     int found = 0;
     struct dirent *entry;
+    errno = 0;
     while ((entry = readdir(directory))) {
         if (entry->d_name[0] == '.') continue;
         char fdpath[PATH_CAP];
-        if (snprintf(fdpath, sizeof(fdpath), "%s/%s", path, entry->d_name) >= (int)sizeof(fdpath)) continue;
+        if (snprintf(fdpath, sizeof(fdpath), "%s/%s", path, entry->d_name) >= (int)sizeof(fdpath)) {
+            found = -1; break;
+        }
         ssize_t length = readlink(fdpath, link, sizeof(link) - 1);
         if (length >= 0) {
             link[length] = 0;
             if (!strcmp(link, wanted)) { found = 1; break; }
+        } else if (errno == EACCES || errno == EPERM) {
+            found = -2;
+        } else if (errno != ENOENT && errno != ESRCH) {
+            found = -1; break;
         }
+        errno = 0;
     }
+    if (!entry && errno) found = -1;
     closedir(directory);
     return found;
+}
+
+static int transport_owned_by(pid_t pid, const struct transport *t) {
+    unsigned long inode;
+    int found = transport_inode(t, NULL, &inode);
+    return found == 1 ? listener_owned_by(pid, inode) : found;
 }
 static int parse_claim(const char *line, struct claim *c) {
     unsigned long long n, port;
@@ -295,69 +342,60 @@ static int same_id(const struct identity *a, const struct identity *b) {
 }
 static int allowed_name(const char *s) { return !strcmp(s, "sshd") || !strcmp(s, "sshd-session"); }
 static int read_transport(struct transport *t) {
-    unsigned cp, sp;
     const char *env = getenv("SSH_CONNECTION");
-    if (!env || sscanf(env, "%63s %u %63s %u", t->client, &cp, t->server, &sp) != 4 || cp > 65535 || sp > 65535 || !cp || !sp) return -1;
-    if (parse_ipv4(t->client, &(struct in_addr){0}) || parse_ipv4(t->server, &(struct in_addr){0})) return -2;
-    t->client_port = cp; t->server_port = sp; return 0;
+    char client[INET6_ADDRSTRLEN], server[INET6_ADDRSTRLEN], extra;
+    unsigned cp, sp;
+    if (!env || sscanf(env, "%45s %u %45s %u %c", client, &cp, server, &sp, &extra) != 4 ||
+        cp > 65535 || sp > 65535 || !cp || !sp) return -1;
+    if (parse_ipv4(client, &(struct in_addr){0}) || parse_ipv4(server, &(struct in_addr){0})) return -2;
+    strcpy(t->client, client); strcpy(t->server, server);
+    t->client_port = cp; t->server_port = sp;
+    return 0;
 }
 static int find_session(const struct transport *t, struct identity *found) {
-    struct identity cur; if (read_identity(getpid(), &cur) < 0) return -1;
+    struct identity cur;
+    unsigned long inode;
+    if (read_identity(getpid(), &cur) < 0 || transport_inode(t, NULL, &inode) != 1) return -1;
     pid_t pid = cur.ppid; uid_t me = geteuid();
     for (int depth = 0; depth < 32 && pid > 1; depth++) {
-        struct identity next; if (read_identity(pid, &next) < 0) return -1;
+        struct identity next;
+        if (read_identity(pid, &next) < 0) return -1;
         if (allowed_name(next.name) && next.uid == me) {
-            FILE *f = fopen("/proc/net/tcp", "r"); char line[512]; int matched = 0;
-            if (!f) return -1;
-            (void)fgets(line, sizeof(line), f);
-            while (fgets(line, sizeof(line), f)) {
-                unsigned la, lp, ra, rp, state; unsigned long inode; int uid;
-                if (sscanf(line, " %*d: %8X:%4X %8X:%4X %2X %*s %*s %*s %*s %d %*d %lu",
-                           &la, &lp, &ra, &rp, &state, &uid, &inode) == 7 && state == 1) {
-                    struct in_addr li = {htonl(la)}, ri = {htonl(ra)}; char lbuf[INET_ADDRSTRLEN], rbuf[INET_ADDRSTRLEN];
-                    inet_ntop(AF_INET, &li, lbuf, sizeof(lbuf)); inet_ntop(AF_INET, &ri, rbuf, sizeof(rbuf));
-                    if (!strcmp(lbuf, t->server) && lp == t->server_port && !strcmp(rbuf, t->client) && rp == t->client_port) {
-                        int ownership = -2;
-                        char fdpath[64], link[128], wanted[64];
-                        snprintf(fdpath, sizeof(fdpath), "/proc/%ld/fd", (long)next.pid);
-                        DIR *fds = opendir(fdpath);
-                        if (fds) {
-                            struct dirent *entry;
-                            snprintf(wanted, sizeof(wanted), "socket:[%lu]", inode);
-                            ownership = 0;
-                            while ((entry = readdir(fds))) {
-                                if (entry->d_name[0] == '.') continue;
-                                char item[PATH_CAP]; snprintf(item, sizeof(item), "%s/%s", fdpath, entry->d_name);
-                                ssize_t link_len = readlink(item, link, sizeof(link)-1);
-                                if (link_len >= 0) { link[link_len] = 0; if (!strcmp(link, wanted)) { ownership = 1; break; } }
-                            }
-                            closedir(fds);
-                        }
-                        /* OpenSSH may deny same-UID fd inspection. Exact
-                         * SSH_CONNECTION + direct ancestor remains the opaque
-                         * registration proof in that case. A readable fd list
-                         * must, however, contain the transport inode. */
-                        if (ownership == 1 || ownership == -2) matched = 1;
-                    }
-                }
-            }
-            fclose(f);
-            if (matched) { *found = next; return 0; }
+            int ownership = listener_owned_by(next.pid, inode);
+            /* Exact transport plus a same-user SSH ancestor registers the
+             * durable proof only when fd inspection is explicitly denied. */
+            if (ownership == 1 || ownership == -2) { *found = next; return 0; }
+            if (ownership < 0) return -1;
         }
+        if (pid == next.ppid) return -1;
         pid = next.ppid;
     }
     return -1;
 }
-static int tcp_listener(const char *host, unsigned port, unsigned *uid, unsigned long *inode) {
-    FILE *f = fopen("/proc/net/tcp", "r"); if (!f) return -1; char line[512]; (void)fgets(line, sizeof(line), f); int result = 0;
-    struct in_addr requested; if (parse_ipv4(host, &requested)) { fclose(f); return -2; }
-    unsigned wanted = requested.s_addr;
+static int tcp_listener_info(const char *host, unsigned port, unsigned *uid,
+                             unsigned long *inode, struct in_addr *actual) {
+    struct in_addr requested;
+    if (parse_ipv4(host, &requested)) return -2;
+    FILE *f = fopen("/proc/net/tcp", "r");
+    if (!f) return -1;
+    char line[512]; int result = 0;
     while (fgets(line, sizeof(line), f)) {
-        unsigned addr, lp, state; int owner; unsigned long ino;
-        if (sscanf(line, " %*d: %8X:%4X %*8X:%*4X %2X %*s %*s %*s %*s %d %*d %lu", &addr, &lp, &state, &owner, &ino) != 5) continue;
-        if (state == 0x0A && lp == port && (addr == wanted || addr == 0)) { result = 1; if(uid)*uid=(unsigned)owner; if(inode)*inode=ino; break; }
+        struct tcp4_row row;
+        if (parse_tcp4_row(line, &row) != 0 || row.state != 0x0A || row.local_port != port) continue;
+        if (row.local.s_addr == requested.s_addr || row.local.s_addr == 0 || requested.s_addr == 0) {
+            if (!row.inode || result) { result = -1; break; }
+            result = 1;
+            if (uid) *uid = row.uid;
+            if (inode) *inode = row.inode;
+            if (actual) *actual = row.local;
+        }
     }
-    fclose(f); return result;
+    if (ferror(f)) result = -1;
+    fclose(f);
+    return result;
+}
+static int tcp_listener(const char *host, unsigned port, unsigned *uid, unsigned long *inode) {
+    return tcp_listener_info(host, port, uid, inode, NULL);
 }
 static int port_free(const char *host, unsigned port) {
     struct in_addr addr; if (parse_ipv4(host, &addr)) return -2;
@@ -381,7 +419,14 @@ static int private_dir_recursive(const char *path) {
 }
 static int registry(struct helper_state *s, const char *owner, const char *rule) {
     const char *base = getenv("FWM_REMOTE_STATE_DIR"); char fallback[PATH_CAP];
-    if (!base) { const char *home = getenv("HOME"); if (!home) return -1; snprintf(fallback, sizeof(fallback), "%s/.local/state/fwm", home); base = fallback; }
+    if (!base) {
+        const char *state = getenv("XDG_STATE_HOME"), *home = getenv("HOME");
+        int n;
+        if (state) n = snprintf(fallback, sizeof(fallback), "%s/fwm", state);
+        else { if (!home) return -1; n = snprintf(fallback, sizeof(fallback), "%s/.local/state/fwm", home); }
+        if (n < 0 || (size_t)n >= sizeof(fallback)) return -1;
+        base = fallback;
+    }
     if (base[0] != '/') return -1;
     char leases[PATH_CAP], owner_dir[PATH_CAP]; snprintf(leases, sizeof(leases), "%s/leases", base); snprintf(owner_dir, sizeof(owner_dir), "%s/%s", leases, owner);
     if (private_dir_recursive(base) < 0 || private_dir_recursive(leases) < 0 || private_dir_recursive(owner_dir) < 0) return -1;
@@ -408,52 +453,48 @@ static int write_record(const char *path, const char *text) {
 }
 static void unlock_registry(struct helper_state *s) { if (s->lock_fd >= 0) { flock(s->lock_fd, LOCK_UN); close(s->lock_fd); s->lock_fd = -1; } }
 static int old_identity(const char *record, struct identity *id, pid_t *pid) {
-    unsigned long long n, uid, pid_value;
-    int nested = json_nested_u64(record, "session", "pid", &n) == 0;
+    unsigned long long start, uid, pid_value;
+    char birth[96];
+    memset(id, 0, sizeof(*id));
+    int nested = json_nested_u64(record, "session", "pid", &pid_value) == 0;
     if (nested) {
-        pid_value = n;
-        if (n < 2 || n > INT_MAX || json_nested_u64(record, "session", "uid", &uid) < 0 || uid > UINT_MAX ||
+        if (json_nested_u64(record, "session", "uid", &uid) < 0 ||
             json_nested_string(record, "session", "name", id->name, sizeof(id->name)) < 0 ||
-            json_nested_string(record, "session", "birth", id->boot, sizeof(id->boot)) < 0) return -1;
-        char *colon = strrchr(id->boot, ':'); if (!colon) return -1;
-        *colon++ = 0; errno = 0; id->start = strtoull(colon, NULL, 10); if (errno || !id->start) return -1;
-        if (!id->boot[0] || !allowed_name(id->name)) return -1;
+            json_nested_string(record, "session", "birth", birth, sizeof(birth)) < 0) return -1;
     } else {
-        if (json_u64(record, "session_pid", &pid_value) < 0 || pid_value < 2 || pid_value > INT_MAX || json_u64(record, "session_uid", &uid) < 0 || uid > UINT_MAX ||
-            json_u64(record, "session_start", &n) < 0 || json_string(record, "session_name", id->name, sizeof(id->name)) < 0 ||
-            json_string(record, "session_birth", id->boot, sizeof(id->boot)) < 0 || !allowed_name(id->name)) return -1;
-        id->start = n;
+        if (json_u64(record, "session_pid", &pid_value) < 0 || json_u64(record, "session_uid", &uid) < 0 ||
+            json_u64(record, "session_start", &start) < 0 ||
+            json_string(record, "session_name", id->name, sizeof(id->name)) < 0 ||
+            json_string(record, "session_birth", birth, sizeof(birth)) < 0) return -1;
     }
-    *pid = (pid_t)pid_value;
-    id->pid = *pid; id->uid = (uid_t)uid;
+    if (pid_value < 2 || pid_value > INT_MAX || uid > UINT_MAX || !allowed_name(id->name)) return -1;
+    char *colon = strrchr(birth, ':');
+    if (!colon) return -1;
+    *colon++ = 0;
+    if (!uuid_ok(birth) || decimal_u64(colon, &id->start) < 0 ||
+        (!nested && start != id->start)) return -1;
+    strcpy(id->boot, birth);
+    *pid = (pid_t)pid_value; id->pid = *pid; id->uid = (uid_t)uid;
     return 0;
 }
 static int old_transport(const char *record, struct transport *t) {
-    const char *p = strstr(record, "\"transport\"");
-    if (p) {
-        p = strchr(p, '['); if (!p) return -1; p++;
-        while (*p == ' ' || *p == '\t') p++;
-        if (*p++ != '"') return -1; size_t n = 0;
-        while (*p && *p != '"' && n + 1 < sizeof(t->client)) t->client[n++] = *p++;
-        if (*p++ != '"') return -1; t->client[n] = 0;
-        while (*p == ' ' || *p == '\t' || *p == ',') p++;
-        char *end; errno = 0; unsigned long cp = strtoul(p, &end, 10); if (errno || end == p || cp > 65535 || !cp) return -1; p = end;
-        while (*p == ' ' || *p == '\t' || *p == ',') p++;
-        if (*p++ != '"') return -1; n = 0;
-        while (*p && *p != '"' && n + 1 < sizeof(t->server)) t->server[n++] = *p++;
-        if (*p++ != '"') return -1; t->server[n] = 0;
-        while (*p == ' ' || *p == '\t' || *p == ',') p++;
-        errno = 0; unsigned long sp = strtoul(p, &end, 10); if (errno || end == p || sp > 65535 || !sp) return -1;
-        if (parse_ipv4(t->client, &(struct in_addr){0}) || parse_ipv4(t->server, &(struct in_addr){0})) return -1;
-        t->client_port = (unsigned)cp; t->server_port = (unsigned)sp; return 0;
+    char array[256], extra;
+    unsigned long long cp, sp;
+    if (json_value(record, "transport", array, sizeof(array), 3) == 0) {
+        int end = 0;
+        if (sscanf(array, "[ \"%45[^\"]\" , %llu , \"%45[^\"]\" , %llu ] %n%c",
+                   t->client, &cp, t->server, &sp, &end, &extra) != 4 ||
+            !end || array[end]) return -1;
+    } else {
+        if (json_string(record, "transport_client", t->client, sizeof(t->client)) < 0 ||
+            json_string(record, "transport_server", t->server, sizeof(t->server)) < 0 ||
+            json_u64(record, "transport_client_port", &cp) < 0 ||
+            json_u64(record, "transport_server_port", &sp) < 0) return -1;
     }
-    unsigned long long n;
-    if (json_string(record,"transport_client",t->client,sizeof(t->client)) < 0 || json_string(record,"transport_server",t->server,sizeof(t->server)) < 0 ||
-        json_u64(record,"transport_client_port",&n) < 0 || n == 0 || n > 65535) return -1;
-    t->client_port = (unsigned)n;
-    if (json_u64(record,"transport_server_port",&n) < 0 || n == 0 || n > 65535) return -1;
-    t->server_port = (unsigned)n;
-    return parse_ipv4(t->client, &(struct in_addr){0}) || parse_ipv4(t->server, &(struct in_addr){0}) ? -1 : 0;
+    if (!cp || cp > 65535 || !sp || sp > 65535 ||
+        parse_ipv4(t->client, &(struct in_addr){0}) || parse_ipv4(t->server, &(struct in_addr){0})) return -1;
+    t->client_port = (unsigned)cp; t->server_port = (unsigned)sp;
+    return 0;
 }
 static int session_proof_matches(const char *record, unsigned uid, unsigned long inode);
 static int validate_old_record(const char *record, const struct claim *requested, struct identity *oldid, pid_t *oldpid,
@@ -471,10 +512,10 @@ static int validate_old_record(const char *record, const struct claim *requested
         !strstr(record,"\"session_proof\"")) return -1;
     struct identity live;
     if (read_identity(*oldpid,&live) == 0 && same_id(oldid,&live)) {
-        int transport_seen = transport_present(oldtransport);
+        int transport_seen = transport_inode(oldtransport, NULL, NULL);
         int ownership = transport_seen == 1 ? transport_owned_by(*oldpid, oldtransport) : 0;
-        if (transport_seen != 1 || ownership == 0) return -1;
-        if (ownership < 0) {
+        if (transport_seen != 1 || (ownership != 1 && ownership != -2)) return -1;
+        if (ownership == -2) {
             unsigned proof_uid; unsigned long proof_inode;
             if (transport_inode(oldtransport,&proof_uid,&proof_inode) != 1 || !session_proof_matches(record,proof_uid,proof_inode)) return -1;
         }
@@ -482,19 +523,35 @@ static int validate_old_record(const char *record, const struct claim *requested
     if (!strcmp(phase,"confirmed") && !strstr(record,"\"listener_proof\"")) return -1;
     *oldport = (unsigned)port; return 0;
 }
+static int proof_matches(const char *record, const char *key, int listener, unsigned uid, unsigned long inode) {
+    char proof[MAX_LINE], source[64], socket_json[MAX_LINE];
+    if (!inode || json_value(record, key, proof, sizeof(proof), 2) < 0 ||
+        json_string(proof, "source", source, sizeof(source)) < 0) return 0;
+    if (strcmp(source, "process_fd") && strcmp(source, listener ? "ssh_forward_ack_inode" : "ssh_exec_ancestry_inode")) return 0;
+    const char *socket_proof = proof;
+    if (listener) {
+        char sockets[MAX_LINE];
+        if (json_value(proof, "sockets", sockets, sizeof(sockets), 3) == 0) {
+            jsmn_parser parser; jsmntok_t tokens[128]; jsmn_init(&parser);
+            int count = jsmn_parse(&parser, sockets, strlen(sockets), tokens, 128);
+            if (count < 2 || tokens[0].size != 1 || tokens[1].type != JSMN_OBJECT) return 0;
+            size_t size = (size_t)(tokens[1].end - tokens[1].start);
+            if (size >= sizeof(socket_json)) return 0;
+            memcpy(socket_json, sockets + tokens[1].start, size); socket_json[size] = 0;
+            socket_proof = socket_json;
+        }
+    } else if (json_value(proof, "socket", socket_json, sizeof(socket_json), 2) == 0) {
+        socket_proof = socket_json;
+    }
+    unsigned long long proof_uid, proof_inode;
+    return json_u64(socket_proof, "uid", &proof_uid) == 0 && proof_uid == uid &&
+           json_inode(socket_proof, &proof_inode) == 0 && proof_inode == inode;
+}
 static int listener_proof_matches(const char *record, unsigned uid, unsigned long inode) {
-    const char *p=strstr(record,"\"listener_proof\""); if(!p)return 0;
-    unsigned long long expected_uid, expected_inode;
-    if(named_u64_after(p,"uid",&expected_uid)==0 && expected_uid != uid)return 0;
-    if(named_u64_after(p,"inode",&expected_inode)==0 && expected_inode != inode)return 0;
-    return 1;
+    return proof_matches(record, "listener_proof", 1, uid, inode);
 }
 static int session_proof_matches(const char *record, unsigned uid, unsigned long inode) {
-    const char *p=strstr(record,"\"session_proof\""); if(!p)return 0;
-    unsigned long long proof_uid, proof_inode;
-    if(named_u64_after(p,"uid",&proof_uid)==0 && proof_uid != uid)return 0;
-    if(named_u64_after(p,"inode",&proof_inode)!=0 || proof_inode != inode)return 0;
-    return 1;
+    return proof_matches(record, "session_proof", 0, uid, inode);
 }
 static int pin_signal(const struct identity *expected, int recover) {
     int proc = proc_fd(expected->pid); if (proc < 0) return 0; struct identity now;
@@ -521,23 +578,49 @@ static int pin_signal(const struct identity *expected, int recover) {
 fail:
     fl = fcntl(pipefd[0], F_GETFL); if (fl >= 0) fcntl(pipefd[0], F_SETFL, fl & ~O_ASYNC); close(pipefd[0]); close(pipefd[1]); close(proc); return -1;
 }
+static int identity_json(const struct identity *id, char *out, size_t cap) {
+    /* Both identities came from procfs, not the request. Refuse names that
+     * cannot be safely represented by this fixed record format. */
+    for (const unsigned char *p = (const unsigned char *)id->name; *p; p++)
+        if (*p < 32 || *p == '"' || *p == '\\') return -1;
+    int n = snprintf(out, cap,
+        "{\"pid\":%ld,\"ppid\":%ld,\"uid\":%u,\"birth\":\"%s:%llu\",\"name\":\"%s\"}",
+        (long)id->pid, (long)id->ppid, (unsigned)id->uid, id->boot, id->start, id->name);
+    return n >= 0 && (size_t)n < cap ? 0 : -1;
+}
 static int make_record(struct helper_state *s, char *out, size_t cap, const char *phase) {
-    unsigned listener_uid=0; unsigned long listener_inode=0;
-    int confirmed = !strcmp(phase,"confirmed");
-    if (confirmed && tcp_listener(s->current.host,s->current.port,&listener_uid,&listener_inode) <= 0) return -1;
-    int n;
-    if (confirmed) n = snprintf(out, cap,
-        "{\"protocol\":%d,\"phase\":\"%s\",\"owner_id\":\"%s\",\"rule_id\":\"%s\",\"generation\":%llu,\"session_id\":\"%s\",\"listen_host\":\"%s\",\"listen_port\":%u,\"session_pid\":%ld,\"session_uid\":%u,\"session_start\":%llu,\"session_birth\":\"%s:%llu\",\"session_name\":\"%s\",\"helper_pid\":%ld,\"transport_client\":\"%s\",\"transport_client_port\":%u,\"transport_server\":\"%s\",\"transport_server_port\":%u,\"session_proof\":{\"source\":\"ssh_exec_ancestry_inode\",\"uid\":%u,\"inode\":%lu},\"listener_absent_at_claim\":true,\"listener_proof\":{\"source\":\"ssh_forward_ack_inode\",\"uid\":%u,\"inode\":%lu},\"registration\":\"ssh_exec_ancestry\"}\n",
-        PROTOCOL, phase, s->current.owner, s->current.rule, s->current.generation, s->current.session,
-        s->current.host, s->current.port, (long)s->session.pid, (unsigned)s->session.uid,
-        s->session.start, s->session.boot, s->session.start, s->session.name, (long)s->helper.pid, s->transport.client, s->transport.client_port,
-        s->transport.server, s->transport.server_port, s->transport_uid, s->transport_inode, listener_uid, listener_inode);
-    else n = snprintf(out, cap,
-        "{\"protocol\":%d,\"phase\":\"%s\",\"owner_id\":\"%s\",\"rule_id\":\"%s\",\"generation\":%llu,\"session_id\":\"%s\",\"listen_host\":\"%s\",\"listen_port\":%u,\"session_pid\":%ld,\"session_uid\":%u,\"session_start\":%llu,\"session_birth\":\"%s:%llu\",\"session_name\":\"%s\",\"helper_pid\":%ld,\"transport_client\":\"%s\",\"transport_client_port\":%u,\"transport_server\":\"%s\",\"transport_server_port\":%u,\"session_proof\":{\"source\":\"ssh_exec_ancestry_inode\",\"uid\":%u,\"inode\":%lu},\"listener_absent_at_claim\":true,\"registration\":\"ssh_exec_ancestry\"}\n",
-        PROTOCOL, phase, s->current.owner, s->current.rule, s->current.generation, s->current.session,
-        s->current.host, s->current.port, (long)s->session.pid, (unsigned)s->session.uid,
-        s->session.start, s->session.boot, s->session.start, s->session.name, (long)s->helper.pid, s->transport.client, s->transport.client_port,
-        s->transport.server, s->transport.server_port, s->transport_uid, s->transport_inode);
+    char session[512], helper[512], listener[1024] = "";
+    if (identity_json(&s->session, session, sizeof(session)) < 0 ||
+        identity_json(&s->helper, helper, sizeof(helper)) < 0) return -1;
+    if (!strcmp(phase, "confirmed")) {
+        if (!s->listener_inode) return -1;
+        int n = snprintf(listener, sizeof(listener),
+            ",\"listener_proof\":{\"source\":\"ssh_forward_ack_inode\",\"uid\":%u,\"inode\":%lu,"
+            "\"sockets\":[{\"local\":[\"%s\",%u],\"remote\":[\"0.0.0.0\",0],\"listening\":true,\"uid\":%u,\"inode\":\"%lu\"}]}",
+            s->listener_uid, s->listener_inode, s->current.host, s->current.port,
+            s->listener_uid, s->listener_inode);
+        if (n < 0 || (size_t)n >= sizeof(listener)) return -1;
+    }
+    /* Keep native flat fields and the original nested identity/socket schema.
+     * Older helpers and existing recovery diagnostics can read the same lease. */
+    int n = snprintf(out, cap,
+        "{\"protocol\":%d,\"phase\":\"%s\",\"owner_id\":\"%s\",\"rule_id\":\"%s\",\"generation\":%llu,"
+        "\"session_id\":\"%s\",\"listen_host\":\"%s\",\"listen_port\":%u,"
+        "\"session_pid\":%ld,\"session_uid\":%u,\"session_start\":%llu,\"session_birth\":\"%s:%llu\",\"session_name\":\"%s\",\"helper_pid\":%ld,"
+        "\"session\":%s,\"helper\":%s,"
+        "\"transport_client\":\"%s\",\"transport_client_port\":%u,\"transport_server\":\"%s\",\"transport_server_port\":%u,"
+        "\"transport\":[\"%s\",%u,\"%s\",%u],"
+        "\"session_proof\":{\"source\":\"ssh_exec_ancestry_inode\",\"uid\":%u,\"inode\":%lu,"
+        "\"socket\":{\"local\":[\"%s\",%u],\"remote\":[\"%s\",%u],\"listening\":false,\"uid\":%u,\"inode\":\"%lu\"}},"
+        "\"listener_absent_at_claim\":true,\"registration\":\"ssh_exec_ancestry\"%s}\n",
+        PROTOCOL, phase, s->current.owner, s->current.rule, s->current.generation,
+        s->current.session, s->current.host, s->current.port,
+        (long)s->session.pid, (unsigned)s->session.uid, s->session.start, s->session.boot,
+        s->session.start, s->session.name, (long)s->helper.pid, session, helper,
+        s->transport.client, s->transport.client_port, s->transport.server, s->transport.server_port,
+        s->transport.client, s->transport.client_port, s->transport.server, s->transport.server_port,
+        s->transport_uid, s->transport_inode, s->transport.server, s->transport.server_port,
+        s->transport.client, s->transport.client_port, s->transport_uid, s->transport_inode, listener);
     return n >= 0 && (size_t)n < cap ? 0 : -1;
 }
 static int match_current(const char *line, const struct claim *c) {
@@ -550,6 +633,7 @@ static int claim_op(struct helper_state *s, const char *line, char *op) {
     int tr = read_transport(&s->transport); if (tr == -2) { emit_error(op,"unsupported","IPv6 SSH_CONNECTION requires a future native helper build"); return -1; }
     if (tr < 0 || find_session(&s->transport, &s->session) < 0 || s->session.uid != geteuid() ||
         transport_inode(&s->transport, &s->transport_uid, &s->transport_inode) != 1) { emit_error(op,"ownership_mismatch","cannot identify a same-user ancestor SSH session and its SSH_CONNECTION transport"); return -1; }
+    if (read_identity(getpid(), &s->helper) < 0) { emit_error(op,"ownership_mismatch","cannot identify the current recovery helper"); return -1; }
     if (registry(s, s->current.owner, s->current.rule) < 0) { emit_error(op,"permission_denied","cannot create or lock the private remote lease registry"); return -1; }
     char old[MAX_LINE]; int rr = read_record(s->path, old, sizeof(old)); int reclaimed = 0;
     if (rr < 0) { unlock_registry(s); emit_error(op,"ownership_mismatch","existing remote lease is unreadable or unsafe"); return -1; }
@@ -566,7 +650,7 @@ static int claim_op(struct helper_state *s, const char *line, char *op) {
         char old_phase[32];
         int listener_owner = old_bound > 0 ? listener_owned_by(oldpid,old_inode) : 0;
         if (json_string(old,"phase",old_phase,sizeof(old_phase)) < 0 ||
-            (old_bound > 0 && listener_owner == 0) ||
+            (old_bound > 0 && listener_owner != 1 && listener_owner != -2) ||
             (!strcmp(old_phase,"confirmed") && old_bound > 0 && !listener_proof_matches(old,old_uid,old_inode)) ||
             (!strcmp(old_phase,"confirmed") && old_bound > 0 && listener_owner < 0 && !listener_proof_matches(old,old_uid,old_inode))) {
             unlock_registry(s); emit_error(op,"unmanaged_conflict","old listener proof does not match the observed listener"); return -1;
@@ -598,20 +682,51 @@ static int claim_op(struct helper_state *s, const char *line, char *op) {
     printf("{\"ok\":true,\"op\":\"claim\",\"protocol\":%d,\"reclaimed\":%s,\"session_pid\":%ld,\"generation\":%llu,\"session_id\":\"%s\"}\n", PROTOCOL, reclaimed?"true":"false", (long)s->session.pid, s->current.generation, s->current.session); fflush(stdout); return 0;
 }
 static int confirm_op(struct helper_state *s, const char *line, const char *op) {
-    if (!s->claimed || !match_current(line,&s->current)) { emit_error(op,"invalid_request","claim must succeed before confirm"); return -1; }
-    int ack=0; if (json_bool(line,"forward_ack",&ack)<0 || !ack) { emit_error(op,"ownership_mismatch","confirm requires the SSH forwarding success acknowledgement"); return -1; }
-    int fd=proc_fd(s->session.pid); struct identity cur; if (fd<0 || read_identity_fd(fd,&cur)<0 || !same_id(&s->session,&cur)) { if(fd>=0)close(fd); emit_error(op,"ownership_mismatch","current SSH process identity changed"); return -1; } close(fd);
-    unsigned uid; unsigned long inode; int bound=tcp_listener(s->current.host,s->current.port,&uid,&inode); if(bound<=0) { emit_error(op,"listener_missing","SSH has not established the registered reverse listener"); return -1; }
-    if (uid != s->session.uid) { emit_error(op,"unmanaged_conflict","reverse listener UID does not match the SSH session"); return -1; }
-    if (registry(s,s->current.owner,s->current.rule)<0) { emit_error(op,"permission_denied","cannot lock the private remote lease registry"); return -1; }
-    char old[MAX_LINE]; if (read_record(s->path,old,sizeof(old)) != 0 || !match_current(old,&s->current)) { unlock_registry(s); emit_error(op,"superseded","this helper no longer owns the current generation"); return -1; }
-    int listener_owner = listener_owned_by(s->session.pid,inode);
-    if (listener_owner == 0 || (listener_owner < 0 &&
-        (!strstr(old,"\"listener_absent_at_claim\":true") || !strstr(old,"\"registration\":\"ssh_exec_ancestry\"") || !strstr(old,"\"session_proof\"")))) {
+    if (!s->claimed || !match_current(line, &s->current)) { emit_error(op,"invalid_request","claim must succeed before confirm"); return -1; }
+    int ack = 0;
+    if (json_bool(line, "forward_ack", &ack) < 0 || !ack) { emit_error(op,"ownership_mismatch","confirm requires the SSH forwarding success acknowledgement"); return -1; }
+    if (registry(s, s->current.owner, s->current.rule) < 0) { emit_error(op,"permission_denied","cannot lock the private remote lease registry"); return -1; }
+    char old[MAX_LINE];
+    if (read_record(s->path, old, sizeof(old)) != 0 || !match_current(old, &s->current)) {
+        unlock_registry(s); emit_error(op,"superseded","this helper no longer owns the current generation"); return -1;
+    }
+    struct identity cur;
+    unsigned transport_uid; unsigned long transport_id;
+    if (read_identity(s->session.pid, &cur) < 0 || !same_id(&s->session, &cur) ||
+        transport_inode(&s->transport, &transport_uid, &transport_id) != 1 ||
+        transport_uid != s->transport_uid || transport_id != s->transport_inode) {
+        unlock_registry(s); emit_error(op,"ownership_mismatch","current SSH process or transport identity changed"); return -1;
+    }
+    unsigned uid; unsigned long inode;
+    struct in_addr actual, requested;
+    int bound = tcp_listener_info(s->current.host, s->current.port, &uid, &inode, &actual);
+    if (bound <= 0) {
+        unlock_registry(s); emit_error(op,"listener_missing","SSH has not established the registered reverse listener"); return -1;
+    }
+    if (parse_ipv4(s->current.host, &requested) || actual.s_addr != requested.s_addr) {
+        unlock_registry(s); emit_error(op,"ownership_mismatch","sshd changed the requested bind address; check GatewayPorts"); return -1;
+    }
+    if (uid != s->session.uid) {
+        unlock_registry(s); emit_error(op,"unmanaged_conflict","reverse listener UID does not match the SSH session"); return -1;
+    }
+    int listener_owner = listener_owned_by(s->session.pid, inode);
+    int absent = 0; char registration[64];
+    if (listener_owner != 1 && (listener_owner != -2 ||
+        json_bool(old, "listener_absent_at_claim", &absent) < 0 || !absent ||
+        json_string(old, "registration", registration, sizeof(registration)) < 0 ||
+        strcmp(registration, "ssh_exec_ancestry") || !session_proof_matches(old, transport_uid, transport_id))) {
         unlock_registry(s); emit_error(op,"unmanaged_conflict","reverse listener inode is not owned by the registered SSH session"); return -1;
     }
-    char record[MAX_LINE]; if (make_record(s,record,sizeof(record),"confirmed") < 0 || write_record(s->path,record) < 0) { unlock_registry(s); emit_error(op,"io_error","cannot durably confirm remote lease"); return -1; } unlock_registry(s);
-    printf("{\"ok\":true,\"op\":\"confirm\",\"protocol\":%d,\"generation\":%llu,\"session_id\":\"%s\",\"session_pid\":%ld}\n",PROTOCOL,s->current.generation,s->current.session,(long)s->session.pid); fflush(stdout); return 0;
+    /* Persist exactly the socket checked above, never a new unverified query. */
+    s->listener_uid = uid; s->listener_inode = inode;
+    char record[MAX_LINE];
+    if (make_record(s, record, sizeof(record), "confirmed") < 0 || write_record(s->path, record) < 0) {
+        unlock_registry(s); emit_error(op,"io_error","cannot durably confirm remote lease"); return -1;
+    }
+    unlock_registry(s);
+    printf("{\"ok\":true,\"op\":\"confirm\",\"protocol\":%d,\"generation\":%llu,\"session_id\":\"%s\",\"session_pid\":%ld}\n",
+           PROTOCOL, s->current.generation, s->current.session, (long)s->session.pid);
+    fflush(stdout); return 0;
 }
 static int release_op(struct helper_state *s, const char *line, const char *op) {
     if (!s->claimed || !match_current(line,&s->current)) { emit_error(op,"invalid_request","claim must succeed before release"); return -1; }

@@ -8,7 +8,7 @@ use crate::{
 use serde_json::{Value, json};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-fn lease_spec() -> crate::model::ForwardSpec {
+pub(super) fn lease_spec() -> crate::model::ForwardSpec {
     let mut spec = test_rule().spec;
     spec.tunnel = Tunnel::Remote {
         listen: "127.0.0.1:45000".parse().unwrap(),
@@ -17,13 +17,13 @@ fn lease_spec() -> crate::model::ForwardSpec {
     spec.remote_cleanup = RemoteCleanup::Verified;
     spec
 }
-fn cleanup(fixture: &Fixture) -> CleanupContext {
+pub(super) fn cleanup(fixture: &Fixture) -> CleanupContext {
     CleanupContext::open(
         &crate::paths::Paths::new(Some(fixture._directory.path().join("recovery"))).unwrap(),
     )
     .unwrap()
 }
-fn claim_reply(request: &Value) -> Value {
+pub(super) fn claim_reply(request: &Value) -> Value {
     json!({"protocol":1,"op":"claim","ok":true,"session_id":request["session_id"],"generation":request["generation"],"session_pid":123,"reclaimed":true})
 }
 pub(super) async fn wait_state(rule: &crate::engine::state::Rule, expected: RuntimeState) {
@@ -90,7 +90,7 @@ async fn unmanaged_port_conflict_keeps_retrying_without_requesting_a_listener() 
 }
 
 #[tokio::test]
-async fn helper_startup_denial_missing_python_disconnect_and_timeout_are_actionable() {
+async fn helper_startup_denial_exit_disconnect_and_timeout_are_actionable() {
     for (mode, needle) in [
         (ExecMode::Reject, "exec_denied"),
         (
@@ -521,7 +521,7 @@ async fn helper_channel_confirmed_after_open_timeout_is_closed_without_leaking()
     assert!(matches!(
         result,
         Err(CleanupError::Timeout {
-            operation: "session channel open"
+            operation: "session channel open" | "helper startup"
         })
     ));
     gate.notify_one();

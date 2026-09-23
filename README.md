@@ -29,6 +29,8 @@ cargo build --release --locked
 
 `install-from-source.sh` 用于完整的本地源码仓库，支持 macOS/Linux 的 Bash（3.2 或更新版本）。可以从任意目录通过脚本路径调用；`--root` 的相对路径以调用时的工作目录为基准。内部使用 `cargo install --path … --locked --force --root …`，默认安装为 `~/.local/bin/fwm`，不受 Cargo 默认安装目录设置影响；`--root` 可显式覆盖，重复运行会更新已有安装。脚本同时安装补全文件，并默认按 `$SHELL` 配置 Bash 或 Zsh 的启动文件；加载补全时会将本次安装的 `bin` 目录置于 PATH 首位。
 
+macOS 构建时，脚本通过 `xcrun` 选择同一套 Apple 编译器、链接器和 SDK，避免 PATH 中旧版 Conda 工具与新 SDK 混用。调整仅作用于本次构建；显式设置的 `SDKROOT`、编译器和 Cargo 链接参数会保留，`DEVELOPER_DIR` 可指定使用的 Xcode。
+
 程序和补全安装成功后，脚本会使用刚安装的二进制执行 `daemon restart`：后台未运行时启动，已运行时重启以加载新版本；已注册的登录服务也会刷新其程序路径。保存的转发启停状态保留。这一步作用于默认配置实例 `~/.fwm`，`--root` 仅改变安装位置，`--shell none` 也会启动或重启后台。若后台启动失败，脚本返回非零退出码，说明程序已经安装，并打印手动重试命令。
 
 此脚本专门用于源码构建。以后若提供从 GitHub Releases 下载预编译程序的一键安装脚本，会使用单独的名称和入口；当前尚未提供该下载脚本。`--offline` 只限制 Cargo 依赖下载，省略时 Cargo 可以获取缺少的依赖。

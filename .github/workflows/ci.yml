@@ -24,6 +24,9 @@ jobs:
       - name: Verified recovery helper tests
         if: runner.os != 'Windows'
         run: python3 -m unittest discover -s crates/fwm-core/src/cleanup -p 'test_*.py' -v
+      - name: Native Linux helper parser and lease regressions
+        if: runner.os != 'Windows'
+        run: python3 tests/native_helper.py -v
       - run: cargo build --locked
       - name: Cross-user IPC authentication regressions (Linux)
         if: runner.os == 'Linux'

@@ -210,6 +210,73 @@ mod unix {
     use agent::{Agent, Behavior, Identity};
 
     #[tokio::test]
+    async fn ssh_config_private_identity_authenticates_without_contacting_agent() {
+        let key = ed25519();
+        let mut server = Fixture::new(vec![key.public_key().clone()], None, None).await;
+        let identity = server.identity("configured-private-key", &key);
+        server.profile.identity_files.clear();
+        let socket = server.directory.path().join("unused-agent.sock");
+        let listener = tokio::net::UnixListener::bind(&socket).unwrap();
+        server.configure(Some(&socket), false);
+        let config = server.profile.ssh_config.as_ref().unwrap();
+        std::fs::write(
+            config,
+            std::fs::read_to_string(config).unwrap().replace(
+                "IdentityFile none",
+                &format!("IdentityFile \"{}\"", identity.display()),
+            ),
+        )
+        .unwrap();
+
+        server.check().await.unwrap();
+
+        assert_eq!(
+            server.observations.lock().unwrap().authenticated,
+            [key.public_key().clone()]
+        );
+        assert!(
+            tokio::time::timeout(std::time::Duration::from_millis(25), listener.accept())
+                .await
+                .is_err(),
+            "a usable configured private key must not require the agent"
+        );
+    }
+
+    #[tokio::test]
+    async fn empty_agent_does_not_hide_server_rejection_of_ssh_config_private_identity() {
+        let mut server = Fixture::new(vec![], None, None).await;
+        let key = ed25519();
+        let identity = server.identity("configured-rejected-key", &key);
+        server.profile.identity_files.clear();
+        let agent = Agent::new(server.directory.path(), vec![], false).await;
+        server.configure(Some(&agent.path), false);
+        let config = server.profile.ssh_config.as_ref().unwrap();
+        std::fs::write(
+            config,
+            std::fs::read_to_string(config).unwrap().replace(
+                "IdentityFile none",
+                &format!("IdentityFile \"{}\"", identity.display()),
+            ),
+        )
+        .unwrap();
+
+        let error = server.check().await.unwrap_err();
+        assert!(error.needs_attention(), "{error:?}");
+        let detail = error.to_string();
+        assert!(detail.contains(identity.to_str().unwrap()), "{detail}");
+        assert!(detail.contains("server rejected"), "{detail}");
+        assert!(
+            detail.contains("SSH agent returned no identities"),
+            "{detail}"
+        );
+        assert_eq!(
+            server.observations.lock().unwrap().authenticated,
+            [key.public_key().clone()]
+        );
+        assert!(agent.signed.lock().unwrap().is_empty());
+    }
+
+    #[tokio::test]
     async fn public_identity_file_selects_agent_key_with_identities_only_true() {
         let allowed = ed25519();
         let mut server = Fixture::new(vec![allowed.public_key().clone()], None, None).await;
@@ -441,7 +508,8 @@ mod unix {
     #[tokio::test]
     async fn agent_disconnect_during_identity_listing_is_explicit_attention() {
         use tokio::{io::AsyncReadExt, net::UnixListener};
-        let server = Fixture::new(vec![], None, None).await;
+        let mut server = Fixture::new(vec![], None, None).await;
+        let identity = server.identity("rejected-before-agent-disconnect", &ed25519());
         let path = server.directory.path().join("broken-agent.sock");
         let listener = UnixListener::bind(&path).unwrap();
         let task = tokio::spawn(async move {
@@ -449,10 +517,11 @@ mod unix {
             let _ = stream.read_u32().await;
         });
         server.configure(Some(&path), false);
-        attention(
-            server.check().await.unwrap_err(),
-            "cannot list agent identities",
-        );
+        let error = server.check().await.unwrap_err();
+        let detail = error.to_string();
+        assert!(detail.contains(identity.to_str().unwrap()), "{detail}");
+        assert!(detail.contains("server rejected"), "{detail}");
+        attention(error, "cannot list agent identities");
         task.await.unwrap();
     }
 

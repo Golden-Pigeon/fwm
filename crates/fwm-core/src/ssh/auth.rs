@@ -83,7 +83,7 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
         if cert_path.exists() {
             let cert = russh::keys::load_openssh_certificate(&cert_path)
                 .map_err(|e| SshError::Authentication(format!("{}: {e}", cert_path.display())))?;
-            if handle
+            let result = handle
                 .authenticate_certificate_with(
                     &server.user,
                     cert,
@@ -93,11 +93,14 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
                 .await
                 .map_err(|error| {
                     SshError::Authentication(format!("certificate signing failed: {error}"))
-                })?
-                .success()
-            {
+                })?;
+            if result.success() {
                 return Ok(());
             }
+            explanations.push(identity_failure(
+                &format!("certificate file {}", cert_path.display()),
+                result,
+            ));
         }
         if attempted
             .iter()
@@ -106,24 +109,31 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
             continue;
         }
         attempted.push(key.public_key().clone());
-        if handle
+        let result = handle
             .authenticate_publickey(&server.user, PrivateKeyWithHashAlg::new(key, hash))
-            .await?
-            .success()
-        {
+            .await?;
+        if result.success() {
             return Ok(());
         }
+        explanations.push(identity_failure(
+            &format!("identity file {}", path.display()),
+            result,
+        ));
     }
     match open_agent(server).await {
         Ok(Some(mut agent)) => {
-            let identities = agent.request_identities().await.map_err(|e| {
-                SshError::Authentication(format!("cannot list agent identities: {e}"))
-            })?;
-            if identities.is_empty() {
-                explanations.push(
-                    "SSH agent returned no identities; unlock the agent or load a key".into(),
-                );
-            }
+            let identities = match agent.request_identities().await {
+                Ok(identities) => {
+                    if identities.is_empty() {
+                        explanations.push("SSH agent returned no identities".into());
+                    }
+                    identities
+                }
+                Err(error) => {
+                    explanations.push(format!("cannot list agent identities: {error}"));
+                    Vec::new()
+                }
+            };
             for identity in identities {
                 let public_key = identity.public_key().into_owned();
                 if server.identities_only
@@ -191,11 +201,30 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
         explanations.push("the server rejected all available identities".into());
     }
     Err(SshError::Authentication(format!(
-        "{}@{}: {}; load a valid key into ssh-agent or configure an unencrypted identity file",
+        "{}@{}: {}; check the configured identity files and server authentication policy",
         server.user,
         server.host,
         explanations.join("; ")
     )))
+}
+
+fn identity_failure(identity: &str, result: client::AuthResult) -> String {
+    match result {
+        client::AuthResult::Failure {
+            remaining_methods,
+            partial_success: true,
+        } => format!(
+            "server accepted {identity} but requires additional authentication: {remaining_methods:?}"
+        ),
+        client::AuthResult::Failure {
+            remaining_methods, ..
+        } => format!(
+            "server rejected {identity}; remaining authentication methods: {remaining_methods:?}"
+        ),
+        client::AuthResult::Success => {
+            unreachable!("successful authentication returns immediately")
+        }
+    }
 }
 
 pub fn agent_socket(server: &ResolvedServer) -> Option<String> {

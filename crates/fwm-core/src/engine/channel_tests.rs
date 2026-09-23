@@ -27,9 +27,83 @@ enum DirectMode {
     Reject,
     Silent,
 }
+
+#[derive(Clone)]
+struct CommandReply {
+    stdout: Vec<Vec<u8>>,
+    stderr: Vec<u8>,
+    status: Option<u32>,
+    eof_before_status: bool,
+    close: bool,
+}
+
+impl Default for CommandReply {
+    fn default() -> Self {
+        Self {
+            stdout: Vec::new(),
+            stderr: Vec::new(),
+            status: Some(0),
+            eof_before_status: true,
+            close: true,
+        }
+    }
+}
+
+impl CommandReply {
+    async fn send(self, channel: &Channel<server::Msg>) -> Result<(), russh::Error> {
+        for chunk in self.stdout {
+            channel.data_bytes(chunk).await?;
+        }
+        if !self.stderr.is_empty() {
+            channel.extended_data_bytes(1, self.stderr).await?;
+        }
+        if self.eof_before_status {
+            channel.eof().await?;
+        }
+        if let Some(status) = self.status {
+            channel.exit_status(status).await?;
+        }
+        if !self.eof_before_status {
+            channel.eof().await?;
+        }
+        if self.close {
+            channel.close().await?;
+        }
+        Ok(())
+    }
+}
+
+#[derive(Clone)]
+struct NativeStartup {
+    uname: CommandReply,
+    windows: CommandReply,
+    upload: CommandReply,
+    commands: Arc<Mutex<Vec<String>>>,
+    uploads: Arc<Mutex<Vec<Vec<u8>>>>,
+}
+
+impl Default for NativeStartup {
+    fn default() -> Self {
+        Self {
+            uname: CommandReply {
+                stdout: vec![b"Linux x86_64\n".to_vec()],
+                ..Default::default()
+            },
+            windows: CommandReply {
+                stdout: vec![b"%OS% %PROCESSOR_ARCHITECTURE%\n".to_vec()],
+                ..Default::default()
+            },
+            upload: CommandReply::default(),
+            commands: Arc::default(),
+            uploads: Arc::default(),
+        }
+    }
+}
+
 #[derive(Clone, Default)]
 struct Behaviour {
     exec: ExecMode,
+    native: NativeStartup,
     session_gate: Option<Arc<Notify>>,
     direct: DirectMode,
     listen: Arc<Mutex<std::collections::VecDeque<bool>>>,
@@ -40,6 +114,7 @@ struct Behaviour {
 }
 struct TestServer {
     behaviour: Behaviour,
+    pending_sessions: HashMap<russh::ChannelId, Channel<server::Msg>>,
     held_direct: Vec<(Channel<server::Msg>, server::ChannelOpenHandle)>,
     direct_started: Arc<Notify>,
     allow_direct: Arc<Notify>,
@@ -69,15 +144,61 @@ impl server::Handler for TestServer {
             return Ok(());
         }
         reply.accept().await;
-        let _ = self.session_channels.send(channel);
+        self.pending_sessions.insert(channel.id(), channel);
         Ok(())
     }
     async fn exec_request(
         &mut self,
         channel: russh::ChannelId,
-        _: &[u8],
+        command: &[u8],
         session: &mut server::Session,
     ) -> Result<(), Self::Error> {
+        let command = String::from_utf8_lossy(command).into_owned();
+        self.behaviour
+            .native
+            .commands
+            .lock()
+            .unwrap()
+            .push(command.clone());
+        let session_channel = self.pending_sessions.remove(&channel).unwrap();
+        let probe = match command.as_str() {
+            "uname -s -m" => Some(self.behaviour.native.uname.clone()),
+            "echo %OS% %PROCESSOR_ARCHITECTURE%" => Some(self.behaviour.native.windows.clone()),
+            _ => None,
+        };
+        if let Some(reply) = probe {
+            session.channel_success(channel)?;
+            tokio::spawn(async move {
+                let _ = reply.send(&session_channel).await;
+            });
+            return Ok(());
+        }
+        if command.starts_with("umask 077;") || command.contains("[IO.File]::Open(") {
+            session.channel_success(channel)?;
+            let reply = self.behaviour.native.upload.clone();
+            let uploads = self.behaviour.native.uploads.clone();
+            tokio::spawn(async move {
+                let mut session_channel = session_channel;
+                let mut uploaded = Vec::new();
+                while let Some(message) = session_channel.wait().await {
+                    match message {
+                        russh::ChannelMsg::Data { data } => uploaded.extend_from_slice(&data),
+                        russh::ChannelMsg::Eof => break,
+                        russh::ChannelMsg::Close => return,
+                        _ => {}
+                    }
+                }
+                uploads.lock().unwrap().push(uploaded);
+                let _ = reply.send(&session_channel).await;
+            });
+            return Ok(());
+        }
+        assert!(
+            command.starts_with("exec '/tmp/.fwm-remote-helper-")
+                || command
+                    .starts_with("powershell -NoProfile -NonInteractive -Command \"& (Join-Path"),
+            "unexpected helper command: {command}"
+        );
         match self.behaviour.exec {
             ExecMode::Success => session.channel_success(channel)?,
             ExecMode::Reject => session.channel_failure(channel)?,
@@ -88,6 +209,7 @@ impl server::Handler for TestServer {
             ExecMode::Close => session.close(channel)?,
             ExecMode::Silent => {}
         }
+        let _ = self.session_channels.send(session_channel);
         Ok(())
     }
     async fn cancel_tcpip_forward(
@@ -208,6 +330,7 @@ impl Fixture {
         let (session_sender, session_channels) = mpsc::unbounded_channel();
         let server_handler = TestServer {
             behaviour,
+            pending_sessions: HashMap::new(),
             held_direct: Vec::new(),
             direct_started: direct_started.clone(),
             allow_direct: allow_direct.clone(),
@@ -381,7 +504,7 @@ async fn established_listener_detects_helper_exit_and_requests_only_its_session_
             io.get_mut().flush().await.unwrap();
         }
         let _ = helper_exit.await;
-        // Dropping only this exec channel simulates Python dying, with SSH live.
+        // Dropping only this exec channel simulates the helper dying, with SSH live.
     });
     tokio::time::timeout(Duration::from_secs(1), async {
         while !events.recv().await.unwrap().message.contains("Established") {}
@@ -531,6 +654,9 @@ async fn cancelled_direct_open_closes_late_channel_and_holds_capacity_until_conf
 
 #[path = "failure_tests.rs"]
 mod failure_tests;
+
+#[path = "native_startup_tests.rs"]
+mod native_startup_tests;
 
 #[path = "remote_dynamic_tests.rs"]
 mod remote_dynamic_tests;

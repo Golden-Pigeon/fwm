@@ -5,15 +5,11 @@ use serde_json::{Value, json};
 use std::{sync::Arc, time::Duration};
 use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
 
-// The helper is a static Linux executable. It is uploaded over the dedicated
-// SSH session and unlinks its temporary pathname before serving requests.
+// Native helper artifacts are uploaded over the dedicated SSH connection.
 // Keeping the bytes in the client means the server needs no Python, compiler,
 // package manager, or matching user-space runtime.
-#[cfg(not(test))]
 const HELPER_LINUX_X86_64: &[u8] = include_bytes!("native_helper_linux_x86_64");
-#[cfg(not(test))]
 const HELPER_MACOS_UNIVERSAL: &[u8] = include_bytes!("native_helper_macos_universal");
-#[cfg(not(test))]
 const HELPER_WINDOWS_X86_64: &[u8] = include_bytes!("native_helper_windows_x86_64.exe");
 const MAX_REPLY: usize = 32 * 1024;
 
@@ -171,61 +167,6 @@ impl Drop for OwnedChannel {
     }
 }
 
-#[cfg(test)]
-async fn open_session<H>(
-    handle: Arc<client::Handle<H>>,
-    _claim: &Claim,
-    timeout: Duration,
-) -> Result<Channel<client::Msg>, CleanupError>
-where
-    H: client::Handler + Send + 'static,
-{
-    // The in-process russh test server feeds one session channel directly to
-    // the protocol tests and cannot model the separate upload channel.
-    let startup = async {
-        let channel = open_session_raw(handle, timeout).await?;
-        let mut owned = OwnedChannel(Some(channel));
-        owned
-            .channel()
-            .exec(true, "native-helper-test")
-            .await
-            .map_err(|_| CleanupError::Remote {
-                code: "exec_denied".into(),
-                message: "SSH server rejected the native recovery helper".into(),
-            })?;
-        loop {
-            match owned.channel_mut().wait().await {
-                Some(ChannelMsg::Success) => return Ok(owned.take()),
-                Some(ChannelMsg::Failure) => {
-                    return Err(CleanupError::Remote {
-                        code: "exec_denied".into(),
-                        message: "SSH server rejected the native recovery helper".into(),
-                    });
-                }
-                Some(ChannelMsg::ExitStatus { exit_status }) => {
-                    return Err(CleanupError::Remote {
-                        code: "helper_unavailable".into(),
-                        message: format!("native recovery helper exited with status {exit_status}"),
-                    });
-                }
-                Some(ChannelMsg::Close | ChannelMsg::Eof) | None => {
-                    return Err(CleanupError::Remote {
-                        code: "helper_unavailable".into(),
-                        message: "native recovery helper channel closed before startup".into(),
-                    });
-                }
-                _ => {}
-            }
-        }
-    };
-    tokio::time::timeout(timeout, startup)
-        .await
-        .map_err(|_| CleanupError::Timeout {
-            operation: "helper startup",
-        })?
-}
-
-#[cfg(not(test))]
 #[derive(Clone, Copy)]
 enum RemotePlatform {
     Linux,
@@ -233,7 +174,81 @@ enum RemotePlatform {
     Windows,
 }
 
-#[cfg(not(test))]
+struct CommandResult {
+    stdout: Vec<u8>,
+    stderr: Vec<u8>,
+    exit_status: u32,
+}
+
+/// SSH EOF ends output, not channel requests. In particular OpenSSH may send
+/// exit-status after EOF. Keep collecting until channel close, so neither an
+/// early EOF nor an early exit-status loses the command's result or output.
+async fn command_result(
+    channel: &mut OwnedChannel,
+    timeout: Duration,
+    operation: &'static str,
+) -> Result<CommandResult, CleanupError> {
+    tokio::time::timeout(timeout, async {
+        let mut stdout = Vec::new();
+        let mut stderr = Vec::new();
+        let mut exit_status = None;
+        loop {
+            match channel.channel_mut().wait().await {
+                Some(ChannelMsg::Data { data }) => {
+                    if stdout.len() + stderr.len() + data.len() > MAX_REPLY {
+                        return Err(CleanupError::Protocol(format!(
+                            "{operation} output exceeds 32 KiB"
+                        )));
+                    }
+                    stdout.extend_from_slice(&data);
+                }
+                Some(ChannelMsg::ExtendedData { data, .. }) => {
+                    if stdout.len() + stderr.len() + data.len() > MAX_REPLY {
+                        return Err(CleanupError::Protocol(format!(
+                            "{operation} output exceeds 32 KiB"
+                        )));
+                    }
+                    stderr.extend_from_slice(&data);
+                }
+                Some(ChannelMsg::ExitStatus {
+                    exit_status: status,
+                }) => {
+                    exit_status = Some(status);
+                }
+                Some(ChannelMsg::Failure) => {
+                    return Err(CleanupError::Remote {
+                        code: "exec_denied".into(),
+                        message: format!("SSH server rejected {operation}"),
+                    });
+                }
+                Some(ChannelMsg::ExitSignal { .. }) => {
+                    return Err(CleanupError::Remote {
+                        code: "helper_unavailable".into(),
+                        message: format!("{operation} was terminated by a signal"),
+                    });
+                }
+                Some(ChannelMsg::Close) | None => {
+                    return Ok(CommandResult {
+                        stdout,
+                        stderr,
+                        exit_status: exit_status.ok_or_else(|| {
+                            CleanupError::Protocol(format!(
+                                "{operation} closed without an exit status"
+                            ))
+                        })?,
+                    });
+                }
+                // EOF carries no success/failure information. Wait for the
+                // exit-status request and the eventual channel close.
+                Some(ChannelMsg::Eof) => {}
+                _ => {}
+            }
+        }
+    })
+    .await
+    .map_err(|_| CleanupError::Timeout { operation })?
+}
+
 async fn probe_remote_command<H>(
     handle: Arc<client::Handle<H>>,
     command: &str,
@@ -252,30 +267,13 @@ where
             code: "exec_denied".into(),
             message: "SSH server rejected remote platform detection".into(),
         })?;
-    let mut output = Vec::new();
-    let result = tokio::time::timeout(timeout, async {
-        loop {
-            match owned.channel_mut().wait().await {
-                Some(ChannelMsg::Data { data }) => output.extend_from_slice(&data),
-                Some(ChannelMsg::ExtendedData { data, .. }) => output.extend_from_slice(&data),
-                Some(ChannelMsg::ExitStatus { exit_status }) => {
-                    return Ok::<bool, CleanupError>(exit_status == 0);
-                }
-                Some(ChannelMsg::Close | ChannelMsg::Eof) | None => {
-                    return Ok::<bool, CleanupError>(false);
-                }
-                _ => {}
-            }
-        }
-    })
-    .await
-    .map_err(|_| CleanupError::Timeout {
-        operation: "remote platform detection",
-    })??;
-    Ok((result, String::from_utf8_lossy(&output).into_owned()))
+    let result = command_result(&mut owned, timeout, "remote platform detection").await?;
+    Ok((
+        result.exit_status == 0,
+        String::from_utf8_lossy(&result.stdout).into_owned(),
+    ))
 }
 
-#[cfg(not(test))]
 async fn detect_remote_platform<H>(
     handle: Arc<client::Handle<H>>,
     timeout: Duration,
@@ -313,7 +311,6 @@ where
     })
 }
 
-#[cfg(not(test))]
 async fn open_session<H>(
     handle: Arc<client::Handle<H>>,
     claim: &Claim,
@@ -329,7 +326,6 @@ where
         })?
 }
 
-#[cfg(not(test))]
 async fn open_session_unbounded<H>(
     handle: Arc<client::Handle<H>>,
     claim: &Claim,
@@ -380,6 +376,7 @@ where
             code: "exec_denied".into(),
             message: "SSH server rejected the native helper upload command".into(),
         })?;
+    let mut startup_stderr = Vec::new();
     loop {
         match upload.channel_mut().wait().await {
             Some(ChannelMsg::Success) => break,
@@ -390,58 +387,45 @@ where
                 });
             }
             Some(ChannelMsg::ExtendedData { data, .. }) => {
-                let message = String::from_utf8_lossy(&data);
-                return Err(CleanupError::Remote {
-                    code: "helper_upload_failed".into(),
-                    message: message.into_owned(),
-                });
+                if startup_stderr.len() + data.len() > MAX_REPLY {
+                    return Err(CleanupError::Protocol(
+                        "helper upload startup output exceeds 32 KiB".into(),
+                    ));
+                }
+                startup_stderr.extend_from_slice(&data);
             }
             Some(ChannelMsg::ExitStatus { exit_status }) => {
                 return Err(CleanupError::Remote {
                     code: "helper_upload_failed".into(),
-                    message: format!("helper upload command exited with status {exit_status}"),
+                    message: format!(
+                        "helper upload command exited with status {exit_status}: {}",
+                        String::from_utf8_lossy(&startup_stderr).trim()
+                    ),
                 });
             }
-            Some(ChannelMsg::Close | ChannelMsg::Eof) | None => {
+            Some(ChannelMsg::Close) | None => {
                 return Err(CleanupError::Remote {
                     code: "helper_upload_failed".into(),
-                    message: "helper upload channel closed before exec confirmation".into(),
+                    message: format!(
+                        "helper upload channel closed before exec confirmation: {}",
+                        String::from_utf8_lossy(&startup_stderr).trim()
+                    ),
                 });
             }
+            Some(ChannelMsg::Eof) => {}
             _ => {}
         }
     }
     upload.channel().data_bytes(helper_bytes.to_vec()).await?;
     upload.channel().eof().await?;
-    let mut upload_status = None;
-    while let Some(message) = upload.channel_mut().wait().await {
-        match message {
-            ChannelMsg::ExitStatus { exit_status } => {
-                upload_status = Some(exit_status);
-                break;
-            }
-            ChannelMsg::Failure => {
-                return Err(CleanupError::Remote {
-                    code: "helper_upload_failed".into(),
-                    message: "native helper upload command failed".into(),
-                });
-            }
-            ChannelMsg::ExtendedData { data, .. } => {
-                return Err(CleanupError::Remote {
-                    code: "helper_upload_failed".into(),
-                    message: String::from_utf8_lossy(&data).into_owned(),
-                });
-            }
-            ChannelMsg::Close | ChannelMsg::Eof => break,
-            _ => {}
-        }
-    }
-    if upload_status != Some(0) {
+    let result = command_result(&mut upload, timeout, "helper upload").await?;
+    if result.exit_status != 0 {
         return Err(CleanupError::Remote {
             code: "helper_upload_failed".into(),
             message: format!(
-                "native helper upload command exited with status {:?}",
-                upload_status
+                "native helper upload exited with status {}: {}",
+                result.exit_status,
+                String::from_utf8_lossy(&result.stderr).trim()
             ),
         });
     }
@@ -457,13 +441,20 @@ where
             code: "exec_denied".into(),
             message: "SSH server rejected the native recovery helper".into(),
         })?;
+    let mut stderr = Vec::new();
     loop {
         match owned.channel_mut().wait().await {
             Some(ChannelMsg::Success) => return Ok(owned.take()),
             Some(ChannelMsg::Failure) => return Err(CleanupError::Remote { code: "exec_denied".into(), message: "SSH server rejected the native recovery helper; allow command execution for verified recovery".into() }),
-            Some(ChannelMsg::ExtendedData { data, .. }) => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: String::from_utf8_lossy(&data).into_owned() }),
-            Some(ChannelMsg::ExitStatus { exit_status }) => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: format!("native recovery helper exited with status {exit_status}") }),
-            Some(ChannelMsg::Close | ChannelMsg::Eof) | None => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: "native recovery helper channel closed before startup".into() }),
+            Some(ChannelMsg::ExtendedData { data, .. }) => {
+                if stderr.len() + data.len() > MAX_REPLY {
+                    return Err(CleanupError::Protocol("helper startup output exceeds 32 KiB".into()));
+                }
+                stderr.extend_from_slice(&data);
+            }
+            Some(ChannelMsg::ExitStatus { exit_status }) => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: format!("native recovery helper exited with status {exit_status}: {}", String::from_utf8_lossy(&stderr).trim()) }),
+            Some(ChannelMsg::Close) | None => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: format!("native recovery helper channel closed before startup: {}", String::from_utf8_lossy(&stderr).trim()) }),
+            Some(ChannelMsg::Eof) => {},
             _ => {}
         }
     }
