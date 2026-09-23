@@ -1,0 +1,12 @@
+name: Windows diagnostics
+on: workflow_dispatch
+permissions:
+  contents: read
+jobs:
+  diagnose:
+    runs-on: windows-2022
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: dtolnay/rust-toolchain@1.90.0
+      - run: cargo test -p fwm --test audit_state_workflows --locked -- --nocapture --test-threads=1

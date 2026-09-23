@@ -13,6 +13,8 @@ pub struct Stream {
     lines: Receiver<(bool, String)>,
     pub output: Vec<String>,
     pub errors: Vec<String>,
+    value_cursor: usize,
+    warning_cursor: usize,
 }
 
 impl Stream {
@@ -50,6 +52,8 @@ impl Stream {
             lines,
             output: vec![],
             errors: vec![],
+            value_cursor: 0,
+            warning_cursor: 0,
         }
     }
 
@@ -66,13 +70,19 @@ impl Stream {
 
     pub fn value_until(&mut self, predicate: impl Fn(&Value) -> bool) -> Value {
         let deadline = Instant::now() + Duration::from_secs(12);
-        while let Some((stderr, text)) = self.line(deadline) {
-            if !stderr {
-                let value: Value =
-                    serde_json::from_str(&text).expect("stream stdout must be JSONL");
+        loop {
+            // stdout and stderr have independent reader threads. Waiting for a
+            // warning must not discard a value that arrives before that warning.
+            while self.value_cursor < self.output.len() {
+                let text = &self.output[self.value_cursor];
+                self.value_cursor += 1;
+                let value: Value = serde_json::from_str(text).expect("stream stdout must be JSONL");
                 if predicate(&value) {
                     return value;
                 }
+            }
+            if self.line(deadline).is_none() {
+                break;
             }
         }
         panic!(
@@ -84,9 +94,16 @@ impl Stream {
 
     pub fn warning_until(&mut self, needle: &str) {
         let deadline = Instant::now() + Duration::from_secs(8);
-        while let Some((stderr, text)) = self.line(deadline) {
-            if stderr && text.contains(needle) {
-                return;
+        loop {
+            while self.warning_cursor < self.errors.len() {
+                let text = &self.errors[self.warning_cursor];
+                self.warning_cursor += 1;
+                if text.contains(needle) {
+                    return;
+                }
+            }
+            if self.line(deadline).is_none() {
+                break;
             }
         }
         panic!("missing warning {needle:?}: {:?}", self.errors);

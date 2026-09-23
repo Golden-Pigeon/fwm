@@ -261,6 +261,10 @@ class MacPlatform:
         for item in result:
             try:
                 names = item.pop("name").split("->")
+                # lsof may list unrelated, unbound TCP sockets as *:*.
+                # They have no port and cannot own a listener or transport.
+                if not item["listening"] and names[0].endswith(":*"):
+                    continue
                 # The name alone is ambiguous; lsof's t field carries the family.
                 if names[0].startswith("*:"):
                     family = item.get("family")

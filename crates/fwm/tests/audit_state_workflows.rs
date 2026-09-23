@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::{
     fs,
     path::PathBuf,
-    process::{Command, Output},
+    process::{Command, Output, Stdio},
 };
 
 struct Fixture {
@@ -31,13 +31,64 @@ impl Fixture {
         self.directory.path().into()
     }
     fn run(&self, args: &[&str]) -> Output {
-        Command::new(env!("CARGO_BIN_EXE_fwm"))
-            .arg("--config-dir")
-            .arg(self.path())
-            .arg("--json")
-            .args(args)
-            .output()
+        use tokio::io::AsyncReadExt;
+        tokio::runtime::Builder::new_current_thread()
+            .enable_all()
+            .build()
             .unwrap()
+            .block_on(async {
+                eprintln!("fixture CLI starting: {args:?}");
+                let mut child = tokio::process::Command::new(env!("CARGO_BIN_EXE_fwm"))
+                    .arg("--config-dir")
+                    .arg(self.path())
+                    .arg("--json")
+                    .args(args)
+                    .stdin(Stdio::null())
+                    .stdout(Stdio::piped())
+                    .stderr(Stdio::piped())
+                    .kill_on_drop(true)
+                    .spawn()
+                    .unwrap();
+                let mut stdout = child.stdout.take().unwrap();
+                let mut stderr = child.stderr.take().unwrap();
+                let out = tokio::spawn(async move {
+                    let mut bytes = vec![];
+                    stdout.read_to_end(&mut bytes).await.unwrap();
+                    bytes
+                });
+                let err = tokio::spawn(async move {
+                    let mut bytes = vec![];
+                    stderr.read_to_end(&mut bytes).await.unwrap();
+                    bytes
+                });
+                let status = tokio::time::timeout(std::time::Duration::from_secs(30), child.wait())
+                    .await
+                    .unwrap_or_else(|_| {
+                        panic!(
+                            "CLI did not exit: {args:?}; daemon log: {:?}",
+                            fs::read_to_string(self.path().join("state/daemon.log"))
+                        )
+                    })
+                    .unwrap();
+                eprintln!("fixture CLI exited: {args:?}: {status}");
+                let stdout = tokio::time::timeout(std::time::Duration::from_secs(5), out)
+                    .await
+                    .unwrap_or_else(|_| {
+                        panic!("CLI exited but a descendant still owns stdout: {args:?}")
+                    })
+                    .unwrap();
+                let stderr = tokio::time::timeout(std::time::Duration::from_secs(5), err)
+                    .await
+                    .unwrap_or_else(|_| {
+                        panic!("CLI exited but a descendant still owns stderr: {args:?}")
+                    })
+                    .unwrap();
+                Output {
+                    status,
+                    stdout,
+                    stderr,
+                }
+            })
     }
     fn ok(&self, args: &[&str]) -> Value {
         let result = self.run(args);

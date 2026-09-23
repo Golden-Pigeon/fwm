@@ -626,6 +626,16 @@ class ParsingTests(unittest.TestCase):
         self.assertEqual(records[2]["pid"], 456)
         self.assertEqual(records[2]["local"], ("0.0.0.0", 9999))
 
+    def test_lsof_ignores_unbound_sockets_without_losing_listeners(self):
+        records = helper.MacPlatform.parse_lsof(
+            "p123\nf5\ntIPv4\nn*:*\nTST=CLOSED\n"
+            "f6\ntIPv6\nn*:12222\nTST=LISTEN\n")
+        self.assertEqual(len(records), 1)
+        self.assertEqual(records[0]["local"], ("::", 12222))
+        self.assertTrue(records[0]["listening"])
+        with self.assertRaises(helper.LeaseError):
+            helper.MacPlatform.parse_lsof("p123\nf5\ntIPv4\nn*:*\nTST=LISTEN\n")
+
     def test_lsof_wildcards_preserve_address_family(self):
         records = helper.MacPlatform.parse_lsof(
             "p123\nf5\ntIPv6\nn*:12222\nTST=LISTEN\n"

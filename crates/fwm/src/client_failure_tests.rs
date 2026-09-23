@@ -95,8 +95,13 @@ async fn startup_failure_does_not_spawn_when_diagnostic_log_cannot_be_opened() {
     let paths = Paths::new(Some(dir.path().into())).unwrap();
     paths.ensure_dirs().unwrap();
     std::fs::create_dir(&paths.log_file).unwrap();
-    let error = ensure_running(&paths).await.unwrap_err();
-    assert!(format!("{error:#}").contains("opening daemon log"));
+    // Exercise the spawn precondition directly: querying a real OS service
+    // manager is unrelated to whether opening the log must precede spawning.
+    let error = background::spawn(&paths).unwrap_err();
+    assert!(
+        format!("{error:#}").contains("opening daemon log"),
+        "{error:#}"
+    );
     assert!(!running(&paths).await.unwrap());
 }
 
