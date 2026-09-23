@@ -57,6 +57,14 @@ The Windows executable is `target\release\fwm.exe`. After replacing an installed
 binary, run `fwm daemon restart` to load it into the background process. See
 [services and upgrades](operations.md#daemon-and-login-services).
 
+## License notices
+
+`fwm licenses` prints the project and bundled-component notices without loading
+configuration or starting the daemon. The text is embedded in the executable,
+including on Windows and after a manual Cargo installation. The source installer
+also saves a copy in `ROOT/share/licenses/fwm/THIRD_PARTY_NOTICES.txt`.
+See [third-party notices](../THIRD_PARTY_NOTICES.md) when redistributing binaries.
+
 ## Shell completion
 
 The source installer enables completion in new terminals. In an existing

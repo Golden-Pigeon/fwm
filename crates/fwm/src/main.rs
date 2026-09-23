@@ -27,6 +27,15 @@ fn main() -> std::process::ExitCode {
         }
         Err(error) => error.exit(),
     };
+    if matches!(args.command, cli::args::Command::Licenses) {
+        let notices = include_str!("../THIRD_PARTY_NOTICES.txt");
+        if args.json {
+            println!("{}", serde_json::json!({"licenses": notices}));
+        } else {
+            print!("{notices}");
+        }
+        return std::process::ExitCode::SUCCESS;
+    }
     execute(args)
 }
 

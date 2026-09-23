@@ -34,6 +34,8 @@ impl Cli {
 
 #[derive(Debug, Subcommand)]
 pub enum Command {
+    /// Print the project and bundled-component license notices.
+    Licenses,
     /// Print a shell script for dynamic command, server, rule and group completion.
     Completions {
         #[arg(value_enum)]

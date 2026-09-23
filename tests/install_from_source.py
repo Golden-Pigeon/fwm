@@ -192,6 +192,11 @@ class InstallFromSource(unittest.TestCase):
     def calls(self):
         return [json.loads(line) for line in self.log.read_text().splitlines()] if self.log.exists() else []
 
+    def test_installs_bundled_license_notices_with_binary(self):
+        self.install(kind="none")
+        installed = self.root / "share/licenses/fwm/THIRD_PARTY_NOTICES.txt"
+        self.assertEqual(installed.read_bytes(), (REPO / "crates/fwm/THIRD_PARTY_NOTICES.txt").read_bytes())
+
     def daemon_calls(self):
         return [json.loads(line) for line in self.daemon_log.read_text().splitlines()] if self.daemon_log.exists() else []
 

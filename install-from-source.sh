@@ -98,7 +98,7 @@ esac
 [[ $completion_shell != none || -z $completion_rc ]] || argument_error '--rc-file cannot be combined with --shell none'
 install_root=${install_root:-${HOME:?HOME must be set when --root is omitted}/.local}
 source_dir=$(CDPATH= cd -- "$(dirname -- "${BASH_SOURCE[0]:-$0}")" && pwd -P)
-if [[ ! -f $source_dir/Cargo.lock || ! -f $source_dir/crates/fwm/Cargo.toml || ! -f $source_dir/scripts/install-shell-completions.sh ]]; then
+if [[ ! -f $source_dir/Cargo.lock || ! -f $source_dir/crates/fwm/Cargo.toml || ! -f $source_dir/crates/fwm/THIRD_PARTY_NOTICES.txt || ! -f $source_dir/scripts/install-shell-completions.sh ]]; then
     printf 'error: run this script from a complete fwm source checkout\n' >&2
     exit 1
 fi
@@ -135,6 +135,8 @@ printf 'Building and installing fwm from %s\n' "$source_dir"
 )
 
 install_root=$(CDPATH= cd -- "$install_root" && pwd -P)
+mkdir -p "$install_root/share/licenses/fwm"
+cp "$source_dir/crates/fwm/THIRD_PARTY_NOTICES.txt" "$install_root/share/licenses/fwm/THIRD_PARTY_NOTICES.txt"
 source "$source_dir/scripts/install-shell-completions.sh"
 install_shell_completions "$install_root" "$completion_shell" "$completion_rc"
 

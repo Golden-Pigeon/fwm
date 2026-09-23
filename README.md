@@ -46,4 +46,4 @@ running tunnels at login, run `fwm service install`.
 - [Status, logs, services, and troubleshooting](docs/operations.md)
 - [Configuration, backups, and recovery](docs/configuration.md)
 
-[MIT license](LICENSE) · [Security notes](SECURITY.md)
+[MIT license](LICENSE) · [Third-party notices](THIRD_PARTY_NOTICES.md) · [Security notes](SECURITY.md)

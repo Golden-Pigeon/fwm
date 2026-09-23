@@ -10,6 +10,9 @@
 - Put agent-facing implementation and validation instructions here. Do not add session summaries, one-off test counts, coverage snapshots, or internal audit checklists to the README.
 - `TESTING.md` contains the test matrix and historical validation evidence. `DESIGN.md` includes design history and future proposals; verify current behavior before treating a proposal as implemented. Preserve dated audit evidence under `audits/`.
 
+- Keep public audit evidence free of workstation usernames, absolute home/temp paths, and real machine aliases. Use repository-relative source links and neutral fixtures; explain redaction without changing historical outcomes or recomputing captured checksums.
+- Keep bundled-component license notices with checked-in helpers and binary distributions. `fwm licenses` embeds `crates/fwm/THIRD_PARTY_NOTICES.txt`; update the notices when their bundled components change.
+
 ## Code map
 
 - `crates/fwm-core/src/`: domain models, configuration storage, selectors, event history, SSH handling, recovery helpers, and the forwarding engine.

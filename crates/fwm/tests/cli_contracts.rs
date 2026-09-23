@@ -35,6 +35,11 @@ fn metadata_and_argument_errors_exit_without_starting_tokio() {
         (vec!["--version"], "fwm "),
         (vec!["-V"], "fwm "),
         (vec!["--json", "--version"], "fwm "),
+        (vec!["licenses"], "Copyright © 2005-2020 Rich Felker"),
+        (
+            vec!["--json", "licenses"],
+            "Copyright © 2005-2020 Rich Felker",
+        ),
         (vec!["--help"], "Usage:"),
         (vec!["-h"], "Usage:"),
         (vec!["server", "edit", "--help"], "Usage:"),
@@ -92,6 +97,7 @@ fn help_and_version_for_every_command_family_do_not_initialize_configuration() {
     let directory = temporary.path().join("never-created");
     let commands = [
         vec![],
+        vec!["licenses"],
         vec!["add"],
         vec!["edit"],
         vec!["group"],

@@ -1,0 +1,14 @@
+# Third-party notices
+
+The [bundled-component notices](crates/fwm/THIRD_PARTY_NOTICES.txt) include the
+copyright and license texts for musl, MinGW-w64 and its gdtoa code, the Zig
+compiler runtime, jsmn, and the BIP-0039 word list, along with fwm's MIT license.
+The Linux helper statically links musl; the Windows helper uses the MinGW-w64
+runtime. These notices apply to the checked-in helper binaries too.
+
+The notices are embedded in the executable and available with `fwm licenses`.
+The source installer also copies them to
+`ROOT/share/licenses/fwm/THIRD_PARTY_NOTICES.txt`.
+Keep this file with distributions of the helpers or fwm executable. Rust
+packages retain their own licenses; compiled releases also need the notices
+required by the resolved Cargo dependencies.

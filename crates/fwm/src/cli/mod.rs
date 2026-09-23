@@ -69,7 +69,7 @@ pub async fn run(args: Cli) -> Result<()> {
         Command::Config { command } => config(&paths, command, args.json).await,
         Command::Daemon { command } => daemon::run(paths, command, args.json).await,
         Command::Service { command } => daemon::service(&paths, command, args.json).await,
-        Command::Completions { .. } => unreachable!(),
+        Command::Completions { .. } | Command::Licenses => unreachable!(),
     }
 }
 
