@@ -78,8 +78,10 @@ class InteractiveShell:
                 return
             time.sleep(0.02)
         os.kill(self.pid, signal.SIGKILL)
-        os.waitpid(self.pid, 0)
+        # Close the PTY master before waiting: on macOS the child can remain
+        # in terminal teardown while unread output is held by this master.
         os.close(self.fd)
+        os.waitpid(self.pid, 0)
 
 
 class InstallFromSource(unittest.TestCase):

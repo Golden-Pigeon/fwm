@@ -106,9 +106,10 @@ fn saved_relative_ssh_paths_survive_chdir_and_equivalent_files_are_accepted() {
                 .as_array()
                 .unwrap()
                 .iter()
-                .any(|item| item["error"]
-                    .as_str()
-                    .is_some_and(|message| message.contains("Connection refused")))
+                .any(|item| item["error"].as_str().is_some_and(|message| message
+                    .to_ascii_lowercase()
+                    .contains("connection refused")
+                    || message.contains("os error 10061")))
         );
     }
     f.run(
