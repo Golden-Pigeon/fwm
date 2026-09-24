@@ -332,4 +332,6 @@ class CompletionScripts(unittest.TestCase):
 
 
 if __name__ == "__main__":
+    import faulthandler
+    faulthandler.dump_traceback_later(180, exit=True)
     unittest.main()

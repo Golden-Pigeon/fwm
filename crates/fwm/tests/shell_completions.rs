@@ -385,7 +385,10 @@ fn filesystem_candidates_preserve_spaces_and_directory_suffixes() {
         .collect();
     assert_eq!(
         candidates,
-        BTreeSet::from(["ssh config".into(), "ssh directory/".into()])
+        BTreeSet::from([
+            "ssh config".into(),
+            format!("ssh directory{}", std::path::MAIN_SEPARATOR)
+        ])
     );
     assert_eq!(
         fixture.complete(&["add", "--ssh-config=ssh c"]),

@@ -17,6 +17,9 @@ jobs:
     runs-on: ${{ matrix.os }}
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: dtolnay/rust-toolchain@1.90.0
         with:
           components: rustfmt, clippy
@@ -50,7 +53,7 @@ jobs:
       - name: Shell completion line editor regressions
         if: runner.os != 'Windows'
         run: |
-          python3 tests/shell_completion_scripts.py
+          python3 tests/shell_completion_scripts.py -v
           python3 tests/install_from_source.py -v
           python3 tests/install_release.py -v
       - name: Real OpenSSH smoke (Linux)
@@ -67,6 +70,9 @@ jobs:
     runs-on: ubuntu-latest
     steps:
       - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: '3.11'
       - uses: dtolnay/rust-toolchain@1.90.0
         with:
           components: llvm-tools-preview
