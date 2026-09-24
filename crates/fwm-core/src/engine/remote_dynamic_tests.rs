@@ -25,7 +25,7 @@ async fn socks_request(stream: &mut RemoteStream, host: &str, port: u16) -> u8 {
     request.extend_from_slice(&port.to_be_bytes());
     stream.write_all(&request).await.unwrap();
     let mut reply = [0; 12];
-    tokio::time::timeout(Duration::from_secs(2), stream.read_exact(&mut reply))
+    tokio::time::timeout(Duration::from_secs(10), stream.read_exact(&mut reply))
         .await
         .unwrap()
         .unwrap();
@@ -145,7 +145,15 @@ async fn remote_dynamic_worker_connects_ip_and_local_dns_targets_and_cancels_lis
 #[tokio::test]
 async fn remote_dynamic_target_refusal_replies_and_keeps_listener_available() {
     let fixture = Fixture::new().await;
-    let route = fixture.remote_route(None, 1);
+    let mut route = fixture.remote_route(None, 1);
+    // Windows can take several seconds to report a refused TCP connection.
+    // Keep the fixture's deadline above that OS delay to test refusal, not timeout.
+    route.timeout = Duration::from_secs(8);
+    fixture
+        .routes
+        .lock()
+        .unwrap()
+        .insert(("127.0.0.1".into(), 45000), route.clone());
     let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
     let port = listener.local_addr().unwrap().port();
     drop(listener);
@@ -241,7 +249,7 @@ async fn remote_dynamic_unsupported_command_replies_without_connecting() {
     let mut stream = fixture.remote().await.unwrap().into_stream();
     stream.write_all(&[5, 1, 0, 5, 3, 0, 1]).await.unwrap();
     let mut reply = [0; 12];
-    tokio::time::timeout(Duration::from_secs(2), stream.read_exact(&mut reply))
+    tokio::time::timeout(Duration::from_secs(10), stream.read_exact(&mut reply))
         .await
         .unwrap()
         .unwrap();

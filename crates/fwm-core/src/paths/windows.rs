@@ -374,6 +374,40 @@ mod tests {
         value
     }
 
+    fn only_trustee(path: &Path) -> String {
+        use windows_sys::Win32::Security::{ACCESS_ALLOWED_ACE, ACE_HEADER, GetAce};
+        let name: Vec<u16> = path.as_os_str().encode_wide().chain(Some(0)).collect();
+        let mut dacl = ptr::null_mut();
+        let mut raw = ptr::null_mut();
+        // SAFETY: the path is terminated and all output pointers are valid.
+        assert_eq!(
+            unsafe {
+                GetNamedSecurityInfoW(
+                    name.as_ptr(),
+                    SE_FILE_OBJECT,
+                    DACL_SECURITY_INFORMATION,
+                    ptr::null_mut(),
+                    ptr::null_mut(),
+                    &mut dacl,
+                    ptr::null_mut(),
+                    &mut raw,
+                )
+            },
+            0
+        );
+        let _security = LocalAllocation(raw);
+        assert!(!dacl.is_null());
+        // SAFETY: GetNamedSecurityInfoW returned a live ACL.
+        assert_eq!(unsafe { (*dacl).AceCount }, 1);
+        let mut ace = ptr::null_mut();
+        assert_ne!(unsafe { GetAce(dacl, 0, &mut ace) }, 0);
+        assert_eq!(unsafe { (*ace.cast::<ACE_HEADER>()).AceType }, 0);
+        let ace = unsafe { &*ace.cast::<ACCESS_ALLOWED_ACE>() };
+        // SDDL may abbreviate the current account as LA (local administrator).
+        // Compare its binary SID rather than a particular string spelling.
+        unsafe { sid_string(ptr::addr_of!(ace.SidStart).cast_mut().cast()) }.unwrap()
+    }
+
     #[test]
     fn directory_and_new_files_are_private_to_current_user() {
         let temporary = tempfile::tempdir().unwrap();
@@ -382,13 +416,13 @@ mod tests {
         let sid = current_user_sid().unwrap();
         let acl = descriptor(&directory);
         assert!(acl.starts_with("D:P"), "{acl}");
-        assert!(acl.contains(&format!(";;;{sid})")), "{acl}");
+        assert_eq!(only_trustee(&directory), sid);
         assert_eq!(acl.matches('(').count(), 1, "{acl}");
         let file = directory.join("config.toml");
         std::fs::write(&file, "private").unwrap();
         let inherited = descriptor(&file);
         assert_eq!(inherited.matches('(').count(), 1, "{inherited}");
-        assert!(inherited.contains(&format!(";;;{sid})")), "{inherited}");
+        assert_eq!(only_trustee(&file), sid);
     }
 
     #[test]
@@ -451,7 +485,7 @@ mod tests {
         ensure_private_directory(&directory).unwrap();
         let sid = current_user_sid().unwrap();
         let acl = descriptor(&directory);
-        assert!(acl.contains(&format!(";;;{sid})")), "{acl}");
+        assert_eq!(only_trustee(&directory), sid);
         assert_eq!(acl.matches('(').count(), 1, "{acl}");
     }
 }
