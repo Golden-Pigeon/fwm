@@ -42,6 +42,18 @@ fn main() -> std::process::ExitCode {
 #[tokio::main]
 async fn execute(args: cli::args::Cli) -> std::process::ExitCode {
     let json_output = args.json;
+    #[cfg(windows)]
+    if let Err(error) = platform::background::isolate_standard_handles() {
+        if json_output {
+            eprintln!(
+                "{}",
+                serde_json::json!({"ok":false,"error":{"code":"process_io_failed","message":format!("{error:#}")}})
+            );
+        } else {
+            eprintln!("error: {error:#}");
+        }
+        return std::process::ExitCode::from(5);
+    }
     let daemon_run = matches!(
         &args.command,
         cli::args::Command::Daemon {

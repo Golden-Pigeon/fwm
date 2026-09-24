@@ -3,7 +3,7 @@ use serde_json::Value;
 use std::{
     fs,
     path::PathBuf,
-    process::{Command, Output, Stdio},
+    process::{Output, Stdio},
 };
 
 struct Fixture {
@@ -251,7 +251,7 @@ mod streaming {
     }
     impl Stream {
         fn new(f: &Fixture, args: &[&str]) -> Self {
-            let mut child = Command::new(env!("CARGO_BIN_EXE_fwm"))
+            let mut child = std::process::Command::new(env!("CARGO_BIN_EXE_fwm"))
                 .arg("--config-dir")
                 .arg(f.path())
                 .arg("--json")

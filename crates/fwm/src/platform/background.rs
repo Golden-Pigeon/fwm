@@ -3,6 +3,34 @@ use fwm_core::paths::Paths;
 use std::fs::OpenOptions;
 use std::process::{Command, Stdio};
 
+/// Rust duplicates explicitly configured child stdio, but CreateProcess also
+/// inherits any original standard handles marked inheritable by our parent.
+/// Clear those flags before spawning anything so detached descendants cannot
+/// keep a CLI caller's capture pipes open after the CLI itself exits.
+#[cfg(windows)]
+pub fn isolate_standard_handles() -> Result<()> {
+    use std::os::windows::io::AsRawHandle;
+    use windows_sys::Win32::Foundation::{
+        HANDLE_FLAG_INHERIT, INVALID_HANDLE_VALUE, SetHandleInformation,
+    };
+    for handle in [
+        std::io::stdin().as_raw_handle(),
+        std::io::stdout().as_raw_handle(),
+        std::io::stderr().as_raw_handle(),
+    ] {
+        if handle.is_null() || handle == INVALID_HANDLE_VALUE {
+            continue;
+        }
+        // SAFETY: these are borrowed process standard handles; changing the
+        // inheritance flag does not close them or change current-process I/O.
+        if unsafe { SetHandleInformation(handle, HANDLE_FLAG_INHERIT, 0) } == 0 {
+            return Err(std::io::Error::last_os_error())
+                .context("disabling inheritance of CLI standard handles");
+        }
+    }
+    Ok(())
+}
+
 /// Spawn the current executable without inheriting a terminal or open stdio pipes.
 pub fn spawn(paths: &Paths) -> Result<()> {
     std::fs::create_dir_all(&paths.state_dir)?;
