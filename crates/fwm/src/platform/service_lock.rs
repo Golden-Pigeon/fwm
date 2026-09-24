@@ -7,6 +7,13 @@ use std::fs::{self, File, OpenOptions};
 pub(super) struct OperationLock {
     _file: File,
 }
+impl Drop for OperationLock {
+    fn drop(&mut self) {
+        // A concurrent fork can retain this open-file description until exec.
+        // Explicit unlock releases our operation immediately in that case.
+        let _ = FileExt::unlock(&self._file);
+    }
+}
 impl OperationLock {
     pub(super) fn acquire(paths: &Paths) -> Result<Self> {
         paths.ensure_dirs()?;

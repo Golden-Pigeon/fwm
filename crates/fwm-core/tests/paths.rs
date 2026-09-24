@@ -49,7 +49,13 @@ fn relative_config_directory_becomes_absolute_without_changing_current_directory
     let current = std::env::current_dir().unwrap();
     let relative = PathBuf::from("fwm-test-relative/config");
     let paths = Paths::new(Some(relative.clone())).unwrap();
-    assert_eq!(paths.config_dir, current.join(relative));
+    assert_eq!(
+        paths.config_dir,
+        fs::canonicalize(&current)
+            .unwrap()
+            .join("fwm-test-relative")
+            .join("config")
+    );
     assert!(paths.config_dir.is_absolute());
     assert_eq!(std::env::current_dir().unwrap(), current);
 }
@@ -130,7 +136,9 @@ fn missing_directories_and_dot_spellings_have_one_identity_and_safe_legacy_pipes
     let directory = tempfile::tempdir().unwrap();
     let base = fs::canonicalize(directory.path()).unwrap();
     let direct = Paths::new(Some(base.join("profile"))).unwrap();
-    let raw = base.join("profile/.");
+    // A verbatim Windows PathBuf eagerly normalizes dot components on join.
+    // Use the original temp path to preserve an actual alternate spelling.
+    let raw = directory.path().join("profile").join(".");
     let mut dotted = Paths::new(Some(raw.clone())).unwrap();
     assert_eq!(direct.config_dir, dotted.config_dir);
     assert_eq!(direct.pipe_name(), dotted.pipe_name());

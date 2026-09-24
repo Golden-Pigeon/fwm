@@ -9,4 +9,4 @@ jobs:
     steps:
       - uses: actions/checkout@v4
       - uses: dtolnay/rust-toolchain@1.90.0
-      - run: cargo test -p fwm --test audit_state_workflows --locked -- --nocapture --test-threads=1
+      - run: cargo test --workspace --locked --no-fail-fast -- --nocapture
