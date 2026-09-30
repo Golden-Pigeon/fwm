@@ -1,9 +1,21 @@
-The first public release of fwm, a persistent SSH port-forwarding manager.
+fwm v0.1.1 improves source-address syntax and SSH configuration compatibility.
 
-- Named local and reverse tunnels, port ranges, and groups.
-- SOCKS5 proxies in either direction, SSH aliases, jump hosts, and host-key verification.
-- Automatic reconnection and verified recovery of stale reverse-tunnel listeners.
-- Compact status output, logs, JSON output, and user login services.
+- `--src` now accepts an IP address with a port, range, or list, such as
+  `--src 0.0.0.0:23589 --tgt 22`. Bracket IPv6 addresses. Editing with an explicit
+  IP updates the binding; a port-only edit preserves the existing IP.
+- SSH configurations using `PreferredAuthentications publickey` now work.
+  Method lists containing `publickey` are accepted; lists excluding it report
+  that fwm requires noninteractive public-key authentication.
+
+For example, expose the local SSH service through a remote server:
+
+```sh
+fwm add --server dev --remote --src 0.0.0.0:23589 --tgt 22 --name reverse-ssh
+```
+
+The server must allow the requested binding, for example with
+`GatewayPorts clientspecified`. Existing saved rules and configuration files
+require no migration.
 
 Prebuilt packages are available for macOS Intel/ARM64, Linux x86_64/ARM64 (musl),
 and Windows x64. Each package includes license notices and the source of its

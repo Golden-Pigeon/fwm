@@ -800,7 +800,7 @@ dependencies = [
 
 [[package]]
 name = "fwm"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "clap",
@@ -827,7 +827,7 @@ dependencies = [
 
 [[package]]
 name = "fwm-api"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "fwm-core",
  "serde",
@@ -838,7 +838,7 @@ dependencies = [
 
 [[package]]
 name = "fwm-core"
-version = "0.1.0"
+version = "0.1.1"
 dependencies = [
  "anyhow",
  "async-trait",
