@@ -360,6 +360,7 @@ fn parse_file(
                     | "proxyjump"
                     | "identityagent"
                     | "identitiesonly"
+                    | "preferredauthentications"
                     | "hostkeyalias"
                     | "stricthostkeychecking"
                     | "forwardagent"
@@ -436,6 +437,19 @@ fn parse_file(
                     .values
                     .entry(key)
                     .or_insert_with(|| vec![if value { "yes" } else { "no" }.into()]);
+            }
+            "preferredauthentications" => {
+                // Keys and certificates (including agent-backed ones) all use
+                // publickey. Other methods are unavailable to this
+                // noninteractive client, but must not implicitly enable keys.
+                if !args[0].split(',').any(|method| method == "publickey") {
+                    return Err(config_error(format!(
+                        "{}:{}: PreferredAuthentications excludes publickey; fwm supports only noninteractive public-key authentication",
+                        path.display(),
+                        line_number + 1
+                    )));
+                }
+                result.values.insert(key, args.to_vec());
             }
             "canonicalizehostname" => {
                 let value = match args[0].to_ascii_lowercase().as_str() {
@@ -685,6 +699,10 @@ fn config_error(message: impl Into<String>) -> SshError {
 #[cfg(test)]
 #[path = "config_override_tests.rs"]
 mod override_tests;
+
+#[cfg(test)]
+#[path = "config_auth_tests.rs"]
+mod auth_tests;
 
 #[cfg(test)]
 mod tests {

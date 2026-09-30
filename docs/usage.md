@@ -88,6 +88,18 @@ together when adding. `--tgt` accepts one port. You can also write
 `--local 3000` or `--remote 3000-3003`, but cannot combine shorthand with a full
 mapping.
 
+`--src` accepts an optional listening IP before the ports. The IP applies to
+the entire list; bracket IPv6 addresses, such as `--src '[::1]:3000-3003'`.
+Without an IP, new rules listen on `127.0.0.1`.
+
+```sh
+fwm add --server dev --remote --src 0.0.0.0:23589 --tgt 22 --name reverse-ssh
+```
+
+This listens on the server's IPv4 interfaces and forwards to `localhost:22`
+on the machine running fwm. The SSH server must permit that binding; see
+[SSH configuration](ssh.md#ssh-config-compatibility).
+
 ## Edit and organize
 
 ```sh
@@ -102,7 +114,8 @@ fwm edit services --rename backend
 fwm edit backend --group another-group
 ```
 
-An edit changes only the fields you supply. `--src` keeps the binding address;
+An edit changes only the fields you supply. A port-only `--src` keeps the binding
+address; `--src 0.0.0.0:23589` changes both the IP and listening port.
 `--tgt` keeps the target host. `--port` changes both ports, preserving addresses.
 Changing direction preserves the endpoints. Even a full replacement mapping
 preserves the existing bind address if you omit it. Switching from SOCKS to a

@@ -197,8 +197,8 @@ pub enum ServerField {
 #[derive(Debug, Args)]
 #[command(
     group(ArgGroup::new("tunnel").required(true).args(["local", "remote", "dynamic", "remote_dynamic"])),
-    override_usage = "fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src PORTS --tgt PORT\n       fwm add --server SERVER [OPTIONS] --dynamic|--remote-dynamic [bind:]PORT",
-    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n  fwm add --server example-cluster --remote-dynamic 127.0.0.1:7897\n\nNames default to a random English word. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or a random English word by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
+    override_usage = "fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src [IP:]PORTS --tgt PORT\n       fwm add --server SERVER [OPTIONS] --dynamic|--remote-dynamic [bind:]PORT",
+    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --remote --src 0.0.0.0:23589 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n  fwm add --server example-cluster --remote-dynamic 127.0.0.1:7897\n\nNames default to a random English word. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or a random English word by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
 )]
 pub struct AddArgs {
     /// Optional legacy positional name; --name is preferred.
@@ -264,8 +264,8 @@ pub struct PortArgs {
     /// Forward each port to localhost at the same port (e.g. 3000-3003,8080).
     #[arg(long, value_name = "PORTS", conflicts_with_all = ["src", "tgt", "dynamic", "remote_dynamic"])]
     pub port: Option<String>,
-    /// Listen on these ports and forward all of them to --tgt (e.g. 5000-5003,6000).
-    #[arg(long, value_name = "PORTS", requires = "tgt", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
+    /// Listen on [IP:]PORTS and forward to --tgt (e.g. 0.0.0.0:5000-5003,6000). Bracket IPv6.
+    #[arg(long, value_name = "[IP:]PORTS", requires = "tgt", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub src: Option<String>,
     /// One localhost destination port for all --src ports.
     #[arg(long, value_name = "PORT", requires = "src", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
@@ -277,8 +277,8 @@ pub struct EditPortArgs {
     /// Replace listen and destination ports with the same port.
     #[arg(long, value_name = "PORT", conflicts_with_all = ["src", "tgt", "dynamic", "remote_dynamic"])]
     pub port: Option<String>,
-    /// Change only the listening port; preserve bind address and destination.
-    #[arg(long, value_name = "PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
+    /// Change the listening port and optional IP; preserve omitted IP and destination. Bracket IPv6.
+    #[arg(long, value_name = "[IP:]PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub src: Option<String>,
     /// Change only the destination port; preserve its host and listening address.
     #[arg(long, value_name = "PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]

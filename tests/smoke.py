@@ -79,7 +79,7 @@ async def run(binary):
             os.chown(remote_state, account.pw_uid, account.pw_gid)
         config_dir = root / "manager"
         client_config = root / "direct-host-ssh-config"
-        client_config.write_text("Host *\n IdentityAgent none\n GlobalKnownHostsFile none\n")
+        client_config.write_text("Host *\n PreferredAuthentications publickey\n IdentityAgent none\n GlobalKnownHostsFile none\n")
         logs = root / "logs"
         logs.mkdir()
         server_port, proxy_port, echo_port, local_port, remote_port, socks_port, remote_socks_port = [free_port() for _ in range(7)]

@@ -107,9 +107,11 @@ pub fn tunnels(
     {
         let mut listen = previous.listen();
         if let Some(source) = ports.src.as_deref() {
-            listen.set_port(ports::single(source).map_err(|_| {
-                anyhow!("--src modifies one listening port; choose an integer between 1 and 65535")
-            })?);
+            let (address, port) = source_parts(source)?;
+            listen.set_port(ports::single(port)?);
+            if let Some(address) = address {
+                listen.set_ip(address);
+            }
         }
         let previous_target = previous.target();
         let target_port = if let Some(target) = ports.tgt.as_deref() {
@@ -140,12 +142,17 @@ pub fn tunnels(
             "--local/--remote requires a forwarding specification, --port PORTS or --src PORTS --tgt PORT"
         );
     }
+    let (address, sources) = if ports.src.is_some() {
+        source_parts(sources)?
+    } else {
+        (None, sources)
+    };
     Ok(ports::expand(sources)?
         .into_iter()
         .map(|source| {
             directed(
                 is_remote,
-                SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), source),
+                SocketAddr::new(address.unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST)), source),
                 Endpoint {
                     host: "localhost".into(),
                     port: target.unwrap_or(source),
@@ -153,6 +160,19 @@ pub fn tunnels(
             )
         })
         .collect())
+}
+
+/// An optional IP prefix applies to the entire source port list.
+fn source_parts(value: &str) -> Result<(Option<IpAddr>, &str)> {
+    let parts = split_brackets(value.trim())?;
+    match parts.as_slice() {
+        [ports] => Ok((None, ports)),
+        [address, ports] => {
+            let address = listening(&format!("{}:1", address.trim()))?.ip();
+            Ok((Some(address), ports))
+        }
+        _ => bail!("--src expects [IP:]PORTS; put IPv6 addresses in brackets"),
+    }
 }
 
 fn directed(is_remote: bool, listen: SocketAddr, target: Endpoint) -> Tunnel {

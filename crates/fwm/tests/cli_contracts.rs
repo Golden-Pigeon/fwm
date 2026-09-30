@@ -264,3 +264,39 @@ fn non_waiting_disabled_add_reports_saved_stopped_and_no_readiness_claim() {
         "{text}"
     );
 }
+
+#[test]
+fn explicit_source_ip_is_saved_without_starting_the_daemon() {
+    let temporary = tempfile::tempdir().unwrap();
+    let output = run(
+        temporary.path(),
+        &[
+            "add",
+            "--server",
+            "dev",
+            "--remote",
+            "--src",
+            "0.0.0.0:23589",
+            "--tgt",
+            "22",
+            "--name",
+            "wan_proxy",
+            "--disabled",
+        ],
+        false,
+    );
+    assert!(
+        output.status.success(),
+        "{}",
+        String::from_utf8_lossy(&output.stderr)
+    );
+    let text = String::from_utf8(output.stdout).unwrap();
+    assert!(
+        text.contains("remote 0.0.0.0:23589 -> local localhost:22"),
+        "{text}"
+    );
+    let status = run(temporary.path(), &["daemon", "status"], true);
+    assert!(status.status.success());
+    let status: Value = serde_json::from_slice(&status.stdout).unwrap();
+    assert_eq!(status["daemon_running"], false);
+}

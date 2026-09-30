@@ -192,3 +192,112 @@ fn remote_dynamic_requires_one_valid_listen_address_without_a_destination() {
         );
     }
 }
+
+#[test]
+fn source_ip_applies_to_every_port_in_both_forwarding_directions() {
+    for remote in [false, true] {
+        for address in ["0.0.0.0", "127.0.0.2", "[::1]"] {
+            let rules = tunnels(
+                (!remote).then_some(""),
+                remote.then_some(""),
+                None,
+                None,
+                &PortArgs {
+                    src: Some(format!("{address}:23589-23590,23589,24000")),
+                    tgt: Some("22".into()),
+                    ..Default::default()
+                },
+                None,
+            )
+            .unwrap();
+            assert_eq!(rules.len(), 3);
+            for (rule, port) in rules.iter().zip([23589, 23590, 24000]) {
+                assert_eq!(rule.listen().to_string(), format!("{address}:{port}"));
+                assert_eq!(rule.target().unwrap().to_string(), "localhost:22");
+                assert_eq!(rule.is_remote(), remote);
+            }
+        }
+    }
+}
+
+#[test]
+fn source_edits_replace_explicit_ip_and_preserve_omitted_fields() {
+    for remote in [false, true] {
+        for ipv6 in [false, true] {
+            let previous = original(remote, ipv6);
+            for source in ["23589", "0.0.0.0:23589", "[::1]:23589"] {
+                let rules = tunnels(
+                    None,
+                    None,
+                    None,
+                    None,
+                    &EditPortArgs {
+                        src: Some(source.into()),
+                        ..Default::default()
+                    },
+                    Some(&previous),
+                )
+                .unwrap();
+                let expected = match source {
+                    "23589" => SocketAddr::new(previous.listen().ip(), 23589),
+                    _ => source.parse().unwrap(),
+                };
+                assert_eq!(rules[0].listen(), expected);
+                assert_eq!(rules[0].target(), previous.target());
+                assert_eq!(rules[0].is_remote(), remote);
+            }
+        }
+    }
+}
+
+#[test]
+fn source_ip_rejects_invalid_addresses_ports_and_oversized_batches() {
+    for source in [
+        "localhost:22",
+        "256.0.0.1:22",
+        ":22",
+        "::1:22",
+        "[::1:22",
+        "0.0.0.0:",
+        "0.0.0.0:0",
+        "0.0.0.0:65536",
+        "0.0.0.0:22,",
+        "0.0.0.0:23-22",
+        "0.0.0.0:1-513",
+        "0.0.0.0:22,127.0.0.1:23",
+    ] {
+        assert!(
+            tunnels(
+                None,
+                Some(""),
+                None,
+                None,
+                &PortArgs {
+                    src: Some(source.into()),
+                    tgt: Some("22".into()),
+                    ..Default::default()
+                },
+                None,
+            )
+            .is_err(),
+            "{source}"
+        );
+    }
+    for source in ["0.0.0.0:22-23", "[::1]:22,23"] {
+        assert!(
+            tunnels(
+                None,
+                None,
+                None,
+                None,
+                &EditPortArgs {
+                    src: Some(source.into()),
+                    ..Default::default()
+                },
+                Some(&original(true, false)),
+            )
+            .is_err(),
+            "{source}"
+        );
+    }
+}

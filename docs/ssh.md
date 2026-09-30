@@ -78,6 +78,13 @@ Supported settings include `Host`, `Include`, `HostName`, `User`, `Port`,
 ProxyJump. Host verification is always enabled, including hashed known-hosts,
 nondefault ports, changed keys, and revocations.
 
+`PreferredAuthentications publickey` is supported. Comma-separated method lists
+are also accepted when they include `publickey`; fwm only attempts public-key
+authentication, using private keys, certificates, or an SSH agent. Password,
+keyboard-interactive, host-based, and GSSAPI authentication are not implemented.
+A list that excludes `publickey` is rejected before connecting. As with other
+scalar settings, the first value in a matching `Host` block or `Include` wins.
+
 Relative identity, agent, and known-hosts paths use the directory containing the
 SSH file that declares them, including included files. Relative `Include` paths
 use `~/.ssh`. `~` and `%d` refer to the running user's home directory.
