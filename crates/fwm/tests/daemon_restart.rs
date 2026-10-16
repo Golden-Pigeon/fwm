@@ -243,6 +243,7 @@ fn restarting_one_profile_does_not_replace_another_daemon() {
 /// A daemon one protocol generation behind refuses the newer protocol, but its
 /// Shutdown encoding is unchanged; replacement must retire it over v1 instead
 /// of failing the whole upgrade.
+#[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn restart_replaces_a_daemon_one_protocol_generation_behind() {
     use fwm_api::codec::{read_frame, write_frame};
@@ -311,6 +312,7 @@ async fn restart_replaces_a_daemon_one_protocol_generation_behind() {
 
 /// A coherent daemon from a newer protocol is named as such and is never
 /// replaced; no second daemon may be started over its socket.
+#[cfg(unix)]
 #[tokio::test(flavor = "multi_thread", worker_threads = 2)]
 async fn restart_refuses_to_replace_a_newer_protocol_daemon() {
     use fwm_api::codec::{read_frame, write_frame};
