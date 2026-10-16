@@ -6,7 +6,10 @@ pub use fwm_core::selection::Selection;
 use serde::{Deserialize, Serialize};
 use serde_json::Value;
 
-pub const API_VERSION: u32 = 1;
+/// Version 2 adds relay forwards (`kind = "relay"`): two rule-dedicated SSH
+/// sessions bridged by this manager. Peers on other versions must negotiate
+/// before submitting or decoding such configurations.
+pub const API_VERSION: u32 = 2;
 pub const MAX_FRAME_BYTES: usize = 1024 * 1024;
 
 #[derive(Clone, Debug, Serialize, Deserialize)]
@@ -47,18 +50,25 @@ pub enum Command {
         forward: ForwardSpec,
         #[serde(default)]
         server: Option<ServerProfile>,
+        #[serde(default)]
+        target_server: Option<ServerProfile>,
     },
     PutForwardsWithServer {
         forwards: Vec<ForwardSpec>,
         #[serde(default)]
         server: Option<ServerProfile>,
+        #[serde(default)]
+        target_server: Option<ServerProfile>,
     },
     /// Create a server, if provided, and all rules in one validated commit;
-    /// never overwrite existing profiles or rules.
+    /// never overwrite existing profiles or rules. `server` is the source-side
+    /// profile; `target_server` carries a relay rule's new target-side alias.
     CreateForwards {
         forwards: Vec<ForwardSpec>,
         #[serde(default)]
         server: Option<ServerProfile>,
+        #[serde(default)]
+        target_server: Option<ServerProfile>,
     },
     RemoveForward {
         selector: String,
@@ -228,7 +238,11 @@ mod tests {
         .unwrap();
         assert!(matches!(
             command,
-            Command::CreateForwards { server: None, .. }
+            Command::CreateForwards {
+                server: None,
+                target_server: None,
+                ..
+            }
         ));
     }
 }

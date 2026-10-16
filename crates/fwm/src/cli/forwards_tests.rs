@@ -38,7 +38,7 @@ fn config() -> Config {
 fn create(config: &Config, name: &str, ports: &str) -> Result<Vec<ForwardSpec>> {
     let args = arguments(name, ports);
     let tunnels = parse::tunnels(args.local.as_deref(), None, None, None, &args.ports, None)?;
-    Ok(add::plan(config, &args, tunnels)?.forwards)
+    Ok(add::plan(config, &args, tunnels, Vec::new())?.forwards)
 }
 
 fn edit_rule(config: &Config, arguments: &[&str]) -> Result<ForwardSpec> {
@@ -48,6 +48,117 @@ fn edit_rule(config: &Config, arguments: &[&str]) -> Result<ForwardSpec> {
         unreachable!()
     };
     edited(config, &args)
+}
+
+fn relay_config() -> (Config, ForwardSpec) {
+    let mut a = ServerProfile::new("host-a");
+    a.host = Some("127.0.0.1".into());
+    let mut c = ServerProfile::new("host-c");
+    c.host = Some("127.0.0.1".into());
+    let relay = ForwardSpec {
+        id: "rule-1".into(),
+        name: "web".into(),
+        group: None,
+        server_id: a.id.clone(),
+        tunnel: Tunnel::Relay {
+            listen: "127.0.0.1:8080".parse().unwrap(),
+            target: "localhost:9000".parse().unwrap(),
+            target_server_id: c.id.clone(),
+        },
+        desired_state: DesiredState::Running,
+        connection_mode: ConnectionMode::Dedicated,
+        remote_cleanup: RemoteCleanup::Verified,
+    };
+    (
+        Config {
+            servers: vec![a, c],
+            forwards: vec![relay.clone()],
+            ..Default::default()
+        },
+        relay,
+    )
+}
+
+#[test]
+fn relay_edits_patch_one_side_and_keep_the_other() {
+    let (config, relay) = relay_config();
+    let source_only = edit_rule(&config, &["--src", "8081"]).unwrap();
+    assert_eq!(source_only.tunnel.listen().to_string(), "127.0.0.1:8081");
+    assert_eq!(
+        source_only.tunnel.target().unwrap().to_string(),
+        "localhost:9000"
+    );
+    let target_only = edit_rule(&config, &["--tgt", "9001"]).unwrap();
+    assert_eq!(target_only.tunnel.listen(), relay.tunnel.listen());
+    assert_eq!(
+        target_only.tunnel.target().unwrap().to_string(),
+        "localhost:9001"
+    );
+    let address = edit_rule(&config, &["--src", "0.0.0.0:8080"]).unwrap();
+    assert_eq!(address.tunnel.listen().to_string(), "0.0.0.0:8080");
+    let host = edit_rule(&config, &["--tgt", "db.internal:9000"]).unwrap();
+    assert_eq!(
+        host.tunnel.target().unwrap().to_string(),
+        "db.internal:9000"
+    );
+    let both = edit_rule(&config, &["--port", "7000"]).unwrap();
+    assert_eq!(both.tunnel.listen().to_string(), "127.0.0.1:7000");
+    assert_eq!(both.tunnel.target().unwrap().to_string(), "localhost:7000");
+    // Metadata edits keep the relay tunnel and cleanup untouched.
+    let rename = edit_rule(&config, &["--rename", "a-to-c"]).unwrap();
+    assert!(matches!(rename.tunnel, Tunnel::Relay { .. }));
+    assert_eq!(rename.remote_cleanup, RemoteCleanup::Verified);
+    assert_eq!(rename.connection_mode, ConnectionMode::Dedicated);
+}
+
+#[test]
+fn relay_edits_reject_type_conversions_shared_mode_and_foreign_flags() {
+    let (relay_cfg, _) = relay_config();
+    for arguments in [
+        vec!["--local"],
+        vec!["--remote"],
+        vec!["--dynamic", "1080"],
+        vec!["--remote-dynamic", "7897"],
+        vec!["--connection-mode", "shared"],
+    ] {
+        let error = edit_rule(&relay_cfg, &arguments)
+            .err()
+            .unwrap_or_else(|| panic!("{arguments:?} unexpectedly succeeded"))
+            .to_string();
+        assert!(
+            error.contains("relay") || error.contains("shared"),
+            "{arguments:?}: {error}"
+        );
+    }
+    // Relay-only flags are explicit errors on other rule types; the unified
+    // --tgt [HOST:]PORT grammar, however, works for every fixed forward.
+    let mut local_config = config();
+    let mut dev = local_config.servers[0].clone();
+    dev.name = "dev".into();
+    local_config.forwards.push(ForwardSpec {
+        id: "rule-1".into(),
+        name: "web".into(),
+        group: None,
+        server_id: dev.id.clone(),
+        tunnel: Tunnel::Local {
+            listen: "127.0.0.1:3000".parse().unwrap(),
+            target: "localhost:3000".parse().unwrap(),
+        },
+        desired_state: DesiredState::Running,
+        connection_mode: ConnectionMode::Shared,
+        remote_cleanup: RemoteCleanup::Off,
+    });
+    let error = edit_rule(&local_config, &["--tgt-server", "host-c"])
+        .err()
+        .unwrap()
+        .to_string();
+    assert!(error.contains("relay"), "{error}");
+    let moved = edit_rule(&local_config, &["--tgt", "db.internal:5432"]).unwrap();
+    assert_eq!(
+        moved.tunnel.target().unwrap().to_string(),
+        "db.internal:5432"
+    );
+    assert_eq!(moved.tunnel.listen().to_string(), "127.0.0.1:3000");
 }
 
 #[test]
@@ -149,6 +260,7 @@ fn waits_for_created_ids_despite_renames_and_ignores_unrelated_rules() {
         forwards: forwards
             .into_iter()
             .map(|rule| ForwardStatus {
+                target_server: None,
                 id: rule.id,
                 name: rule.name,
                 group: rule.group,

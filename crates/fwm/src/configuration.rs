@@ -29,7 +29,11 @@ pub fn prepare(before: &Config, command: &Command) -> Result<Change, ApiError> {
             let server = config
                 .server(selector)
                 .ok_or_else(|| ApiError::new("not_found", "server not found"))?;
-            if config.forwards.iter().any(|f| f.server_id == server.id) {
+            if config
+                .forwards
+                .iter()
+                .any(|f| f.references_server(&server.id))
+            {
                 return Err(ApiError::new(
                     "server_in_use",
                     "remove this server's forwards before removing the server",
@@ -47,16 +51,49 @@ pub fn prepare(before: &Config, command: &Command) -> Result<Change, ApiError> {
             }
             "forward saved".into()
         }
-        Command::PutForwardWithServer { forward, server } => {
-            batch::replace(&mut config, vec![forward.clone()], server.clone())?;
+        Command::PutForwardWithServer {
+            forward,
+            server,
+            target_server,
+        } => {
+            batch::replace(
+                &mut config,
+                vec![forward.clone()],
+                [server.clone(), target_server.clone()]
+                    .into_iter()
+                    .flatten()
+                    .collect(),
+            )?;
             "forward saved".into()
         }
-        Command::PutForwardsWithServer { forwards, server } => {
-            batch::replace(&mut config, forwards.clone(), server.clone())?;
+        Command::PutForwardsWithServer {
+            forwards,
+            server,
+            target_server,
+        } => {
+            batch::replace(
+                &mut config,
+                forwards.clone(),
+                [server.clone(), target_server.clone()]
+                    .into_iter()
+                    .flatten()
+                    .collect(),
+            )?;
             batch::saved_message(forwards)
         }
-        Command::CreateForwards { forwards, server } => {
-            batch::append_new(&mut config, forwards.clone(), server.clone())?;
+        Command::CreateForwards {
+            forwards,
+            server,
+            target_server,
+        } => {
+            batch::append_new(
+                &mut config,
+                forwards.clone(),
+                [server.clone(), target_server.clone()]
+                    .into_iter()
+                    .flatten()
+                    .collect(),
+            )?;
             batch::saved_message(forwards)
         }
         Command::RemoveForward { selector } => {

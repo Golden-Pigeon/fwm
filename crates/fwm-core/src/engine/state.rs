@@ -131,6 +131,10 @@ impl Rule {
                         .clone(),
                 ),
                 group: spec.group.clone(),
+                target_server_id: spec.tunnel.target_server_id().map(str::to_owned),
+                target_server_name: entry
+                    .map(|entry| entry.status.target_server.clone())
+                    .unwrap_or(None),
             }),
             message,
         );
@@ -191,6 +195,7 @@ pub(super) fn test_rule() -> Rule {
         name: spec.name.clone(),
         group: spec.group.clone(),
         server: "server".into(),
+        target_server: None,
         kind: "dynamic".into(),
         listen: "127.0.0.1:1080".into(),
         target: None,

@@ -339,7 +339,7 @@ mod streaming {
                     }}),
                     _ => json!({"capabilities":["atomic_status_view"]}),
                 };
-                let response = json!({"api_version":1,"request_id":req["request_id"],"ok":true,"error":null,"data":data});
+                let response = json!({"api_version":2,"request_id":req["request_id"],"ok":true,"error":null,"data":data});
                 let bytes = serde_json::to_vec(&response).unwrap();
                 socket
                     .write_all(&(bytes.len() as u32).to_be_bytes())

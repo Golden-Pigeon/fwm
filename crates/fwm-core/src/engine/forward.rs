@@ -64,6 +64,9 @@ pub(super) async fn run(
         Tunnel::RemoteDynamic { listen } => {
             remote::run(rule, handle, routes, listen, None, policy, cancel, session).await
         }
+        // Relay rules bridge two dedicated sessions and never run inside a
+        // shared connection group; the engine routes them to relay::supervise.
+        Tunnel::Relay { .. } => unreachable!("relay forwards use the relay coordinator"),
     }
 }
 

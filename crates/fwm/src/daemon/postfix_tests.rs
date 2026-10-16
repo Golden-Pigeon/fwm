@@ -67,6 +67,7 @@ fn snapshot(count: usize, error: &str) -> StatusSnapshot {
         config_revision: 3,
         forwards: (0..count)
             .map(|i| ForwardStatus {
+                target_server: None,
                 id: format!("rule-{i}"),
                 name: format!("web-{i}"),
                 group: None,

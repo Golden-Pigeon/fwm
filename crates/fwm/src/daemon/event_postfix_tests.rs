@@ -20,6 +20,8 @@ fn queued_engine_events_keep_producer_context_and_time_after_edits() {
         };
         let captured = EngineEvent {
             context: Some(EventContext {
+                target_server_id: None,
+                target_server_name: None,
                 forward_name: Some("old-rule".into()),
                 server_id: Some("server-a".into()),
                 server_name: Some("old-server".into()),
@@ -36,6 +38,8 @@ fn queued_engine_events_keep_producer_context_and_time_after_edits() {
         journal.remember(
             "rule".into(),
             HistoryLabels {
+                target_server_id: None,
+                target_server_name: None,
                 forward_name: Some("new-rule".into()),
                 server_id: Some("server-b".into()),
                 server_name: Some("new-server".into()),
@@ -89,6 +93,8 @@ fn contextless_queued_events_do_not_acquire_the_current_rules_scope_when_read() 
     journal.remember(
         "rule".into(),
         HistoryLabels {
+            target_server_id: None,
+            target_server_name: None,
             forward_name: Some("new-name".into()),
             server_id: Some("new-server".into()),
             server_name: Some("new-server-name".into()),

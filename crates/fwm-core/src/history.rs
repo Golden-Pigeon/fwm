@@ -32,6 +32,11 @@ pub struct HistoryEntry {
     pub server_name: Option<String>,
     #[serde(default)]
     pub group: Option<String>,
+    /// Relay rules: the target-side identity recorded at event time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_server_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_server_name: Option<String>,
 }
 
 #[derive(Clone, Debug, Default)]
@@ -40,6 +45,8 @@ pub struct HistoryLabels {
     pub server_id: Option<String>,
     pub server_name: Option<String>,
     pub group: Option<String>,
+    pub target_server_id: Option<String>,
+    pub target_server_name: Option<String>,
 }
 
 impl HistoryLabels {
@@ -49,6 +56,8 @@ impl HistoryLabels {
             server_id: entry.server_id.clone(),
             server_name: entry.server_name.clone(),
             group: entry.group.clone(),
+            target_server_id: entry.target_server_id.clone(),
+            target_server_name: entry.target_server_name.clone(),
         }
     }
 
@@ -57,6 +66,8 @@ impl HistoryLabels {
         entry.server_id = self.server_id.clone();
         entry.server_name = self.server_name.clone();
         entry.group = self.group.clone();
+        entry.target_server_id = self.target_server_id.clone();
+        entry.target_server_name = self.target_server_name.clone();
     }
 }
 
@@ -66,6 +77,10 @@ pub fn labels_from_config(config: &Config) -> HashMap<String, HistoryLabels> {
         .iter()
         .map(|forward| {
             let server = config.server(&forward.server_id);
+            let target = forward
+                .tunnel
+                .target_server_id()
+                .and_then(|id| config.server(id));
             (
                 forward.id.clone(),
                 HistoryLabels {
@@ -73,6 +88,8 @@ pub fn labels_from_config(config: &Config) -> HashMap<String, HistoryLabels> {
                     server_id: Some(forward.server_id.clone()),
                     server_name: server.map(|server| server.name.clone()),
                     group: forward.group.clone(),
+                    target_server_id: forward.tunnel.target_server_id().map(str::to_owned),
+                    target_server_name: target.map(|server| server.name.clone()),
                 },
             )
         })
@@ -90,6 +107,8 @@ impl HistoryEntry {
             forward_name: context.forward_name,
             server_name: context.server_name,
             group: context.group,
+            target_server_id: context.target_server_id,
+            target_server_name: context.target_server_name,
         }
     }
 
@@ -114,6 +133,8 @@ impl HistoryEntry {
                 server_id: Some(server.id.clone()),
                 server_name: Some(server.name.clone()),
                 group: forward.group.clone(),
+                target_server_id: forward.tunnel.target_server_id().map(str::to_owned),
+                target_server_name: None,
             });
         }
         Self::new(instance, event)
@@ -126,6 +147,8 @@ impl HistoryEntry {
                 server_id: Some(server.id.clone()),
                 server_name: Some(server.name.clone()),
                 group: None,
+                target_server_id: None,
+                target_server_name: None,
             });
         }
         Self::new(instance, event)
@@ -146,10 +169,14 @@ pub fn enrich_legacy(entries: &mut [HistoryEntry], _config: Option<&Config>) {
     for entry in entries {
         if let Some(context) = &entry.event.context {
             entry.forward_name = context.forward_name.clone();
-            entry.server_id = context.server_id.clone().or(entry.event.server_id.clone());
+            entry.server_id = context.server_id.clone().or(entry.server_id.clone());
             entry.event.server_id = entry.server_id.clone();
             entry.server_name = context.server_name.clone();
             entry.group = context.group.clone();
+            if entry.target_server_id.is_none() {
+                entry.target_server_id = context.target_server_id.clone();
+                entry.target_server_name = context.target_server_name.clone();
+            }
         } else if entry.server_id.is_none() {
             entry.server_id = entry.event.server_id.clone();
         }
@@ -208,9 +235,10 @@ impl HistoryFilter {
             .map(|server| server.id.as_str())
             .or_else(|| {
                 self.server.as_deref().filter(|id| {
-                    entries
-                        .iter()
-                        .any(|entry| entry.server_id.as_deref() == Some(*id))
+                    entries.iter().any(|entry| {
+                        entry.server_id.as_deref() == Some(*id)
+                            || entry.target_server_id.as_deref() == Some(*id)
+                    })
                 })
             });
         entries
@@ -226,10 +254,13 @@ impl HistoryFilter {
             })
             .filter(|entry| {
                 self.server.as_ref().is_none_or(|name| {
+                    // A relay references servers on both ends; either side matches.
                     if let Some(id) = selected_server_id {
                         entry.server_id.as_deref() == Some(id)
+                            || entry.target_server_id.as_deref() == Some(id)
                     } else {
                         entry.server_name.as_ref() == Some(name)
+                            || entry.target_server_name.as_ref() == Some(name)
                     }
                 })
             })

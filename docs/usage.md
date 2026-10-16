@@ -18,12 +18,17 @@ fwm add --server dev --remote --src 12222 --tgt 22 --name reverse-ssh
 # Reach a database from the SSH server's network
 fwm add --server dev --local=15432:db.internal:5432 --name database
 
+# Same, using the flag form: --src takes [IP:]PORTS, --tgt takes [HOST:]PORT
+fwm add --server dev --local --src 15432 --tgt db.internal:5432 --name database
+
 # Save a rule without starting it
 fwm add --server dev --local --port 8080 --name preview --disabled
 ```
 
-Creation binds to `127.0.0.1` by default. A full mapping has the form
-`[bind:]source_port:target_host:target_port`. Use brackets for IPv6, for example
+Creation binds to `127.0.0.1` and targets `localhost` by default. A full mapping
+has the form `[bind:]source_port:target_host:target_port`; the flag form mirrors
+that split — `--src [IP:]PORTS` and `--tgt [HOST:]PORT`, where a bare `--tgt`
+port keeps `localhost`. Use brackets for IPv6, for example
 `[::1]:3000:[::1]:3000`. Scoped targets such as `[fe80::1%lo0]:8080` are interpreted
 on the target side. `--local` connects to the target from the SSH server;
 `--remote` connects from the machine running fwm.
@@ -56,6 +61,53 @@ BIND. Keep listeners on loopback unless you intend to expose them; see the
 `--remote 7897` is a fixed forward to local `localhost:7897`, not a SOCKS proxy.
 SOCKS options cannot be combined with fixed mappings or port-range shorthand.
 
+## Two-server relay
+
+fwm runs on a third machine M that can reach both servers A and C. A relay rule
+listens on A and forwards each connection to a target resolved from C: access to
+`localhost:B` on A connects to `localhost:D` on C. Both SSH connections are made
+by M; A and C never talk to each other, and all data flows through M.
+
+```sh
+# localhost:8080 on A reaches localhost:9000 on C
+fwm add --name a-to-c --src-server A --src 8080 --tgt-server C --tgt 9000
+
+# Same port on both sides
+fwm add --src-server A --tgt-server C --port 8080
+
+# Explicit listen address on A
+fwm add --src-server A --src 0.0.0.0:8080 --tgt-server C --tgt 9000
+
+# Reach a host in C's network; C resolves db.internal
+fwm add --src-server A --src 15432 --tgt-server C --tgt db.internal:5432
+
+# Save without connecting
+fwm add --src-server A --tgt-server C --port 8080 --disabled
+```
+
+`--src-server` and `--tgt-server` must be supplied together; each accepts a
+saved profile name, ID, or a new SSH alias saved atomically with the rule. They
+replace `--server` and cannot be combined with `--local`, `--remote`,
+`--dynamic`, or `--remote-dynamic`. `--src` accepts `[IP:]PORTS` and `--tgt`
+accepts `[HOST:]PORT` — the same shape on both sides; `--tgt 5432` keeps the
+default host and `--port` uses the same port on both sides. The target host
+defaults to `localhost`, meaning C itself; pass `127.0.0.1` or `::1` to pin an
+address family. Target hostnames are resolved by C, listen addresses are
+resolved by A.
+
+The default listen address is `127.0.0.1` on A, and only A's own processes can
+connect. A non-loopback bind additionally depends on A's `GatewayPorts`,
+forwarding permissions, and firewall. Both endpoints use rule-dedicated SSH
+sessions; `--connection-mode shared` is rejected. Verified cleanup defaults to
+on and manages A's listener session exactly like reverse rules — see
+[reverse-tunnel recovery](operations.md#reverse-tunnel-recovery); A must allow
+remote command execution unless you explicitly pass `--remote-cleanup off`.
+
+Readiness requires both SSH sessions, A's accepted listener, and, with verified
+cleanup, confirmed ownership; a refused target connection fails only that one
+connection and never tears down the sessions. Stopping the daemon or shutting
+down M interrupts the relay; new connections resume after recovery.
+
 ## Port ranges and groups
 
 ```sh
@@ -64,6 +116,9 @@ fwm add --server dev --remote --port 3000-3003,8080 --name services
 
 # Forward several local ports to a single remote target port
 fwm add --server dev --local --src 4000-4003 --tgt 8080 --name pool
+
+# Or to one named destination reachable from the server
+fwm add --server dev --local --src 4000-4003 --tgt db.internal:5432 --name pool
 
 # Append members to an existing group
 fwm add --server dev --remote --port 9000-9002 --group services --name extra
@@ -115,8 +170,9 @@ fwm edit backend --group another-group
 ```
 
 An edit changes only the fields you supply. A port-only `--src` keeps the binding
-address; `--src 0.0.0.0:23589` changes both the IP and listening port.
-`--tgt` keeps the target host. `--port` changes both ports, preserving addresses.
+address; `--src 0.0.0.0:23589` changes both the IP and listening port. A
+port-only `--tgt` keeps the target host; `--tgt db.internal:5432` changes both.
+`--port` changes both ports, preserving addresses.
 Changing direction preserves the endpoints. Even a full replacement mapping
 preserves the existing bind address if you omit it. Switching from SOCKS to a
 fixed tunnel needs a target port, for example
@@ -131,6 +187,22 @@ use `add --group` to expand a group. Conflicting listener changes reject the
 whole edit. To merge groups, use `edit GROUP --group TARGET`; renaming to an
 existing group is rejected. `--ungroup` keeps the rules and removes membership.
 Even stopped members of one group must have distinct listeners.
+
+Relay rules edit one side at a time; the other side keeps its values. `--server`
+moves the listening (source) side, `--tgt-server` the target side:
+
+```sh
+fwm edit a-to-c --src 8081
+fwm edit a-to-c --tgt 9001
+fwm edit a-to-c --tgt db.internal:5432
+fwm edit a-to-c --tgt-server another-target
+fwm edit a-to-c --port 7000
+```
+
+Switching between relay and local/remote/dynamic rules is not offered; remove
+and re-add the rule instead. `--tgt-server` is rejected on
+non-relay rules, and direction flags are rejected on relay rules — including in
+group edits, which then fail as a whole.
 
 The older positional name for `add` still works. For numeric rule names, make
 port arguments explicit: `fwm edit 1234 --remote --port 3000`.
@@ -148,10 +220,13 @@ fwm remove web
 ```
 
 Rule names, IDs, and group names select individual rules or groups; commands
-also offer `--group` and `--server` selectors. `restart` starts selected stopped
+also offer `--group` and `--server` selectors. `--server X` selects rules that
+reference X on either endpoint, so a relay appears when selecting A or C and is
+operated once. `restart` starts selected stopped
 rules too. A rule/group restart leaves unselected rules running. A server
 restart refreshes that server's SSH configuration and connection, useful after
-changing keys, endpoints, or agents.
+changing keys, endpoints, or agents; it rebuilds every relay session that
+references the server.
 
 `retry` acts only on enabled rules in an abnormal state; it skips connected and
 stopped rules. `down` saves a stopped setting; `remove` deletes the rule. Neither

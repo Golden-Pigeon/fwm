@@ -61,7 +61,7 @@ async fn malformed_json_utf8_and_wrong_payload_types_are_invalid_data() {
             io::ErrorKind::InvalidData
         );
     }
-    let bytes = frame(br#"{"api_version":1,"request_id":"a","command":{"method":"unknown"}}"#);
+    let bytes = frame(br#"{"api_version":2,"request_id":"a","command":{"method":"unknown"}}"#);
     assert_eq!(
         read_frame::<Request, _>(&mut bytes.as_slice())
             .await

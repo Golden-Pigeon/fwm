@@ -4,7 +4,6 @@ use std::{net::SocketAddr, time::Duration};
 use russh::{ChannelStream, client};
 use tokio::sync::{OwnedSemaphorePermit, oneshot};
 
-use super::connection::SshHandle;
 use crate::model::Endpoint;
 
 pub(super) type Opened = Result<(ChannelStream<client::Msg>, OwnedSemaphorePermit), russh::Error>;
@@ -12,12 +11,15 @@ pub(super) type Opened = Result<(ChannelStream<client::Msg>, OwnedSemaphorePermi
 /// russh's raw Channel does not close on drop, and abandoning its open future
 /// does not cancel a pending SSH request. Keep the request and its capacity slot
 /// until confirmation; convert immediately to a stream that closes on drop.
-pub(super) fn open_direct(
-    handle: SshHandle,
+pub(super) fn open_direct<H>(
+    handle: std::sync::Arc<client::Handle<H>>,
     target: Endpoint,
     originator: SocketAddr,
     permit: OwnedSemaphorePermit,
-) -> oneshot::Receiver<Opened> {
+) -> oneshot::Receiver<Opened>
+where
+    H: client::Handler + Send + 'static,
+{
     let (sender, receiver) = oneshot::channel();
     tokio::spawn(async move {
         let opened = handle.channel_open_direct_tcpip(

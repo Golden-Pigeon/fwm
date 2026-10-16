@@ -29,8 +29,8 @@ pub(super) type SshHandle = Arc<client::Handle<Handler>>;
 
 #[derive(Clone)]
 pub(super) struct Failure {
-    message: String,
-    needs_attention: bool,
+    pub(super) message: String,
+    pub(super) needs_attention: bool,
 }
 
 #[derive(Clone)]

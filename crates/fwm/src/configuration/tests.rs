@@ -46,6 +46,7 @@ fn legacy_put_and_single_replace_preserve_identity_without_changing_input() {
         Command::PutForwardWithServer {
             forward: edited.clone(),
             server: None,
+            target_server: None,
         },
     ] {
         let changed = prepare(&created.config, &command).unwrap();
@@ -85,7 +86,8 @@ fn single_replace_with_new_server_is_atomic_and_checks_references() {
             &config,
             &Command::PutForwardWithServer {
                 forward: rule.clone(),
-                server: Some(server.clone())
+                server: Some(server.clone()),
+                target_server: None,
             }
         )
         .is_err()
@@ -97,6 +99,7 @@ fn single_replace_with_new_server_is_atomic_and_checks_references() {
         &Command::PutForwardWithServer {
             forward: moved.clone(),
             server: Some(server),
+            target_server: None,
         },
     )
     .unwrap();
@@ -178,4 +181,99 @@ fn offline_restart_enables_only_selected_rules_without_losing_command_semantics(
     );
     assert_eq!(changed.selected, Some(vec![rule.id]));
     assert!(changed.message.starts_with("Restart requested"));
+}
+
+fn relay_parts() -> (ServerProfile, ServerProfile, ForwardSpec) {
+    let mut source = ServerProfile::new("a");
+    source.host = Some("127.0.0.1".into());
+    let mut target = ServerProfile::new("c");
+    target.host = Some("127.0.0.2".into());
+    let relay = ForwardSpec {
+        id: "relay-rule".into(),
+        name: "a-to-c".into(),
+        group: None,
+        server_id: source.id.clone(),
+        tunnel: Tunnel::Relay {
+            listen: "127.0.0.1:8080".parse().unwrap(),
+            target: "localhost:9000".parse().unwrap(),
+            target_server_id: target.id.clone(),
+        },
+        desired_state: DesiredState::Running,
+        connection_mode: ConnectionMode::Dedicated,
+        remote_cleanup: RemoteCleanup::Verified,
+    };
+    (source, target, relay)
+}
+
+#[test]
+fn relay_create_commits_both_aliases_and_the_rule_in_one_transaction() {
+    let (source, target, relay) = relay_parts();
+    let mut forwarded = relay.clone();
+    forwarded.server_id = source.id.clone();
+    let changed = prepare(
+        &Config::default(),
+        &Command::CreateForwards {
+            forwards: vec![forwarded],
+            server: Some(source),
+            target_server: Some(target),
+        },
+    )
+    .unwrap()
+    .config;
+    assert_eq!(changed.servers.len(), 2);
+    assert_eq!(changed.forwards.len(), 1);
+    changed.validate().unwrap();
+    // A dangling target reference fails the whole batch before any commit.
+    let (source, target, relay) = relay_parts();
+    let mut orphan = relay.clone();
+    orphan.tunnel = Tunnel::Relay {
+        listen: relay.tunnel.listen(),
+        target: relay.tunnel.target().unwrap().clone(),
+        target_server_id: "missing".into(),
+    };
+    assert!(
+        prepare(
+            &Config::default(),
+            &Command::CreateForwards {
+                forwards: vec![orphan],
+                server: Some(source),
+                target_server: Some(target),
+            }
+        )
+        .is_err()
+    );
+}
+
+#[test]
+fn server_removal_is_blocked_by_either_relay_endpoint() {
+    let (source, target, relay) = relay_parts();
+    let config = Config {
+        servers: vec![source.clone(), target.clone()],
+        forwards: vec![relay],
+        ..Config::default()
+    };
+    for selector in ["a", "c"] {
+        let error = prepare(
+            &config,
+            &Command::RemoveServer {
+                selector: selector.into(),
+            },
+        )
+        .err()
+        .map(|error| error.code);
+        assert_eq!(error.as_deref(), Some("server_in_use"), "{selector}");
+    }
+    let removed = prepare(
+        &Config {
+            servers: vec![source, target],
+            forwards: vec![],
+            ..Config::default()
+        },
+        &Command::RemoveServer {
+            selector: "a".into(),
+        },
+    )
+    .unwrap();
+    assert_eq!(removed.config.servers.len(), 1);
+    assert_eq!(removed.config.servers[0].name, "c");
 }

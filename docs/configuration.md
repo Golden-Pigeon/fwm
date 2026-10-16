@@ -63,7 +63,29 @@ dedicated connection. An explicit `remote_cleanup = "off"` is preserved.
 For reverse SOCKS, use `kind = "remote_dynamic"` and a `listen` address without a
 `target`.
 
-The current configuration format is version 3. Upgrades retain old snapshots;
+Two-server relay rules use `kind = "relay"`. `server_id` names the listening
+(source) server and the required `target_server_id` names the server that
+resolves and connects to `target`; both must reference saved profiles, and the
+same profile may serve both roles. Relay rules always use dedicated connections
+on both endpoints, so an explicit `connection_mode = "shared"` is rejected:
+
+```toml
+[[forwards]]
+name = "a-to-c"
+server_id = "host-a"
+kind = "relay"
+listen = "127.0.0.1:8080"
+target = "localhost:9000"
+target_server_id = "host-c"
+```
+
+`target_server_id` is only valid on relay rules, and unknown fields are
+rejected, so an older binary fails loudly instead of silently forwarding
+through the manager. Listener conflicts are checked against the source server's
+listeners, exactly like reverse rules on that server; target ports are not
+listeners and never conflict.
+
+The current configuration format is version 4. Upgrades retain old snapshots;
 version 1 reverse rules migrate to verified/dedicated mode. Older multi-rule
 batches named `prefix-port` become groups where that prefix does not conflict
 with a rule name or ID. Rule IDs, endpoints, and requested states are preserved.

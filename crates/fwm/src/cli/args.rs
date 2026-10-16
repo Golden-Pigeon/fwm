@@ -196,9 +196,9 @@ pub enum ServerField {
 
 #[derive(Debug, Args)]
 #[command(
-    group(ArgGroup::new("tunnel").required(true).args(["local", "remote", "dynamic", "remote_dynamic"])),
-    override_usage = "fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src [IP:]PORTS --tgt PORT\n       fwm add --server SERVER [OPTIONS] --dynamic|--remote-dynamic [bind:]PORT",
-    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --remote --src 0.0.0.0:23589 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n  fwm add --server example-cluster --remote-dynamic 127.0.0.1:7897\n\nNames default to a random English word. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or a random English word by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
+    group(ArgGroup::new("tunnel").required(true).args(["local", "remote", "dynamic", "remote_dynamic", "src_server"])),
+    override_usage = "fwm add --server SERVER [OPTIONS] --local|--remote --port PORTS\n       fwm add --server SERVER [OPTIONS] --local|--remote --src [IP:]PORTS --tgt [HOST:]PORT\n       fwm add --server SERVER [OPTIONS] --dynamic|--remote-dynamic [bind:]PORT\n       fwm add --src-server SOURCE --tgt-server TARGET [OPTIONS] --src [IP:]PORTS --tgt [HOST:]PORT",
+    after_help = "Examples:\n  fwm add --server example-cluster --remote --src 12222 --tgt 22\n  fwm add --server dev --remote --src 0.0.0.0:23589 --tgt 22\n  fwm add --server dev --local --port 3000-3003,8080\n  fwm add --server dev --remote --port 7890 --name proxy\n  fwm add --server dev --local=3000:localhost:8080\n  fwm add --server example-cluster --remote-dynamic 127.0.0.1:7897\n  fwm add --src-server host-a --tgt-server host-c --src 8080 --tgt 9000\n  fwm add --src-server host-a --tgt-server host-c --port 8080\n  fwm add --src-server host-a --src 15432 --tgt-server host-c --tgt db.internal:5432\n\nNames default to a random English word. --server accepts an existing profile or\nan SSH alias/hostname directly. --server is required for every add unless a\ntwo-server relay is requested with --src-server and --tgt-server together.\nLegacy positional names and -L/-R SPEC remain supported.\nMulti-port adds also create a group: NAME, or a random English word by default.\nUse --group GROUP to add any number of members to a new or existing group.\n--name independently sets the rule name or multi-port name prefix.\nExample: fwm add --server dev --local --port 8080 --group web\nExample: fwm down --group web"
 )]
 pub struct AddArgs {
     /// Optional legacy positional name; --name is preferred.
@@ -210,9 +210,29 @@ pub struct AddArgs {
     /// Put one or more new forwards in this group, creating it if needed.
     #[arg(long, value_name = "GROUP")]
     pub group: Option<String>,
-    /// Saved server profile or SSH alias/hostname (required).
-    #[arg(long, value_name = "SERVER")]
-    pub server: String,
+    /// Saved server profile or SSH alias/hostname (required unless relay).
+    #[arg(
+        long,
+        value_name = "SERVER",
+        required_unless_present_any = ["src_server", "tgt_server"]
+    )]
+    pub server: Option<String>,
+    /// Source server whose localhost listens (relay mode; requires --tgt-server).
+    #[arg(
+        long,
+        value_name = "SERVER",
+        requires = "tgt_server",
+        conflicts_with_all = ["server", "local", "remote", "dynamic", "remote_dynamic"]
+    )]
+    pub src_server: Option<String>,
+    /// Target server whose network resolves the destination (relay mode).
+    #[arg(
+        long,
+        value_name = "SERVER",
+        requires = "src_server",
+        conflicts_with_all = ["server", "local", "remote", "dynamic", "remote_dynamic"]
+    )]
+    pub tgt_server: Option<String>,
     /// SSH config file for a new alias/hostname profile.
     #[arg(long, value_name = "PATH")]
     pub ssh_config: Option<PathBuf>,
@@ -232,9 +252,9 @@ pub struct AddArgs {
     pub ports: PortArgs,
     #[arg(long)]
     pub disabled: bool,
-    /// SSH connection sharing; verified remote cleanup always uses dedicated.
-    #[arg(long, value_enum, default_value_t = Mode::Shared)]
-    pub connection_mode: Mode,
+    /// SSH connection sharing (default shared); verified cleanup always dedicates.
+    #[arg(long, value_enum)]
+    pub connection_mode: Option<Mode>,
     /// Reclaim this rule's registered stale SSH sessions (remote default: verified).
     #[arg(long, value_enum, long_help = REMOTE_CLEANUP_HELP)]
     pub remote_cleanup: Option<CleanupMode>,
@@ -267,8 +287,8 @@ pub struct PortArgs {
     /// Listen on [IP:]PORTS and forward to --tgt (e.g. 0.0.0.0:5000-5003,6000). Bracket IPv6.
     #[arg(long, value_name = "[IP:]PORTS", requires = "tgt", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub src: Option<String>,
-    /// One localhost destination port for all --src ports.
-    #[arg(long, value_name = "PORT", requires = "src", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
+    /// Destination for all --src ports: [HOST:]PORT (host defaults to localhost).
+    #[arg(long, value_name = "[HOST:]PORT", requires = "src", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub tgt: Option<String>,
 }
 
@@ -280,8 +300,8 @@ pub struct EditPortArgs {
     /// Change the listening port and optional IP; preserve omitted IP and destination. Bracket IPv6.
     #[arg(long, value_name = "[IP:]PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub src: Option<String>,
-    /// Change only the destination port; preserve its host and listening address.
-    #[arg(long, value_name = "PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
+    /// Change the destination port and optional host; a bare port keeps the host.
+    #[arg(long, value_name = "[HOST:]PORT", conflicts_with_all = ["port", "dynamic", "remote_dynamic"])]
     pub tgt: Option<String>,
 }
 
@@ -320,6 +340,13 @@ pub struct EditArgs {
     /// Move to a saved server or SSH alias.
     #[arg(long)]
     pub server: Option<String>,
+    /// Move a relay rule's target side to a saved server or SSH alias.
+    #[arg(
+        long,
+        value_name = "SERVER",
+        conflicts_with_all = ["local", "remote", "dynamic", "remote_dynamic"]
+    )]
+    pub tgt_server: Option<String>,
     /// SSH config file when moving to a new server alias.
     #[arg(long, requires = "server", value_name = "PATH")]
     pub ssh_config: Option<PathBuf>,
@@ -619,6 +646,8 @@ mod tests {
             ])
             .is_err()
         );
+        // A direction without --server or a relay pair is rejected by clap
+        // itself, preserving the exit-2 invalid_arguments contract.
         assert!(Cli::try_parse_from(["fwm", "add", "--remote", "--port", "7890"]).is_err());
     }
 

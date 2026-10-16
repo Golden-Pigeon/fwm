@@ -114,32 +114,42 @@ pub fn tunnels(
             }
         }
         let previous_target = previous.target();
-        let target_port = if let Some(target) = ports.tgt.as_deref() {
-            ports::single(target)?
+        let target = if let Some(value) = ports.tgt.as_deref() {
+            // A bare port keeps the recorded host; an explicit host replaces it.
+            let (host, port) = target_parts(value)?;
+            Endpoint {
+                host: host.unwrap_or_else(|| {
+                    previous_target.map_or_else(|| "localhost".into(), |t| t.host.clone())
+                }),
+                port,
+            }
         } else {
-            previous_target.map(|target| target.port).ok_or_else(|| {
-                anyhow!("switching a SOCKS proxy to local/remote forwarding requires --tgt PORT")
-            })?
-        };
-        let target = Endpoint {
-            host: previous_target.map_or_else(|| "localhost".into(), |target| target.host.clone()),
-            port: target_port,
+            Endpoint {
+                    host: previous_target.map_or_else(|| "localhost".into(), |t| t.host.clone()),
+                    port: previous_target
+                        .map(|target| target.port)
+                        .ok_or_else(|| {
+                            anyhow!("switching a SOCKS proxy to local/remote forwarding requires --tgt [HOST:]PORT")
+                        })?,
+                }
         };
         return Ok(vec![directed(is_remote, listen, target)]);
     }
     let (sources, target) = if let Some(source) = ports.src.as_deref() {
+        let (host, port) = target_parts(ports.tgt.as_deref().expect("validated pair"))?;
         (
             source,
-            Some(ports::single(
-                ports.tgt.as_deref().expect("validated pair"),
-            )?),
+            Some(Endpoint {
+                host: host.unwrap_or_else(|| "localhost".into()),
+                port,
+            }),
         )
     } else {
         (ports.port.as_deref().unwrap_or(value), None)
     };
     if sources.is_empty() {
         bail!(
-            "--local/--remote requires a forwarding specification, --port PORTS or --src PORTS --tgt PORT"
+            "--local/--remote requires a forwarding specification, --port PORTS or --src PORTS --tgt [HOST:]PORT"
         );
     }
     let (address, sources) = if ports.src.is_some() {
@@ -150,20 +160,97 @@ pub fn tunnels(
     Ok(ports::expand(sources)?
         .into_iter()
         .map(|source| {
+            let target = target.clone().unwrap_or_else(|| Endpoint {
+                host: "localhost".into(),
+                port: source,
+            });
             directed(
                 is_remote,
                 SocketAddr::new(address.unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST)), source),
-                Endpoint {
-                    host: "localhost".into(),
-                    port: target.unwrap_or(source),
-                },
+                target,
             )
         })
         .collect())
 }
 
+/// One relay listener and its resolved target endpoint.
+pub(super) struct RelaySpec {
+    pub listen: SocketAddr,
+    pub target: Endpoint,
+}
+
+/// Parse two-server relay endpoints: `--src [IP:]PORTS --tgt [HOST:]PORT`, or
+/// `--port` for the same port on both sides. Ports are 1–65535 and never
+/// reallocated.
+pub fn relays(src: Option<&str>, tgt: Option<&str>, port: Option<&str>) -> Result<Vec<RelaySpec>> {
+    if let Some(ports) = port {
+        if src.is_some() || tgt.is_some() {
+            bail!("--port cannot be combined with --src or --tgt");
+        }
+        return Ok(ports::expand(ports)?
+            .into_iter()
+            .map(|target_port| RelaySpec {
+                listen: SocketAddr::new(IpAddr::V4(Ipv4Addr::LOCALHOST), target_port),
+                target: Endpoint {
+                    host: "localhost".into(),
+                    port: target_port,
+                },
+            })
+            .collect());
+    }
+    let (source, target) = match (src, tgt) {
+        (Some(source), Some(target)) => (source, target),
+        _ => bail!(
+            "a relay forward requires --src [IP:]PORTS and --tgt [HOST:]PORT, or --port PORTS"
+        ),
+    };
+    let (host, target_port) = target_parts(target)?;
+    let host = host.unwrap_or_else(|| "localhost".into());
+    let (address, sources) = source_parts(source)?;
+    Ok(ports::expand(sources)?
+        .into_iter()
+        .map(|listen_port| RelaySpec {
+            listen: SocketAddr::new(
+                address.unwrap_or(IpAddr::V4(Ipv4Addr::LOCALHOST)),
+                listen_port,
+            ),
+            target: Endpoint {
+                host: host.clone(),
+                port: target_port,
+            },
+        })
+        .collect())
+}
+
+/// `--tgt` mirrors `--src`'s address prefix: `[HOST:]PORT`. A bare port keeps
+/// any existing destination host; an explicit host replaces it.
+pub(super) fn target_parts(value: &str) -> Result<(Option<String>, u16)> {
+    let parts = split_brackets(value.trim())?;
+    match parts.as_slice() {
+        [port] => Ok((None, ports::single(port)?)),
+        [host, port] => Ok((Some(target_host(host)?), ports::single(port)?)),
+        _ => bail!("--tgt expects [HOST:]PORT; put IPv6 addresses in brackets"),
+    }
+}
+
+/// A destination host is resolved by the target side; accept a bare IPv6
+/// literal (with or without brackets) exactly like `--tgt [::1]:PORT`.
+pub fn target_host(value: &str) -> Result<String> {
+    if value.is_empty() || value.chars().any(|c| c.is_whitespace() || c.is_control()) {
+        bail!("--tgt host must not be empty or contain whitespace");
+    }
+    let host = value
+        .strip_prefix('[')
+        .and_then(|inner| inner.strip_suffix(']'))
+        .unwrap_or(value);
+    if host.contains(':') && host.parse::<std::net::Ipv6Addr>().is_err() {
+        bail!("--tgt host {value:?} is not a valid IPv6 address; bracket IPv6 literals",);
+    }
+    Ok(host.to_owned())
+}
+
 /// An optional IP prefix applies to the entire source port list.
-fn source_parts(value: &str) -> Result<(Option<IpAddr>, &str)> {
+pub(super) fn source_parts(value: &str) -> Result<(Option<IpAddr>, &str)> {
     let parts = split_brackets(value.trim())?;
     match parts.as_slice() {
         [ports] => Ok((None, ports)),
@@ -375,6 +462,61 @@ mod tests {
         }
         let direct = tunnels(Some("3000"), None, None, None, &PortArgs::default(), None).unwrap();
         assert_eq!(direct[0].target().unwrap().to_string(), "localhost:3000");
+    }
+
+    #[test]
+    fn tgt_accepts_optional_host_on_add_and_edit() {
+        let ports = PortArgs {
+            src: Some("5000-5001".into()),
+            tgt: Some("db.internal:5432".into()),
+            ..Default::default()
+        };
+        let rules = tunnels(None, Some(""), None, None, &ports, None).unwrap();
+        assert!(rules.iter().all(
+            |rule| rule.is_remote() && rule.target().unwrap().to_string() == "db.internal:5432"
+        ));
+        let existing = Tunnel::Local {
+            listen: "[::1]:12345".parse().unwrap(),
+            target: Endpoint {
+                host: "internal.example".into(),
+                port: 8080,
+            },
+        };
+        // A bare port keeps the recorded host; an explicit host replaces it.
+        let bare = EditPortArgs {
+            tgt: Some("8081".into()),
+            ..Default::default()
+        };
+        let changed = tunnels(None, None, None, None, &bare, Some(&existing))
+            .unwrap()
+            .remove(0);
+        assert_eq!(
+            changed.target().unwrap().to_string(),
+            "internal.example:8081"
+        );
+        let explicit = EditPortArgs {
+            tgt: Some("[2001:db8::1]:443".into()),
+            ..Default::default()
+        };
+        let changed = tunnels(None, None, None, None, &explicit, Some(&existing))
+            .unwrap()
+            .remove(0);
+        assert_eq!(changed.target().unwrap().to_string(), "[2001:db8::1]:443");
+        for invalid in [
+            "::1:8080",
+            "db.internal:0",
+            "db.internal:8080:9090",
+            ":8080",
+        ] {
+            let bad = EditPortArgs {
+                tgt: Some(invalid.into()),
+                ..Default::default()
+            };
+            assert!(
+                tunnels(None, None, None, None, &bad, Some(&existing)).is_err(),
+                "{invalid}"
+            );
+        }
     }
 
     #[test]

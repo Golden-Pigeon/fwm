@@ -19,8 +19,12 @@ fwm doctor --server dev
 
 Status shows one row per rule: name, server, group, direction, source, target,
 and state. `L→R` means a local listener with a remote target; `R→L` is the reverse.
-`localhost`, `127.0.0.1`, and `::1` show only the port. Other addresses, including
-`0.0.0.0`, keep the host and port; SOCKS targets display `SOCKS5`.
+A two-server relay shows `R→R` and names both endpoints in the server column,
+source first, such as `host-a→host-c`; `--server` selects relays from either
+endpoint. `localhost`, `127.0.0.1`, and `::1` show only the port. Other addresses, including
+`0.0.0.0`, keep the host and port; SOCKS targets display `SOCKS5`. For relays,
+`connected` additionally means both SSH sessions and the source listener are
+confirmed.
 
 The summary counts states, problems appear first, and error details follow the
 table. Colors are optional: set `NO_COLOR=1` to disable them. Redirected output

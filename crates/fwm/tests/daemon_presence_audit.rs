@@ -81,7 +81,7 @@ fn unresponsive_owner_is_not_reported_stopped_or_replaced_and_stop_sends_shutdow
                     let method = request["command"]["method"].as_str().unwrap().to_owned();
                     thread_methods.lock().unwrap().push(method.clone());
                     if method == "shutdown" {
-                        let body=serde_json::to_vec(&serde_json::json!({"api_version":1,"request_id":request["request_id"],"ok":true,"data":{},"error":null})).unwrap();
+                        let body=serde_json::to_vec(&serde_json::json!({"api_version":2,"request_id":request["request_id"],"ok":true,"data":{},"error":null})).unwrap();
                         socket
                             .write_all(&(body.len() as u32).to_be_bytes())
                             .unwrap();

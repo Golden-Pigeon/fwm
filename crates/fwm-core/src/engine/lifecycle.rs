@@ -51,6 +51,21 @@ impl Engine {
                 retired.push(group.task);
             }
         }
+        // A relay endpoint change rebuilds both of its rule-dedicated sessions.
+        let relay_ids: Vec<_> = self
+            .relays
+            .iter()
+            .filter(|(_, group)| {
+                group.endpoints.source.id == server.id || group.endpoints.target.id == server.id
+            })
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in relay_ids {
+            if let Some(group) = self.relays.remove(&id) {
+                group.cancel.cancel();
+                retired.push(group.task);
+            }
+        }
         // Closing old listeners before replacements avoids a spurious port
         // conflict, especially for remote forwards with verified recovery.
         join_cancelled(retired).await;
@@ -90,10 +105,7 @@ impl Engine {
             let reason = if entry.spec.desired_state != DesiredState::Running {
                 Some("stopped")
             } else if matches!(operation, Operation::Retry)
-                && self
-                    .groups
-                    .get(&entry.connection_key)
-                    .is_some_and(|group| !group.task.is_finished())
+                && self.supervisor_alive(id, &entry.connection_key)
             {
                 match entry.status.state {
                     RuntimeState::Established => Some("already_established"),
@@ -142,8 +154,37 @@ impl Engine {
                 group.desired.send_replace(rules);
             }
         }
+        for group in self.relays.values() {
+            let mut rule = group.desired.borrow().clone();
+            if selected.contains(&rule.spec.id) {
+                {
+                    let mut statuses = self.statuses.lock().unwrap();
+                    let entry = statuses.get_mut(&rule.spec.id).unwrap();
+                    self.generation += 1;
+                    entry.generation = self.generation;
+                    entry.status.active_connections = 0;
+                    entry.status.retry_count = 0;
+                    entry.status.state = RuntimeState::Starting;
+                    entry.status.last_error = None;
+                    entry.status.next_retry_unix_ms = None;
+                    rule.generation = self.generation;
+                }
+                group.desired.send_replace(rule);
+            }
+        }
         self.revive_finished_groups();
+        self.revive_finished_relays();
         Ok(report)
+    }
+
+    /// Retry only skips rules a live supervisor is still driving to health.
+    fn supervisor_alive(&self, id: &str, connection_key: &str) -> bool {
+        if let Some(group) = self.groups.get(connection_key) {
+            return !group.task.is_finished();
+        }
+        self.relays
+            .get(id)
+            .is_some_and(|group| !group.task.is_finished())
     }
 }
 

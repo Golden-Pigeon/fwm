@@ -36,6 +36,7 @@
 | 服务事务与故障回归 | `platform/service_tests.rs`、`platform/service_windows_tests.rs`、`platform/service_definition.rs`、`platform/service_command.rs`、`cli/service_lifecycle_tests.rs` | 状态化三平台假服务管理器；旧定义与 OS 注册独立恢复、部分写失败、原子替换、回滚所有权、整个事务互斥、命令超时、旧路径发现、失配 marker、禁用任务、升级后可执行文件刷新、失败退出码 |
 | 无响应后台与显式恢复 | `tests/daemon_presence_audit.rs`、`tests/audit_state_workflows.rs`、`store/recovery_tests.rs` | 持锁但无响应不误判停止、不另启实例、仍发送 shutdown；watch 失联后恢复；恢复前校验、独立备份、保留可读停删意图、损坏意图须显式放弃、全部规则停止 |
 | 历史选择与服务器事件回归 | `history/selection_audit_tests.rs`、`cli/query_selection_tests.rs`、`tests/audit_state_workflows.rs` | 当前对象优先历史别名、组简写和显式组筛选等价、follow 固定规则/服务器 ID、删除重建不跳转、服务器配置/信任/连接事件保留归属 |
+| 双服务器 relay 转发 | `model_forward.rs`、`model.rs`、`engine/mod.rs`、`engine/relay.rs`、`add_relay_tests.rs`、`forwards_tests.rs`、`configuration/tests.rs`、`fwm-api/tests/protocol_contract.rs` | relay wire 契约（缺 `target_server_id`/外借字段/显式 shared 拒绝）、双端引用校验与源端监听冲突、同一 profile 双角色、schema 3→4 迁移、引擎按规则派生协调器与代次重启、编辑单侧补丁且拒绝类型转换、`--server X` 任一端选择与历史双端筛选、两个新 alias 与规则同事务提交 |
 
 表中的 Rust 路径相对对应 crate 的 `src` 或根目录；Rust 集成测试位于各 crate 的 `tests/`。
 
@@ -71,6 +72,10 @@ python3 tests/native_linux_recovery.py --ssh-config /path/to/fixture/ssh_config 
 该测试不需要虚拟机安装 Python，覆盖实际数据传输、保留旧 SSH 会话的网络黑洞、旧 Python lease 迁移、helper 异常退出恢复、其他管理器隔离，以及未登记的手动 SSH 转发占用端口时仍保持正常。
 
 2026-09-22 原生 Linux helper 修复验证：10 项实际 C 解析/记录回归、568 项 Rust 测试、33 项旧 Python helper 测试通过；严格 Clippy 和 Release 构建通过。最终二进制在 Linux 4.14.167／OpenSSH 9.9、UID 1000、未安装 Python 的隔离虚拟机上通过上述完整流程，包括真实占用端口的旧会话回收和手动 SSH 转发保护。
+
+2026-10-16 双服务器 relay 转发（`Tunnel::Relay`，schema v4，API v2）验证环境：macOS 27 arm64、Apple CLT/Xcode 工具链（构建时显式 `SDKROOT`）。通过检查：`cargo fmt --all -- --check`、`cargo clippy --workspace --all-targets --locked -- -D warnings`、`cargo test --workspace --locked`（28 个测试目标全部通过，含新增 relay 模型/wire/引擎/CLI/配置/历史/协议契约测试）、`tests/postfix_queries.py`（debug 二进制）、`tests/shell_completion_scripts.py`（18 项，含 6 项预期失败）、cleanup Python helper 套件（34 项）与 `tests/native_helper.py`（10 项）。`tests/smoke.py` 在本机失败于 `remote_recovery.py` 的 `previous["session"]["pid"]` 读取——经 stash 对照验证，未修改的 master 同样失败（本机 native helper 写入扁平 `session_pid` 字段而脚本期望嵌套 `session` 对象），属既有问题，与 relay 改动无关；relay 的真实 sshd 数据面与故障矩阵尚待在允许 sshd 的环境按第 7 节验收表执行。
+
+2026-10-16 relay 确认阶段竞争修复：established 阶段曾把 `RemoteLease::confirm()` 与 100ms 轮询 tick 放进同一个 `select!`，而首次 tick 立即触发，会把进行中的确认请求丢弃重发；helper 对两次确认各回一行，客户端消费第一行后报告 Established，`wait_closed()` 随即读到第二行，规则毫秒级跌入 Backoff 并无限循环。真实服务器往返延迟必然大于首个 poll，故 100% 复现；进程内伪连接因回复同 poll 就绪而未触发，这是该缺陷逃过引擎测试的原因。修复后确认请求只与取消竞争——`confirm()` 自身在传输断开时失败并被内部超时约束；取消时放弃该 lease（交由下一次 fenced claim 回收）而不是在同一流上追加 release 请求。回归覆盖：`tests/smoke.py` 新增双服务器 relay 场景（真实 sshd，verified cleanup 默认路径，断言建立、回显数据、静置后仍为 established），在 `FWM_SMOKE_UX_ONLY=1` 下与既有 UX 段全部通过；`cargo fmt`／clippy／`cargo test --workspace --locked` 全部通过。另在一对真实 Linux 服务器上端到端验证两条 relay 规则：修复后持续 established，经跳板读取对端 sshd banner，并完成完整 SSH 握手与认证交换，确认双向数据面。
 
 真实 SSH 测试仅使用临时密钥、临时配置和回环监听。要求 Unix、sshd 和 ssh-keygen；macOS 的嵌套沙箱可能阻止 sshd 初始化，需在允许该测试的环境执行。测试清理其创建的后台和 SSH 服务，不读取或更改默认 fwm 配置。
 

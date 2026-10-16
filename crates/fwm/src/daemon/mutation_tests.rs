@@ -19,6 +19,7 @@ async fn group(fixture: &Fixture) -> Config {
             Command::CreateForwards {
                 forwards,
                 server: None,
+                target_server: None,
             },
         ))
         .await;
@@ -115,6 +116,7 @@ async fn group_edit_and_new_server_are_atomic_and_all_ids_must_exist() {
             Command::PutForwardsWithServer {
                 forwards: invalid,
                 server: Some(server.clone()),
+                target_server: None,
             },
         ))
         .await;
@@ -125,6 +127,7 @@ async fn group_edit_and_new_server_are_atomic_and_all_ids_must_exist() {
         Command::PutForwardsWithServer {
             forwards: changed.clone(),
             server: Some(server.clone()),
+            target_server: None,
         },
     );
     request.expected_revision = Some(original.revision);

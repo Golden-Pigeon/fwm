@@ -70,7 +70,7 @@ class Peer:
                     data = {"daemon_instance_id": "test", "capabilities": ["cli_ux_v5", "atomic_status_view"]} if request["command"]["method"] == "ping" else self.reply(request)
                     if data is None:
                         continue
-                    response = json.dumps({"api_version": 1, "request_id": request["request_id"], "ok": True, "data": data, "error": None}).encode()
+                    response = json.dumps({"api_version": 2, "request_id": request["request_id"], "ok": True, "data": data, "error": None}).encode()
                     stream.sendall(struct.pack(">I", len(response)) + response)
                 except (OSError, EOFError):
                     pass
@@ -130,7 +130,7 @@ class Queries(unittest.TestCase):
                 with socket.socket(socket.AF_UNIX) as stream:
                     stream.settimeout(5)
                     stream.connect(str(path / "state/daemon.sock"))
-                    payload = json.dumps({"api_version": 1, "request_id": str(time.monotonic_ns()), "command": command}).encode()
+                    payload = json.dumps({"api_version": 2, "request_id": str(time.monotonic_ns()), "command": command}).encode()
                     stream.sendall(struct.pack(">I", len(payload)) + payload)
                     return json.loads(exact(stream, struct.unpack(">I", exact(stream, 4))[0]))
 

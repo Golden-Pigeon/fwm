@@ -46,8 +46,11 @@ pub async fn send(paths: &Paths, command: Command, revision: Option<u64>) -> Res
             | Command::DoctorProfile { .. }
             | Command::Doctor { .. }
     );
-    let grouped = matches!(&request.command, Command::CreateForwards { forwards, .. }
-        if forwards.iter().any(|forward| forward.group.is_some()));
+    let grouped = matches!(
+        &request.command,
+        Command::CreateForwards { forwards, .. }
+            if forwards.iter().any(|forward| forward.group.is_some())
+    );
     if ux_command || grouped {
         let ping = Request::new(uuid::Uuid::new_v4().to_string(), Command::Ping);
         require_capability(&exchange(paths, &ping).await?, paths, "cli_ux_v5")?;

@@ -96,6 +96,8 @@ fn add_candidates(mut command: Command, parent: &[&str], config: &Config) -> Com
         }
         let id = arg.get_id().as_str();
         let values: Option<Vec<String>> = if id == "server"
+            || id == "src_server"
+            || id == "tgt_server"
             || (id == "name"
                 && matches!(
                     route.as_slice(),

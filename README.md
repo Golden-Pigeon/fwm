@@ -4,9 +4,10 @@ A command-line manager for SSH port forwarding. Save tunnels by name, manage the
 across servers, and let a background daemon reconnect when the network drops.
 Closing your terminal leaves the tunnels running.
 
-Supports local and reverse forwarding, SOCKS5 in either direction, SSH config
-aliases, and jump hosts on macOS, Linux, and Windows. The remote host needs an SSH
-server; you do not need to install fwm there.
+Supports local and reverse forwarding, SOCKS5 in either direction, two-server
+relay forwarding (`--src-server A --tgt-server C`), SSH config aliases, and jump
+hosts on macOS, Linux, and Windows. The remote host needs an SSH server; you do
+not need to install fwm there.
 
 ## Install
 
@@ -38,7 +39,9 @@ fwm up web                   # start it again
 ```
 
 This forwards local port 3000 to `localhost:3000` on `dev`. Use `--remote` for the
-opposite direction, or `--dynamic 1080` for a local SOCKS5 proxy. To start saved
+opposite direction, `--dynamic 1080` for a local SOCKS5 proxy, or
+`--src-server A --src 8080 --tgt-server C --tgt 9000` to forward a port on
+server A to a service on server C through this machine. To start saved
 running tunnels at login, run `fwm service install`.
 
 ## Documentation

@@ -185,7 +185,7 @@ fn status_text(snapshot: &StatusSnapshot, daemon_state: &str, now: u64, color: b
             [
                 marker.into(),
                 forward.name.clone(),
-                forward.server.clone(),
+                server_cell(forward),
                 forward.group.as_deref().unwrap_or("—").into(),
                 direction(forward).into(),
                 compact_endpoint(&forward.listen).into(),
@@ -277,10 +277,18 @@ fn compact_endpoint(endpoint: &str) -> &str {
 }
 
 fn direction(forward: &ForwardStatus) -> &'static str {
-    if matches!(forward.kind.as_str(), "remote" | "remote_dynamic") {
-        "R→L"
-    } else {
-        "L→R"
+    match forward.kind.as_str() {
+        "remote" | "remote_dynamic" => "R→L",
+        "relay" => "R→R",
+        _ => "L→R",
+    }
+}
+
+/// One server cell per rule; a relay names both endpoints, source first.
+fn server_cell(forward: &ForwardStatus) -> String {
+    match (&forward.target_server, forward.kind.as_str()) {
+        (Some(target), "relay") => format!("{}→{}", forward.server, target),
+        _ => forward.server.clone(),
     }
 }
 
@@ -345,6 +353,11 @@ pub fn offline(config: Config) -> StatusSnapshot {
                 kind: forward.tunnel.kind().into(),
                 listen: forward.tunnel.listen().to_string(),
                 target: forward.tunnel.target().map(ToString::to_string),
+                target_server: forward
+                    .tunnel
+                    .target_server_id()
+                    .and_then(|id| config.server(id))
+                    .map(|server| server.name.clone()),
                 desired_state: forward.desired_state,
                 state: RuntimeState::Stopped,
                 retry_count: 0,
@@ -423,6 +436,7 @@ mod tests {
     #[test]
     fn status_table_keeps_directions_and_endpoints_and_moves_errors_below_rows() {
         let mut forward = ForwardStatus {
+            target_server: None,
             id: "id".into(),
             name: "proxy".into(),
             group: None,

@@ -2,6 +2,8 @@
 
 创建：2026-09-18；更新：2026-09-20。状态：已实现基于 russh 的首个 CLI 版本；本文同时保留后续增强的设计。已交付功能、运行方法和明确边界以 [README.md](README.md) 为准。
 
+已实现增强：[双服务器端口转发设计](docs/design/remote-to-remote.md)（2026-10-16 提案，同日实现）。第三台机器上的 fwm 将源服务器（`--src-server`）的监听端口桥接到目标服务器（`--tgt-server`）解析并连接的目标服务：配置 kind=relay（schema v4）、API 协议版本 2、规则级双专用会话协调器与进程内 forwarded-tcpip→direct-tcpip 桥接。命令契约、生命周期和验收要求见该提案；使用说明见 [usage](docs/usage.md)。
+
 当前实现包括模块化 workspace、L/R/本地与反向 SOCKS5、共享/独占连接、后台与 IPC、重连、配置恢复、原生跳板、主机校验、CLI 和三平台服务适配。Remote 和 RemoteDynamic 默认启用 verified 回收，包含持久登记、旧会话身份核验、主动终止、重新绑定和 helper 生命周期监督。verified native helper 覆盖 Linux x86_64、macOS universal 和 Windows x86_64 远端；其他架构仍需对应 helper artifact，不能将交叉编译视作运行验证。
 
 用户已确认：使用 Rust 和 russh；第一版为 CLI；同时支持 macOS、Linux、Windows；为 TUI、Web UI、Desktop 保留接口。本文的命令名 `fwm` 为暂定名。

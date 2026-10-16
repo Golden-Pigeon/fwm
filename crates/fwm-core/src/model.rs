@@ -11,7 +11,7 @@ mod forward_wire;
 
 use serde::{Deserialize, Serialize};
 
-pub const SCHEMA_VERSION: u32 = 3;
+pub const SCHEMA_VERSION: u32 = 4;
 
 pub fn new_id() -> String {
     uuid::Uuid::new_v4().to_string()
@@ -112,6 +112,13 @@ pub enum Tunnel {
     RemoteDynamic {
         listen: SocketAddr,
     },
+    /// Two-server relay: listen on the source server (`server_id`), connect to
+    /// `target` from a second, rule-dedicated session on `target_server_id`.
+    Relay {
+        listen: SocketAddr,
+        target: Endpoint,
+        target_server_id: String,
+    },
 }
 
 impl Tunnel {
@@ -120,12 +127,23 @@ impl Tunnel {
             Self::Local { listen, .. }
             | Self::Remote { listen, .. }
             | Self::Dynamic { listen }
-            | Self::RemoteDynamic { listen } => *listen,
+            | Self::RemoteDynamic { listen }
+            | Self::Relay { listen, .. } => *listen,
         }
     }
     pub fn target(&self) -> Option<&Endpoint> {
         match self {
-            Self::Local { target, .. } | Self::Remote { target, .. } => Some(target),
+            Self::Local { target, .. }
+            | Self::Remote { target, .. }
+            | Self::Relay { target, .. } => Some(target),
+            _ => None,
+        }
+    }
+    pub fn target_server_id(&self) -> Option<&str> {
+        match self {
+            Self::Relay {
+                target_server_id, ..
+            } => Some(target_server_id),
             _ => None,
         }
     }
@@ -135,10 +153,16 @@ impl Tunnel {
             Self::Remote { .. } => "remote",
             Self::Dynamic { .. } => "dynamic",
             Self::RemoteDynamic { .. } => "remote_dynamic",
+            Self::Relay { .. } => "relay",
         }
     }
+    /// True when the listener lives on a remote SSH server. A relay listens on
+    /// its source server, but its data path never targets the manager itself.
     pub fn is_remote(&self) -> bool {
-        matches!(self, Self::Remote { .. } | Self::RemoteDynamic { .. })
+        matches!(
+            self,
+            Self::Remote { .. } | Self::RemoteDynamic { .. } | Self::Relay { .. }
+        )
     }
 }
 
@@ -261,6 +285,26 @@ impl ServerProfile {
     }
 }
 
+impl ForwardSpec {
+    /// Every server profile this rule references, source side first.
+    pub fn referenced_server_ids(&self) -> Vec<&str> {
+        let mut ids = vec![self.server_id.as_str()];
+        if let Some(target) = self.tunnel.target_server_id() {
+            ids.push(target);
+        }
+        ids
+    }
+
+    /// The server whose network hosts this rule's listener.
+    pub fn listen_server_id(&self) -> &str {
+        &self.server_id
+    }
+
+    pub fn references_server(&self, id: &str) -> bool {
+        self.referenced_server_ids().contains(&id)
+    }
+}
+
 #[derive(Clone, Debug, PartialEq, Eq, Serialize, Deserialize)]
 #[serde(try_from = "forward_wire::Forward")]
 pub struct ForwardSpec {
@@ -341,7 +385,7 @@ impl Config {
     pub fn migrate(&mut self) -> Result<bool, String> {
         match self.schema_version {
             SCHEMA_VERSION => Ok(false),
-            1 | 2 => {
+            1..=3 => {
                 let legacy = self.schema_version;
                 for forward in &mut self.forwards {
                     if legacy == 1 && forward.tunnel.is_remote() {
@@ -349,7 +393,9 @@ impl Config {
                         forward.connection_mode = ConnectionMode::Dedicated;
                     }
                 }
-                self.infer_legacy_groups();
+                if legacy < 3 {
+                    self.infer_legacy_groups();
+                }
                 self.schema_version = SCHEMA_VERSION;
                 self.revision = self
                     .revision
@@ -433,10 +479,11 @@ impl Config {
         let server = self
             .server(selector)
             .ok_or_else(|| format!("unknown server {selector:?}"))?;
+        // A relay references the same profile on both sides at most once per rule.
         Ok(self
             .forwards
             .iter()
-            .filter(|rule| rule.server_id == server.id)
+            .filter(|rule| rule.references_server(&server.id))
             .map(|rule| rule.id.clone())
             .collect())
     }
@@ -535,12 +582,27 @@ impl Config {
             {
                 return Err("duplicate or empty forward identity/name".into());
             }
+            if let Some(target_server_id) = forward.tunnel.target_server_id()
+                && !ids
+                    .iter()
+                    .any(|existing| existing.as_str() == target_server_id)
+            {
+                return Err(format!("{} references unknown target server", forward.name));
+            }
             if !ids.contains(&forward.server_id) {
                 return Err(format!("{} references unknown server", forward.name));
             }
             if forward.tunnel.listen().port() == 0 {
                 return Err(
                     "automatic listen port allocation is not supported; choose a fixed port".into(),
+                );
+            }
+            if matches!(forward.tunnel, Tunnel::Relay { .. })
+                && forward.connection_mode != ConnectionMode::Dedicated
+            {
+                return Err(
+                    "relay forwards always use dedicated connections; explicit shared is not supported"
+                        .into(),
                 );
             }
             if let Some(target) = forward.tunnel.target() {
@@ -671,6 +733,9 @@ pub struct ForwardStatus {
     #[serde(default)]
     pub group: Option<String>,
     pub server: String,
+    /// Relay rules: the target-side server name. `None` for other kinds.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_server: Option<String>,
     pub kind: String,
     pub listen: String,
     pub target: Option<String>,
@@ -701,6 +766,11 @@ pub struct EventContext {
     pub server_id: Option<String>,
     pub server_name: Option<String>,
     pub group: Option<String>,
+    /// Relay rules: the target-side server identity at event time.
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_server_id: Option<String>,
+    #[serde(default, skip_serializing_if = "Option::is_none")]
+    pub target_server_name: Option<String>,
 }
 
 #[derive(Clone, Debug, Default, Serialize, Deserialize)]
@@ -778,6 +848,168 @@ mod tests {
         for invalid in ["::1:5432", "host:0", "host:65536", "bad host:22"] {
             assert!(invalid.parse::<Endpoint>().is_err());
         }
+    }
+
+    fn relay_fixture() -> (ServerProfile, ServerProfile, ForwardSpec) {
+        let mut source = ServerProfile::new("a");
+        source.host = Some("127.0.0.1".into());
+        let mut target = ServerProfile::new("c");
+        target.host = Some("127.0.0.1".into());
+        let relay = ForwardSpec {
+            id: new_id(),
+            name: "a-to-c".into(),
+            group: None,
+            server_id: source.id.clone(),
+            tunnel: Tunnel::Relay {
+                listen: "127.0.0.1:8080".parse().unwrap(),
+                target: "localhost:9000".parse().unwrap(),
+                target_server_id: target.id.clone(),
+            },
+            desired_state: DesiredState::Running,
+            connection_mode: ConnectionMode::Dedicated,
+            remote_cleanup: RemoteCleanup::Verified,
+        };
+        (source, target, relay)
+    }
+
+    #[test]
+    fn relay_rules_validate_both_endpoints_and_default_to_verified_cleanup() {
+        let (source, target, relay) = relay_fixture();
+        let mut config = Config {
+            servers: vec![source.clone(), target.clone()],
+            forwards: vec![relay.clone()],
+            ..Config::default()
+        };
+        config.validate().unwrap();
+        // The same profile may serve both roles, still exactly once per rule.
+        let mut shared = relay.clone();
+        shared.tunnel = Tunnel::Relay {
+            listen: relay.tunnel.listen(),
+            target: relay.tunnel.target().unwrap().clone(),
+            target_server_id: source.id.clone(),
+        };
+        config.forwards = vec![shared];
+        config.validate().unwrap();
+
+        config.forwards = vec![relay];
+        config.servers.pop();
+        let error = config.validate().unwrap_err();
+        assert!(error.contains("unknown target server"), "{error}");
+
+        let (source, target, mut shared_mode) = relay_fixture();
+        shared_mode.connection_mode = ConnectionMode::Shared;
+        let invalid = Config {
+            servers: vec![source, target],
+            forwards: vec![shared_mode],
+            ..Config::default()
+        };
+        assert!(invalid.validate().is_err());
+    }
+
+    #[test]
+    fn relay_listen_conflicts_follow_the_source_server_side_only() {
+        let (source, target, relay) = relay_fixture();
+        let mut config = Config {
+            servers: vec![source.clone(), target.clone()],
+            forwards: vec![relay.clone()],
+            ..Config::default()
+        };
+        // A remote listener on the same source server collides.
+        let mut remote = relay.clone();
+        remote.id = new_id();
+        remote.name = "remote-rule".into();
+        remote.server_id = source.id.clone();
+        remote.tunnel = Tunnel::Remote {
+            listen: relay.tunnel.listen(),
+            target: "localhost:22".parse().unwrap(),
+        };
+        config.forwards.push(remote);
+        assert!(config.validate().unwrap_err().contains("conflict"));
+        // A local listener on the manager never conflicts with a relay port.
+        config.forwards.pop();
+        let mut local = relay.clone();
+        local.id = new_id();
+        local.name = "local-rule".into();
+        local.server_id = target.id.clone();
+        local.remote_cleanup = RemoteCleanup::Off;
+        local.connection_mode = ConnectionMode::Shared;
+        local.tunnel = Tunnel::Local {
+            listen: relay.tunnel.listen(),
+            target: "localhost:22".parse().unwrap(),
+        };
+        config.forwards.push(local);
+        config.validate().unwrap();
+        // Target ports are not listeners and never participate in conflicts.
+        let mut second = relay.clone();
+        second.id = new_id();
+        second.name = "second-relay".into();
+        second.tunnel = Tunnel::Relay {
+            listen: "127.0.0.1:8081".parse().unwrap(),
+            target: relay.tunnel.target().unwrap().clone(),
+            target_server_id: target.id.clone(),
+        };
+        config.forwards.push(second);
+        config.validate().unwrap();
+    }
+
+    #[test]
+    fn server_selection_matches_either_relay_endpoint_without_duplicates() {
+        let (source, target, relay) = relay_fixture();
+        let config = Config {
+            servers: vec![source.clone(), target.clone()],
+            forwards: vec![relay.clone()],
+            ..Config::default()
+        };
+        assert_eq!(
+            config.select_server_forwards(&source.id).unwrap(),
+            vec![relay.id.clone()]
+        );
+        assert_eq!(
+            config.select_server_forwards("c").unwrap(),
+            vec![relay.id.clone()]
+        );
+        let mut both = relay.clone();
+        both.tunnel = Tunnel::Relay {
+            listen: relay.tunnel.listen(),
+            target: relay.tunnel.target().unwrap().clone(),
+            target_server_id: source.id.clone(),
+        };
+        let both = Config {
+            servers: vec![source.clone()],
+            forwards: vec![both],
+            ..Config::default()
+        };
+        assert_eq!(both.select_server_forwards("a").unwrap().len(), 1);
+    }
+
+    #[test]
+    fn schema_three_migrates_to_four_without_touching_groups() {
+        let mut server = ServerProfile::new("dev");
+        server.host = Some("127.0.0.1".into());
+        let mut config = Config {
+            schema_version: 3,
+            revision: 11,
+            servers: vec![server],
+            forwards: vec![ForwardSpec {
+                id: "rule".into(),
+                name: "web".into(),
+                group: None,
+                server_id: "server".into(),
+                tunnel: Tunnel::Dynamic {
+                    listen: "127.0.0.1:1080".parse().unwrap(),
+                },
+                desired_state: DesiredState::Stopped,
+                connection_mode: ConnectionMode::Shared,
+                remote_cleanup: RemoteCleanup::Off,
+            }],
+            ..Config::default()
+        };
+        config.forwards[0].server_id = config.servers[0].id.clone();
+        assert!(config.migrate().unwrap());
+        assert_eq!(config.schema_version, SCHEMA_VERSION);
+        assert_eq!(config.revision, 12);
+        assert!(config.forwards[0].group.is_none());
+        config.validate().unwrap();
     }
     #[test]
     fn dangling_server_and_wildcard_conflicts_are_rejected() {

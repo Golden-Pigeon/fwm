@@ -295,7 +295,7 @@ fn remove_route(routes: &RemoteRoutes, key: &(String, u32), rule: &Rule) {
 }
 
 /// Timeout changes observability, not ownership: the future is retained for compensation.
-async fn protocol_request<F, T>(
+pub(super) async fn protocol_request<F, T>(
     future: F,
     rule: &Rule,
     cancel: &CancellationToken,

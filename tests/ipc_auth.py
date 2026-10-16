@@ -55,7 +55,7 @@ with socket.socket(socket.AF_UNIX) as listener:
                 if length > 1024 * 1024:
                     raise ValueError("oversized fixture request")
                 request = json.loads(exact(stream, length))
-                reply = json.dumps({"api_version": 1, "request_id": request["request_id"],
+                reply = json.dumps({"api_version": 2, "request_id": request["request_id"],
                                     "ok": True, "error": None,
                                     "data": {"daemon_instance_id": "counterfeit",
                                              "capabilities": ["cli_ux_v5"]}}).encode()
@@ -70,7 +70,7 @@ import json, socket, struct, sys
 with socket.socket(socket.AF_UNIX) as stream:
     stream.settimeout(3)
     stream.connect(sys.argv[1])
-    request = json.dumps({"api_version": 1, "request_id": "foreign",
+    request = json.dumps({"api_version": 2, "request_id": "foreign",
                           "command": {"method": "shutdown"}}).encode()
     try:
         stream.sendall(struct.pack(">I", len(request)) + request)

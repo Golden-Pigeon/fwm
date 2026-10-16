@@ -3,6 +3,7 @@ mod channels;
 mod connection;
 mod forward;
 mod lifecycle;
+mod relay;
 mod remote;
 mod retry;
 mod socks;
@@ -23,7 +24,9 @@ use tokio_util::sync::CancellationToken;
 
 use crate::model::{
     Config, ConnectionMode, DesiredState, EngineEvent, ForwardStatus, RuntimeState, ServerProfile,
+    Tunnel,
 };
+use relay::RelayEndpoints;
 use state::{Events, Rule, StatusEntry, Statuses};
 
 struct Group {
@@ -34,8 +37,23 @@ struct Group {
     task: JoinHandle<()>,
 }
 
+/// A relay rule always isolates both endpoints on rule-dedicated sessions, so
+/// it is supervised per rule rather than through a shared connection group.
+/// `connection_key` covers both endpoints' profiles and resolved SSH routes;
+/// unlike shared groups, the rule-id key cannot change, so an identity edit
+/// must explicitly retire and respawn the coordinator.
+struct RelayGroup {
+    endpoints: RelayEndpoints,
+    policy: crate::model::RetryPolicy,
+    connection_key: String,
+    desired: watch::Sender<Rule>,
+    cancel: CancellationToken,
+    task: JoinHandle<()>,
+}
+
 pub struct Engine {
     groups: HashMap<String, Group>,
+    relays: HashMap<String, RelayGroup>,
     retired: Vec<JoinHandle<()>>,
     statuses: Statuses,
     events: Events,
@@ -55,6 +73,7 @@ impl Engine {
     pub fn new() -> Self {
         Self {
             groups: HashMap::new(),
+            relays: HashMap::new(),
             retired: vec![],
             statuses: Arc::new(Mutex::new(HashMap::new())),
             events: Events::new(),
@@ -74,13 +93,15 @@ impl Engine {
     pub async fn reconcile(&mut self, config: &Config) -> Result<()> {
         config.validate().map_err(|error| anyhow!(error))?;
         let mut desired: HashMap<String, (ServerProfile, Vec<Rule>)> = HashMap::new();
+        let mut desired_relays: HashMap<String, (RelayEndpoints, Rule, String)> = HashMap::new();
         self.ssh_fingerprints
             .retain(|id, _| config.servers.iter().any(|server| server.id == *id));
+        // Fingerprint every server a rule can reference, on either relay side.
         for server in config.servers.iter().filter(|server| {
             config
                 .forwards
                 .iter()
-                .any(|rule| rule.server_id == server.id)
+                .any(|rule| rule.references_server(&server.id))
         }) {
             let mut profile = server.clone();
             profile.name.clear();
@@ -108,14 +129,42 @@ impl Engine {
             let dedicated = (spec.connection_mode == ConnectionMode::Dedicated
                 || spec.remote_cleanup == crate::model::RemoteCleanup::Verified)
                 .then_some(&spec.id);
-            let mut connection_profile = server.clone();
-            connection_profile.name.clear(); // Labels never change connection identity.
-            let key = serde_json::to_string(&(
-                connection_profile,
-                &config.defaults.retry,
-                dedicated,
-                &self.ssh_fingerprints[&server.id].1,
-            ))?;
+            let key = match &spec.tunnel {
+                Tunnel::Relay {
+                    target_server_id, ..
+                } => {
+                    // Both endpoints are dedicated to this rule; identity covers
+                    // each side's connection options and resolved SSH route.
+                    let target = config
+                        .servers
+                        .iter()
+                        .find(|s| s.id == *target_server_id)
+                        .context("unknown target server")?;
+                    let mut source_profile = server.clone();
+                    source_profile.name.clear();
+                    let mut target_profile = target.clone();
+                    target_profile.name.clear();
+                    serde_json::to_string(&(
+                        "relay",
+                        &source_profile,
+                        &self.ssh_fingerprints[&server.id].1,
+                        &target_profile,
+                        &self.ssh_fingerprints[target_server_id].1,
+                        &config.defaults.retry,
+                        &spec.id,
+                    ))?
+                }
+                _ => {
+                    let mut connection_profile = server.clone();
+                    connection_profile.name.clear(); // Labels never change connection identity.
+                    serde_json::to_string(&(
+                        connection_profile,
+                        &config.defaults.retry,
+                        dedicated,
+                        &self.ssh_fingerprints[&server.id].1,
+                    ))?
+                }
+            };
             present.insert(spec.id.clone());
             let generation = {
                 let mut statuses = self.statuses.lock().unwrap();
@@ -128,6 +177,7 @@ impl Engine {
                     entry.status.name = spec.name.clone();
                     entry.status.group = spec.group.clone();
                     entry.status.server = server.name.clone();
+                    entry.status.target_server = relay_target_name(config, spec);
                     entry.generation
                 } else {
                     self.generation += 1;
@@ -158,6 +208,7 @@ impl Engine {
                                 name: spec.name.clone(),
                                 group: spec.group.clone(),
                                 server: server.name.clone(),
+                                target_server: relay_target_name(config, spec),
                                 kind: spec.tunnel.kind().to_string(),
                                 listen: spec.tunnel.listen().to_string(),
                                 target: spec.tunnel.target().map(ToString::to_string),
@@ -173,17 +224,42 @@ impl Engine {
                     self.generation
                 }
             };
-            desired
-                .entry(key)
-                .or_insert_with(|| (server.clone(), vec![]))
-                .1
-                .push(Rule {
-                    spec: spec.clone(),
-                    server_name: server.name.clone(),
-                    generation,
-                    statuses: self.statuses.clone(),
-                    events: self.events.clone(),
-                });
+            let rule = Rule {
+                spec: spec.clone(),
+                server_name: server.name.clone(),
+                generation,
+                statuses: self.statuses.clone(),
+                events: self.events.clone(),
+            };
+            match &spec.tunnel {
+                Tunnel::Relay {
+                    target_server_id, ..
+                } => {
+                    let target = config
+                        .servers
+                        .iter()
+                        .find(|s| s.id == *target_server_id)
+                        .context("unknown target server")?;
+                    desired_relays.insert(
+                        spec.id.clone(),
+                        (
+                            RelayEndpoints {
+                                source: server.clone(),
+                                target: target.clone(),
+                            },
+                            rule,
+                            key,
+                        ),
+                    );
+                }
+                _ => {
+                    desired
+                        .entry(key)
+                        .or_insert_with(|| (server.clone(), vec![]))
+                        .1
+                        .push(rule);
+                }
+            }
         }
         self.statuses
             .lock()
@@ -220,8 +296,106 @@ impl Engine {
                 self.groups.insert(key, group);
             }
         }
+        self.reconcile_relays(desired_relays, config.defaults.retry.clone());
         self.revive_finished_groups();
+        self.revive_finished_relays();
         Ok(())
+    }
+
+    /// Spawn or refresh per-rule relay coordinators. Endpoint or SSH-route
+    /// identity changes rebuild both dedicated sessions; generation bumps and
+    /// label-only edits update the running rule in place.
+    fn reconcile_relays(
+        &mut self,
+        desired: HashMap<String, (RelayEndpoints, Rule, String)>,
+        policy: crate::model::RetryPolicy,
+    ) {
+        let stale: Vec<_> = self
+            .relays
+            .iter()
+            .filter(|(id, group)| {
+                desired
+                    .get(*id)
+                    .is_none_or(|(_, _, key)| *key != group.connection_key)
+            })
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in stale {
+            let group = self.relays.remove(&id).unwrap();
+            group.cancel.cancel();
+            self.retired.push(group.task);
+        }
+        for (id, (endpoints, rule, key)) in desired {
+            if let Some(group) = self.relays.get_mut(&id) {
+                group.endpoints = endpoints;
+                group.desired.send_if_modified(|previous| {
+                    let changed =
+                        previous.generation != rule.generation || previous.spec != rule.spec;
+                    *previous = rule;
+                    changed
+                });
+            } else {
+                let (desired, receiver) = watch::channel(rule);
+                let cancel = CancellationToken::new();
+                let task = tokio::spawn(relay::supervise(
+                    endpoints.clone(),
+                    policy.clone(),
+                    receiver,
+                    cancel.clone(),
+                    self.connection_limit.clone(),
+                    self.events.clone(),
+                    self.cleanup.clone(),
+                ));
+                self.relays.insert(
+                    id,
+                    RelayGroup {
+                        endpoints,
+                        policy: policy.clone(),
+                        connection_key: key,
+                        desired,
+                        cancel,
+                        task,
+                    },
+                );
+            }
+        }
+    }
+
+    fn revive_finished_relays(&mut self) {
+        let finished: Vec<_> = self
+            .relays
+            .iter()
+            .filter(|(_, group)| group.task.is_finished())
+            .map(|(id, _)| id.clone())
+            .collect();
+        for id in finished {
+            let old = self.relays.remove(&id).unwrap();
+            old.cancel.cancel();
+            let rule = old.desired.borrow().clone();
+            let (desired, receiver) = watch::channel(rule);
+            let cancel = CancellationToken::new();
+            let task = tokio::spawn(relay::supervise(
+                old.endpoints.clone(),
+                old.policy.clone(),
+                receiver,
+                cancel.clone(),
+                self.connection_limit.clone(),
+                self.events.clone(),
+                self.cleanup.clone(),
+            ));
+            self.retired.push(old.task);
+            self.relays.insert(
+                id,
+                RelayGroup {
+                    endpoints: old.endpoints,
+                    policy: old.policy,
+                    connection_key: old.connection_key,
+                    desired,
+                    cancel,
+                    task,
+                },
+            );
+        }
     }
 
     fn spawn_group(
@@ -288,6 +462,10 @@ impl Engine {
             group.cancel.cancel();
             self.retired.push(group.task);
         }
+        for (_, group) in self.relays.drain() {
+            group.cancel.cancel();
+            self.retired.push(group.task);
+        }
         join_cancelled(std::mem::take(&mut self.retired)).await;
         for entry in self.statuses.lock().unwrap().values_mut() {
             entry.status.state = RuntimeState::Stopped;
@@ -317,9 +495,20 @@ fn runtime_equal(a: &crate::model::ForwardSpec, b: &crate::model::ForwardSpec) -
         && a.remote_cleanup == b.remote_cleanup
 }
 
+/// Display name of a relay rule's target-side server, if it still resolves.
+fn relay_target_name(config: &Config, spec: &crate::model::ForwardSpec) -> Option<String> {
+    spec.tunnel
+        .target_server_id()
+        .and_then(|id| config.server(id))
+        .map(|server| server.name.clone())
+}
+
 impl Drop for Engine {
     fn drop(&mut self) {
         for group in self.groups.values() {
+            group.cancel.cancel();
+        }
+        for group in self.relays.values() {
             group.cancel.cancel();
         }
     }
@@ -332,6 +521,105 @@ mod cleanup_tests;
 mod tests {
     use super::*;
     use crate::model::{ForwardSpec, RemoteCleanup, Tunnel};
+
+    fn relay_config(running: bool) -> Config {
+        let mut source = ServerProfile::new("source-a");
+        source.host = Some("127.0.0.1".into());
+        let mut target = ServerProfile::new("target-c");
+        target.host = Some("127.0.0.1".into());
+        Config {
+            servers: vec![source.clone(), target.clone()],
+            forwards: vec![ForwardSpec {
+                id: "relay-rule".into(),
+                name: "a-to-c".into(),
+                group: None,
+                server_id: source.id.clone(),
+                tunnel: Tunnel::Relay {
+                    listen: "127.0.0.1:18080".parse().unwrap(),
+                    target: "localhost:19000".parse().unwrap(),
+                    target_server_id: target.id.clone(),
+                },
+                desired_state: if running {
+                    DesiredState::Running
+                } else {
+                    DesiredState::Stopped
+                },
+                connection_mode: ConnectionMode::Dedicated,
+                remote_cleanup: RemoteCleanup::Off,
+            }],
+            ..Config::default()
+        }
+    }
+
+    #[tokio::test]
+    async fn relay_rules_get_their_own_coordinator_and_dual_end_labels() {
+        let config = relay_config(true);
+        let mut engine = Engine::new();
+        engine.reconcile(&config).await.unwrap();
+        {
+            let statuses = engine.statuses.lock().unwrap();
+            let entry = &statuses["relay-rule"];
+            assert_eq!(entry.status.kind, "relay");
+            assert_eq!(entry.status.server, "source-a");
+            assert_eq!(entry.status.target_server.as_deref(), Some("target-c"));
+            assert_eq!(entry.status.target.as_deref(), Some("localhost:19000"));
+            assert_eq!(entry.status.state, RuntimeState::Starting);
+        }
+        // Relay rules never join a shared connection group.
+        assert!(engine.groups.is_empty());
+        assert!(engine.relays.contains_key("relay-rule"));
+        engine.shutdown().await;
+        assert_eq!(engine.snapshot().await[0].state, RuntimeState::Stopped);
+    }
+
+    #[tokio::test]
+    async fn relay_metadata_edits_keep_identity_while_endpoint_edits_rebuild() {
+        let mut config = relay_config(true);
+        let mut engine = Engine::new();
+        engine.reconcile(&config).await.unwrap();
+        let generation = engine.statuses.lock().unwrap()["relay-rule"].generation;
+        config.forwards[0].name = "renamed".into();
+        engine.reconcile(&config).await.unwrap();
+        assert_eq!(
+            engine.statuses.lock().unwrap()["relay-rule"].generation,
+            generation
+        );
+        let snapshot = engine.snapshot().await;
+        assert_eq!(snapshot[0].name, "renamed");
+        // A target endpoint change re-identifies the coordinator.
+        config.forwards[0].tunnel = Tunnel::Relay {
+            listen: "127.0.0.1:18080".parse().unwrap(),
+            target: "localhost:19001".parse().unwrap(),
+            target_server_id: config.servers[0].id.clone(),
+        };
+        engine.reconcile(&config).await.unwrap();
+        assert!(engine.statuses.lock().unwrap()["relay-rule"].generation > generation);
+        engine.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn stopped_relay_rules_report_stopped_without_spawning_a_coordinator_task() {
+        // The task exists but immediately reports Stopped and waits; a fresh
+        // engine must not treat the rule as connecting.
+        let config = relay_config(false);
+        let mut engine = Engine::new();
+        engine.reconcile(&config).await.unwrap();
+        tokio::task::yield_now().await;
+        assert_eq!(engine.snapshot().await[0].state, RuntimeState::Stopped);
+        engine.shutdown().await;
+    }
+
+    #[tokio::test]
+    async fn restart_bumps_the_relay_generation_through_its_watch_channel() {
+        let config = relay_config(true);
+        let mut engine = Engine::new();
+        engine.reconcile(&config).await.unwrap();
+        let generation = engine.statuses.lock().unwrap()["relay-rule"].generation;
+        let report = engine.restart(&["relay-rule".into()]).await.unwrap();
+        assert_eq!(report.affected, ["relay-rule"]);
+        assert!(engine.statuses.lock().unwrap()["relay-rule"].generation > generation);
+        engine.shutdown().await;
+    }
 
     #[tokio::test]
     async fn metadata_changes_preserve_generation_and_shared_connection_identity() {

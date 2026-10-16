@@ -21,6 +21,41 @@ fn requests_accept_absent_revision_but_reject_invalid_revision_types() {
 }
 
 #[test]
+fn relay_forwards_carry_the_target_server_field_in_the_wire_contract() {
+    let relay = json!({
+        "id":"rule-1","name":"a-to-c","server_id":"source","kind":"relay",
+        "listen":"127.0.0.1:8080","target":"localhost:9000","target_server_id":"target"
+    });
+    let wire = json!({"api_version":API_VERSION,"request_id":"ui-1","command":{
+        "method":"create_forwards","params":{"forwards":[relay],"server":null,"target_server":null}}});
+    let request: Request = serde_json::from_value(wire).unwrap();
+    let Command::CreateForwards { forwards, .. } = request.command else {
+        panic!("expected create_forwards");
+    };
+    assert_eq!(forwards[0].tunnel.kind(), "relay");
+    assert_eq!(forwards[0].tunnel.target_server_id(), Some("target"));
+    // Legacy requests without the new optional fields still decode.
+    let legacy = json!({"method":"create_forwards","params":{"forwards":[
+        json!({"id":"r2","name":"web","server_id":"s","kind":"local","listen":"127.0.0.1:3000","target":"localhost:3000"})
+    ]}});
+    let command: Command = serde_json::from_value(legacy).unwrap();
+    assert!(matches!(
+        command,
+        Command::CreateForwards {
+            server: None,
+            target_server: None,
+            ..
+        }
+    ));
+    // A relay forward without its target server is a decode error, never a
+    // silently local-forwarded rule.
+    let broken = json!({"method":"create_forwards","params":{"forwards":[
+        json!({"id":"r3","name":"broken","server_id":"s","kind":"relay","listen":"127.0.0.1:3000","target":"localhost:3000"})
+    ]}});
+    assert!(serde_json::from_value::<Command>(broken).is_err());
+}
+
+#[test]
 fn grouped_control_wire_format_is_stable_for_other_ui_clients() {
     let wire = json!({"api_version":API_VERSION,"request_id":"ui-1","expected_revision":12,"command":{"method":"restart","params":{"selection":{"by":"group","value":"web"}}}});
     let request: Request = serde_json::from_value(wire.clone()).unwrap();

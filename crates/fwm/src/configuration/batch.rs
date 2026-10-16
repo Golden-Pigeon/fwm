@@ -5,7 +5,7 @@ use fwm_core::model::{Config, ForwardSpec, ServerProfile};
 pub(super) fn append_new(
     config: &mut Config,
     forwards: Vec<ForwardSpec>,
-    server: Option<ServerProfile>,
+    servers: Vec<ServerProfile>,
 ) -> Result<(), ApiError> {
     if forwards.is_empty() {
         return Err(ApiError::new(
@@ -13,12 +13,12 @@ pub(super) fn append_new(
             "a batch must contain at least one forward",
         ));
     }
-    if let Some(server) = server {
+    for server in servers {
         let references = forwards
             .iter()
-            .map(|forward| forward.server_id.clone())
-            .collect::<Vec<_>>();
-        insert_server(config, server, &references)?;
+            .flat_map(|forward| forward.referenced_server_ids())
+            .any(|id| id == server.id);
+        insert_server(config, server, references)?;
     }
     for forward in &forwards {
         if let Some(existing) = config
@@ -46,7 +46,7 @@ pub(super) fn append_new(
 pub(super) fn insert_server(
     config: &mut Config,
     server: ServerProfile,
-    references: &[String],
+    referenced: bool,
 ) -> Result<(), ApiError> {
     if let Some(existing) = config
         .servers
@@ -61,7 +61,7 @@ pub(super) fn insert_server(
             ),
         ));
     }
-    if !references.contains(&server.id) {
+    if !referenced {
         return Err(ApiError::new(
             "invalid_request",
             "a new server must be used by at least one selected forward",
@@ -74,7 +74,7 @@ pub(super) fn insert_server(
 pub(super) fn replace(
     config: &mut Config,
     forwards: Vec<ForwardSpec>,
-    server: Option<ServerProfile>,
+    servers: Vec<ServerProfile>,
 ) -> Result<(), ApiError> {
     if forwards.is_empty() {
         return Err(ApiError::new(
@@ -101,12 +101,12 @@ pub(super) fn replace(
             ));
         }
     }
-    if let Some(server) = server {
+    for server in servers {
         let references = forwards
             .iter()
-            .map(|forward| forward.server_id.clone())
-            .collect::<Vec<_>>();
-        insert_server(config, server, &references)?;
+            .flat_map(|forward| forward.referenced_server_ids())
+            .any(|id| id == server.id);
+        insert_server(config, server, references)?;
     }
     for forward in forwards {
         let existing = config

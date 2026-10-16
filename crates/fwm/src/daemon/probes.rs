@@ -190,6 +190,7 @@ mod tests {
             status: "trusted".into(),
         };
         let mut forward = ForwardStatus {
+            target_server: None,
             id: "forward".into(),
             name: "forward".into(),
             group: None,

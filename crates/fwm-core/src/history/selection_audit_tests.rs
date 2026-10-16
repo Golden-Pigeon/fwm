@@ -109,3 +109,69 @@ fn renamed_group_shorthand_uses_event_time_membership_and_includes_no_old_group_
     assert_eq!(short.len(), 1);
     assert_eq!(short[0].group.as_deref(), Some("renamed"));
 }
+
+#[test]
+fn relay_events_match_server_filters_on_either_endpoint() {
+    let mut source = ServerProfile::new("host-a");
+    source.id = "source-id".into();
+    source.host = Some("127.0.0.1".into());
+    let mut target = ServerProfile::new("host-c");
+    target.id = "target-id".into();
+    target.host = Some("127.0.0.2".into());
+    let relay = ForwardSpec {
+        id: "relay-id".into(),
+        name: "a-to-c".into(),
+        group: None,
+        server_id: source.id.clone(),
+        tunnel: Tunnel::Relay {
+            listen: "127.0.0.1:8080".parse().unwrap(),
+            target: "localhost:9000".parse().unwrap(),
+            target_server_id: target.id.clone(),
+        },
+        desired_state: DesiredState::Stopped,
+        connection_mode: ConnectionMode::Dedicated,
+        remote_cleanup: RemoteCleanup::Verified,
+    };
+    let config = Config {
+        servers: vec![source, target],
+        forwards: vec![relay.clone()],
+        ..Default::default()
+    };
+    let event = EngineEvent {
+        context: Some(crate::model::EventContext {
+            forward_name: Some("a-to-c".into()),
+            server_id: Some("source-id".into()),
+            server_name: Some("host-a".into()),
+            group: None,
+            target_server_id: Some("target-id".into()),
+            target_server_name: Some("host-c".into()),
+        }),
+        sequence: 1,
+        timestamp_ms: 0,
+        forward_id: Some("relay-id".into()),
+        server_id: Some("source-id".into()),
+        message: "Established".into(),
+    };
+    let entry = HistoryEntry::new("instance".into(), event.clone());
+    // Captured context records both endpoints for later queries.
+    assert_eq!(entry.target_server_id.as_deref(), Some("target-id"));
+    assert_eq!(entry.target_server_name.as_deref(), Some("host-c"));
+    let entries = vec![entry];
+    for selector in ["host-a", "host-c", "target-id"] {
+        let selected = HistoryFilter {
+            server: Some(selector.into()),
+            ..Default::default()
+        }
+        .select(&entries, Some(&config));
+        assert_eq!(selected.len(), 1, "{selector}");
+    }
+    let unrelated = HistoryFilter {
+        server: Some("unrelated".into()),
+        ..Default::default()
+    }
+    .select(&entries, Some(&config));
+    assert!(unrelated.is_empty());
+    // Relay events always carry both endpoints in their captured context;
+    // context-free records predate relay forwards entirely.
+    let _ = event;
+}

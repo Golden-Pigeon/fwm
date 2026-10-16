@@ -27,6 +27,12 @@ CLI file paths are resolved relative to the current directory; paths written in
 fwm's TOML are relative to its configuration directory. Existing final file
 symlinks are preserved so you can replace their targets.
 
+Two-server relay rules resolve two profiles in the same command; `--ssh-config`
+applies to both new aliases. If the endpoints need different SSH settings,
+create the two profiles first with `server add`, then reference them by name.
+Both endpoints keep their own host-key trust and jump-host chain; nothing is
+forwarded to the SSH agent on either server.
+
 ## Host trust and jump hosts
 
 ```sh

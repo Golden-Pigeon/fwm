@@ -17,6 +17,8 @@ fn event(instance: &str, sequence: u64, name: &str) -> HistoryEntry {
         server_id: Some("server-id".into()),
         server_name: Some("dev".into()),
         group: Some("web".into()),
+        target_server_id: None,
+        target_server_name: None,
     }
 }
 
@@ -203,6 +205,8 @@ fn captured_context_remains_authoritative_in_constructors_and_legacy_projection(
         server_id: Some("captured-server".into()),
         server_name: Some("captured-name".into()),
         group: None,
+        target_server_id: None,
+        target_server_name: None,
     });
     original.event.server_id = Some("wrong-server".into());
     let projected = HistoryEntry::new("old".into(), original.event.clone());

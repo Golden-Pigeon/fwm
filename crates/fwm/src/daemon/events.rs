@@ -143,6 +143,8 @@ impl EventJournal {
                 server_id: server_id.clone().or(labels.server_id.clone()),
                 server_name: labels.server_name,
                 group: labels.group,
+                target_server_id: labels.target_server_id,
+                target_server_name: labels.target_server_name,
             }),
             server_id: server_id.or(labels.server_id),
             sequence: 0,

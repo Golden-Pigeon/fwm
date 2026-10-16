@@ -191,7 +191,7 @@ LogLevel VERBOSE
             command = {"method": method}
             if params is not None:
                 command["params"] = params
-            request = {"api_version": 1, "request_id": str(uuid.uuid4()), "expected_revision": revision, "command": command}
+            request = {"api_version": 2, "request_id": str(uuid.uuid4()), "expected_revision": revision, "command": command}
             data = json.dumps(request).encode()
             writer.write(struct.pack(">I", len(data)) + data)
             await writer.drain()
@@ -269,6 +269,25 @@ LogLevel VERBOSE
             assert await reader.readexactly(11) == b"socks-works"
             writer.close()
             print("PASS real OpenSSH: local / remote / SOCKS5 forwarding", flush=True)
+
+            # Two-server relay: the listener lives on `test` and connections are
+            # bridged to a target resolved from `peer`. Verified cleanup (the
+            # relay default) drives the recovery helper protocol; dropping and
+            # retrying an in-flight lease request would leave a surplus reply
+            # that surfaces as "unexpected recovery helper output while idle".
+            await cli("server", "add", "peer", "--host", "127.0.0.1", "--user", ssh_user, "--port", str(server_port), "--identity", str(key), "--known-hosts", str(known_hosts), "--ssh-config", str(client_config))
+            await cli("server", "trust", "peer", "--fingerprint", fingerprint)
+            relay_port = free_port()
+            await cli("add", "relay-smoke", "--src-server", "test", "--src", str(relay_port), "--tgt-server", "peer", "--tgt", str(echo_port), "--wait", "--timeout", "20s")
+            await echo_test(relay_port)
+            await asyncio.sleep(1.5)
+
+            async def relay_settled():
+                return (await status())["relay-smoke"]["state"] == "established"
+
+            await eventually(relay_settled, description="relay stays established")
+            await cli("remove", "relay-smoke")
+            print("PASS two-server relay forwarding with verified cleanup", flush=True)
 
             await check_remote_dynamic(cli, rpc, status, eventually, remote_state,
                                        remote_socks_port, echo_port, local_port)

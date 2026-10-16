@@ -119,7 +119,7 @@ async fn apply_inner(
     let mut config = state.config.clone();
     match request.command {
         Command::Ping => Ok(
-            json!({"daemon_instance_id":state.instance,"version":env!("CARGO_PKG_VERSION"),"capabilities":["atomic_alias_add","verified_remote_cleanup","cli_ux_v3","cli_ux_v4","cli_ux_v5","atomic_status_view"]}),
+            json!({"daemon_instance_id":state.instance,"version":env!("CARGO_PKG_VERSION"),"capabilities":["atomic_alias_add","verified_remote_cleanup","cli_ux_v3","cli_ux_v4","cli_ux_v5","atomic_status_view","relay_forwards"]}),
         ),
         Command::GetConfig => encode(&config),
         Command::Status | Command::StatusView { .. } => {

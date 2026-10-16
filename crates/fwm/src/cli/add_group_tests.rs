@@ -15,7 +15,7 @@ fn create(config: &Config, flags: &[&str]) -> Result<AddPlan> {
         &args.ports,
         None,
     )?;
-    plan(config, &args, tunnels)
+    plan(config, &args, tunnels, Vec::new())
 }
 
 fn saved(plan: AddPlan) -> Config {
@@ -160,6 +160,8 @@ fn duplicate_ports_in_a_stopped_group_are_rejected_even_with_different_names() {
 
 #[test]
 fn group_options_do_not_weaken_explicit_server_or_direction_requirements() {
+    // clap still rejects a direction without --server or a relay pair before
+    // any runtime starts; --group cannot bypass the requirement.
     for flags in [
         vec!["fwm", "add", "--group", "web", "--local", "--port", "3000"],
         vec![

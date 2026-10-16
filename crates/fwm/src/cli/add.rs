@@ -16,16 +16,30 @@ pub async fn run(paths: &Paths, args: AddArgs, json_output: bool) -> Result<()> 
     if args.disabled && (args.wait || args.timeout.is_some()) {
         bail!("--wait cannot be combined with --disabled; --timeout also implies --wait");
     }
-    let tunnels = parse::tunnels(
-        args.local.as_deref(),
-        args.remote.as_deref(),
-        args.dynamic.as_deref(),
-        args.remote_dynamic.as_deref(),
-        &args.ports,
-        None,
-    )?;
+    let relay = args.src_server.is_some() || args.tgt_server.is_some();
+    let tunnels = if relay {
+        Vec::new()
+    } else {
+        parse::tunnels(
+            args.local.as_deref(),
+            args.remote.as_deref(),
+            args.dynamic.as_deref(),
+            args.remote_dynamic.as_deref(),
+            &args.ports,
+            None,
+        )?
+    };
+    let relay_specs = if relay {
+        parse::relays(
+            args.ports.src.as_deref(),
+            args.ports.tgt.as_deref(),
+            args.ports.port.as_deref(),
+        )?
+    } else {
+        Vec::new()
+    };
     let config = get_config(paths, false).await?;
-    let plan = plan(&config, &args, tunnels)?;
+    let plan = plan(&config, &args, tunnels, relay_specs)?;
     let ids: Vec<_> = plan
         .forwards
         .iter()
@@ -36,6 +50,7 @@ pub async fn run(paths: &Paths, args: AddArgs, json_output: bool) -> Result<()> 
         Command::CreateForwards {
             forwards: plan.forwards,
             server: plan.server,
+            target_server: plan.target_server,
         },
         Some(config.revision),
     )
@@ -59,6 +74,36 @@ pub async fn run(paths: &Paths, args: AddArgs, json_output: bool) -> Result<()> 
                 .config
                 .forward(id)
                 .expect("accepted forward exists in mutation reply");
+            if let Tunnel::Relay { .. } = forward.tunnel {
+                let source = reply
+                    .config
+                    .server(&forward.server_id)
+                    .expect("accepted relay has a source server");
+                let target = forward
+                    .tunnel
+                    .target_server_id()
+                    .and_then(|id| reply.config.server(id))
+                    .expect("accepted relay has a target server");
+                println!(
+                    "  {}  [{} > {} / {}]  source {}:{} -> target {}:{}",
+                    forward.name,
+                    source.name,
+                    target.name,
+                    forward.tunnel.kind(),
+                    source.name,
+                    compact(&forward.tunnel.listen().to_string()),
+                    target.name,
+                    compact(
+                        &forward
+                            .tunnel
+                            .target()
+                            .map(ToString::to_string)
+                            .unwrap_or_default()
+                    ),
+                );
+                cleanup::describe(forward);
+                continue;
+            }
             let server = reply
                 .config
                 .server(&forward.server_id)
@@ -89,12 +134,29 @@ pub async fn run(paths: &Paths, args: AddArgs, json_output: bool) -> Result<()> 
     Ok(())
 }
 
+/// Loopback endpoints read as bare ports; other addresses stay explicit.
+fn compact(endpoint: &str) -> &str {
+    endpoint
+        .rsplit_once(':')
+        .filter(|(host, _)| {
+            host.eq_ignore_ascii_case("localhost") || matches!(*host, "127.0.0.1" | "[::1]" | "::1")
+        })
+        .map(|(_, port)| port)
+        .unwrap_or(endpoint)
+}
+
 pub(super) struct AddPlan {
     pub forwards: Vec<ForwardSpec>,
     pub server: Option<ServerProfile>,
+    pub target_server: Option<ServerProfile>,
 }
 
-pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Result<AddPlan> {
+pub(super) fn plan(
+    config: &Config,
+    args: &AddArgs,
+    tunnels: Vec<Tunnel>,
+    relay_specs: Vec<parse::RelaySpec>,
+) -> Result<AddPlan> {
     let explicit_name = args.explicit_name.as_deref().or(args.name.as_deref());
     if let Some(name) = explicit_name {
         validate_name(name).map_err(anyhow::Error::msg)?;
@@ -102,11 +164,59 @@ pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Res
     if let Some(group) = &args.group {
         validate_name(group).map_err(anyhow::Error::msg)?;
     }
-    if tunnels.is_empty() {
+    let relay = args.src_server.is_some();
+    if !relay && args.server.is_none() {
+        bail!(
+            "--server is required; two-server relays instead need --src-server and --tgt-server together"
+        );
+    }
+    if relay && matches!(args.connection_mode, Some(super::args::Mode::Shared)) {
+        bail!(
+            "relay forwards do not support --connection-mode shared; both endpoints use rule-dedicated sessions"
+        );
+    }
+    let mut batch: Vec<Tunnel> = tunnels;
+    if relay {
+        batch = relay_specs
+            .into_iter()
+            .map(|spec| Tunnel::Relay {
+                listen: spec.listen,
+                target: spec.target,
+                target_server_id: String::new(),
+            })
+            .collect();
+    }
+    if batch.is_empty() {
         bail!("choose a forwarding direction and ports");
     }
-    let selected = server_selection::select(config, &args.server, args.ssh_config.as_deref())?;
-    let multiple = tunnels.len() > 1;
+    let multiple = batch.len() > 1;
+    let (selected_server, selected_target) = if relay {
+        let source = server_selection::select(
+            config,
+            args.src_server
+                .as_deref()
+                .expect("relay mode selects a source server"),
+            args.ssh_config.as_deref(),
+        )?;
+        let target = server_selection::select(
+            config,
+            args.tgt_server
+                .as_deref()
+                .expect("relay mode selects a target server"),
+            args.ssh_config.as_deref(),
+        )?;
+        (Some(source), Some(target))
+    } else {
+        (
+            Some(server_selection::select(
+                config,
+                args.server.as_deref().expect("validated above"),
+                args.ssh_config.as_deref(),
+            )?),
+            None,
+        )
+    };
+    let selected_server = selected_server.expect("always selected");
     let mut names = RandomNames::new(config, args.group.as_deref());
     let group = if let Some(group) = &args.group {
         Some(group.clone())
@@ -118,8 +228,8 @@ pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Res
     } else {
         None
     };
-    let mut forwards = Vec::with_capacity(tunnels.len());
-    for tunnel in tunnels {
+    let mut forwards = Vec::with_capacity(batch.len());
+    for tunnel in batch {
         let name = match explicit_name {
             Some(name) if multiple => format!("{name}-{}", tunnel.listen().port()),
             Some(name) => name.to_owned(),
@@ -138,17 +248,30 @@ pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Res
         if config.forward(&name).is_some() {
             bail!("forward {name:?} already exists; use `fwm edit` or choose another --name");
         }
-        let (connection_mode, remote_cleanup) = cleanup::effective(
-            &tunnel,
-            None,
-            Some(args.connection_mode),
-            args.remote_cleanup,
-        )?;
+        let (connection_mode, remote_cleanup) =
+            cleanup::effective(&tunnel, None, args.connection_mode, args.remote_cleanup)?;
+        let tunnel = match tunnel {
+            Tunnel::Relay {
+                listen,
+                target,
+                target_server_id: _,
+            } => Tunnel::Relay {
+                listen,
+                target,
+                target_server_id: selected_target
+                    .as_ref()
+                    .expect("relay selects a target server")
+                    .profile
+                    .id
+                    .clone(),
+            },
+            other => other,
+        };
         forwards.push(ForwardSpec {
             id: new_id(),
             name,
             group: group.clone(),
-            server_id: selected.profile.id.clone(),
+            server_id: selected_server.profile.id.clone(),
             tunnel,
             desired_state: if args.disabled {
                 DesiredState::Stopped
@@ -159,17 +282,28 @@ pub(super) fn plan(config: &Config, args: &AddArgs, tunnels: Vec<Tunnel>) -> Res
             remote_cleanup,
         });
     }
-    let server = selected.is_new.then_some(selected.profile);
+    let server = selected_server.is_new.then_some(selected_server.profile);
+    let target_server =
+        selected_target.and_then(|selected| selected.is_new.then_some(selected.profile));
     let mut candidate = config.clone();
     candidate.servers.extend(server.iter().cloned());
+    candidate.servers.extend(target_server.iter().cloned());
     candidate.forwards.extend(forwards.iter().cloned());
     candidate.validate().map_err(anyhow::Error::msg)?;
-    Ok(AddPlan { forwards, server })
+    Ok(AddPlan {
+        forwards,
+        server,
+        target_server,
+    })
 }
 
 #[cfg(test)]
 #[path = "add_group_tests.rs"]
 mod group_tests;
+
+#[cfg(test)]
+#[path = "add_relay_tests.rs"]
+mod relay_tests;
 
 #[cfg(test)]
 mod tests {
@@ -191,7 +325,7 @@ mod tests {
             &args.ports,
             None,
         )?;
-        plan(config, &args, tunnels)
+        plan(config, &args, tunnels, Vec::new())
     }
 
     #[test]

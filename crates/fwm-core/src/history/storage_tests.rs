@@ -315,6 +315,8 @@ fn maximum_escaped_ids_and_labels_fit_persisted_record() {
         server_id: Some(id.clone()),
         server_name: Some("s".repeat(100)),
         group: Some("g".repeat(100)),
+        target_server_id: None,
+        target_server_name: None,
     });
     record.server_id = Some(id);
     record.forward_name = Some("界".repeat(33));

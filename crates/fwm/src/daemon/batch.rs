@@ -68,6 +68,7 @@ mod tests {
                     fixture.rule("web-3001", 3001),
                 ],
                 server: None,
+                target_server: None,
             },
         );
         request.expected_revision = Some(1);
@@ -106,6 +107,7 @@ mod tests {
                     Command::CreateForwards {
                         forwards,
                         server: None,
+                        target_server: None,
                     },
                 ))
                 .await;
@@ -127,6 +129,7 @@ mod tests {
                 Command::CreateForwards {
                     forwards: vec![existing.clone()],
                     server: None,
+                    target_server: None,
                 },
             ))
             .await;
@@ -142,6 +145,7 @@ mod tests {
                 Command::CreateForwards {
                     forwards: vec![fixture.rule("new", 6001), overwrite],
                     server: None,
+                    target_server: None,
                 },
             ))
             .await;
@@ -166,6 +170,7 @@ mod tests {
             Command::CreateForwards {
                 forwards: forwards.clone(),
                 server: Some(server.clone()),
+                target_server: None,
             },
         );
         request.expected_revision = Some(1);
@@ -217,6 +222,7 @@ mod tests {
                     Command::CreateForwards {
                         forwards,
                         server: Some(server.clone()),
+                        target_server: None,
                     },
                 ))
                 .await;
@@ -247,6 +253,7 @@ mod tests {
                     Command::CreateForwards {
                         forwards: vec![forward],
                         server: Some(server),
+                        target_server: None,
                     },
                 ))
                 .await;
@@ -270,6 +277,7 @@ mod tests {
             Command::CreateForwards {
                 forwards: vec![forward],
                 server: Some(server),
+                target_server: None,
             },
         );
         request.expected_revision = Some(before.revision - 1);
