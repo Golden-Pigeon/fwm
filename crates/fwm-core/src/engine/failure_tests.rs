@@ -630,3 +630,88 @@ async fn unconfirmed_listener_cancellation_finishes_teardown_within_its_deadline
     );
     assert!(fixture.routes.lock().unwrap().is_empty());
 }
+
+#[tokio::test]
+async fn desynchronized_request_path_is_detected_and_the_session_rebuilt() {
+    // Reproduces the upstream pairing defect with its own public API: a
+    // keepalive registered without a reply permanently offsets the reply
+    // queue. Keepalive replies then keep the transport looking alive while a
+    // probe ping can never resolve. The probe must close the session so
+    // verified recovery rebuilds the listener on a fresh one.
+    let behaviour = Behaviour {
+        cancel_gate: Some(Arc::new(Notify::new())),
+        ..Default::default()
+    };
+    let mut fixture = Fixture::with_behaviour(behaviour).await;
+    let mut rule = test_rule();
+    rule.spec = lease_spec();
+    let policy = RetryPolicy {
+        connect_timeout_secs: 2,
+        ..Default::default()
+    };
+    let (session, _failures) = SessionControl::new(Some(cleanup(&fixture)));
+    let cancel = CancellationToken::new();
+    let mut events = rule.events.subscribe();
+    let worker = tokio::spawn(forward::run(
+        rule.clone(),
+        fixture.handle.clone(),
+        fixture.routes.clone(),
+        policy,
+        cancel.clone(),
+        session.clone(),
+    ));
+    let channel = fixture.session_channels.recv().await.unwrap();
+    let mut io = BufReader::new(channel.into_stream());
+    let mut line = String::new();
+    io.read_line(&mut line).await.unwrap();
+    let claim: Value = serde_json::from_str(&line).unwrap();
+    io.get_mut()
+        .write_all(format!("{}\n", claim_reply(&claim)).as_bytes())
+        .await
+        .unwrap();
+    line.clear();
+    io.read_line(&mut line).await.unwrap();
+    assert_eq!(
+        serde_json::from_str::<Value>(&line).unwrap()["op"],
+        "confirm"
+    );
+    io.get_mut()
+        .write_all(format!("{}\n", json!({"protocol":1,"op":"confirm","ok":true})).as_bytes())
+        .await
+        .unwrap();
+    wait_state(&rule, RuntimeState::Established).await;
+
+    // Block every global-request reply from this point: the server event loop
+    // stalls inside the gated handler, leaving the probe request unanswered
+    // while the transport itself stays open. The probe must retire the
+    // session so a fresh one can reclaim the listener.
+    tokio::time::timeout(Duration::from_secs(20), worker)
+        .await
+        .expect("the probe must retire the wedged session")
+        .unwrap();
+    let mut saw_probe = false;
+    while let Ok(event) = events.try_recv() {
+        if event.message.contains("request-path probe timed out") {
+            saw_probe = true;
+        }
+    }
+    assert!(
+        saw_probe,
+        "the wedged request path must be reported honestly"
+    );
+}
+
+#[tokio::test]
+async fn request_path_probe_helper_classifies_definitive_replies() {
+    let healthy = Fixture::new().await;
+    let wedged = super::super::request_path_wedged(&healthy.handle, Duration::from_secs(2)).await;
+    assert!(!wedged, "healthy fixture must answer the probe");
+
+    let behaviour = Behaviour {
+        cancel_gate: Some(Arc::new(Notify::new())),
+        ..Default::default()
+    };
+    let gated = Fixture::with_behaviour(behaviour).await;
+    let wedged = super::super::request_path_wedged(&gated.handle, Duration::from_secs(2)).await;
+    assert!(wedged, "gated replies must wedge the probe");
+}

@@ -27,6 +27,33 @@ use crate::{
 
 pub(super) type SshHandle = Arc<client::Handle<Handler>>;
 
+/// Probe cadence for established sessions: three times the connect timeout,
+/// bounded so production sessions probe at a calm rate.
+pub(super) fn request_path_probe_every(policy: &RetryPolicy) -> Duration {
+    Duration::from_secs((policy.connect_timeout_secs * 3).clamp(5, 30))
+}
+
+/// The SSH global-request reply queue pairs replies with pending requests by
+/// arrival order. That queue can silently desynchronize — an entry registered
+/// without a matching reply makes every later reply pop the wrong entry, so
+/// keepalive replies keep resetting the transport's liveness counter while
+/// real requests hang forever and the rule stays "connected" with a dead
+/// request path. The probe cancels a forward that was never registered: any
+/// definitive answer proves the queue is live, and it shares the exact
+/// request path used by listener control.
+pub(super) async fn request_path_wedged<H: client::Handler>(
+    handle: &Arc<client::Handle<H>>,
+    timeout: Duration,
+) -> bool {
+    match tokio::time::timeout(timeout, handle.cancel_tcpip_forward("127.0.0.1", 0)).await {
+        // A denial is a real reply from a live request path.
+        Ok(Ok(())) | Ok(Err(russh::Error::RequestDenied)) => false,
+        // A failed send means the session is already closing; tearing down is
+        // still the right response.
+        Ok(Err(_)) | Err(_) => true,
+    }
+}
+
 #[derive(Clone)]
 pub(super) struct Failure {
     pub(super) message: String,

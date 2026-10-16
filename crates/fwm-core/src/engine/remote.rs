@@ -4,7 +4,7 @@ use tokio::sync::Semaphore;
 use tokio_util::sync::CancellationToken;
 
 use super::{
-    connection::{SessionControl, SshHandle},
+    connection::{SessionControl, SshHandle, request_path_probe_every, request_path_wedged},
     forward::{RemoteRoute, RemoteRoutes, backoff},
     state::Rule,
 };
@@ -155,25 +155,44 @@ pub(super) async fn run(
             },
         );
         rule.update(RuntimeState::Established, None, 0, None);
-        if let Some(lease) = lease.as_mut() {
-            let failure = tokio::select! {
-                biased;
-                _ = cancel.cancelled() => None,
-                _ = session.disconnected.cancelled() => None,
-                error = lease.wait_closed() => Some(error),
+        let probe_every = request_path_probe_every(&policy);
+        let mut probe =
+            tokio::time::interval_at(tokio::time::Instant::now() + probe_every, probe_every);
+        probe.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+        loop {
+            let lease_closed = async {
+                match lease.as_mut() {
+                    Some(lease) => lease.wait_closed().await,
+                    None => std::future::pending().await,
+                }
             };
-            if let Some(error) = failure {
-                traffic.cancel();
-                remove_route(&routes, &key, &rule);
-                // The control channel can no longer confirm a release. Keep
-                // its record and let the next dedicated session recover it.
-                cleanup_failure(&rule, error, &cancel, &session).await;
-                return;
-            }
-        } else {
             tokio::select! {
-                _ = cancel.cancelled() => {},
-                _ = session.disconnected.cancelled() => {},
+                biased;
+                _ = cancel.cancelled() => break,
+                _ = session.disconnected.cancelled() => break,
+                error = lease_closed => {
+                    traffic.cancel();
+                    remove_route(&routes, &key, &rule);
+                    // The control channel can no longer confirm a release. Keep
+                    // its record and let the next dedicated session recover it.
+                    cleanup_failure(&rule, error, &cancel, &session).await;
+                    return;
+                }
+                _ = probe.tick() => {
+                    if request_path_wedged(&handle, timeout).await {
+                        rule.emit(
+                            "request-path probe timed out; closing this SSH session so a fresh one can rebuild the listener",
+                        );
+                        let _ = handle
+                            .disconnect(
+                                russh::Disconnect::ByApplication,
+                                "fwm request-path probe timed out",
+                                "en",
+                            )
+                            .await;
+                        break;
+                    }
+                }
             }
         }
     }
@@ -283,6 +302,14 @@ async fn cancel_listener(
                     );
                     tokio::select! {
                         _ = session.disconnected.cancelled() => return false,
+                        // The overall deadline bounds this retry delay too: a
+                        // fast-failing request must not defer it forever.
+                        _ = &mut deadline => {
+                            rule.emit(
+                                "remote listener cancellation was not confirmed in time; the lease record keeps the leftover listener recoverable",
+                            );
+                            return false;
+                        }
                         _ = tokio::time::sleep(Duration::from_secs(2)) => {},
                     }
                 }

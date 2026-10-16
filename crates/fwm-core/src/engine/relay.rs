@@ -21,7 +21,7 @@ use tokio_util::sync::CancellationToken;
 
 use super::{
     channels::open_direct,
-    connection::Failure,
+    connection::{Failure, request_path_probe_every, request_path_wedged},
     forward::backoff,
     remote::protocol_request,
     retry,
@@ -498,6 +498,10 @@ async fn established(
 
     let mut check = tokio::time::interval(Duration::from_millis(100));
     check.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
+    let probe_every = request_path_probe_every(policy);
+    let mut probe =
+        tokio::time::interval_at(tokio::time::Instant::now() + probe_every, probe_every);
+    probe.set_missed_tick_behavior(tokio::time::MissedTickBehavior::Skip);
     let outcome = loop {
         if cancel.is_cancelled() {
             break Outcome::DesiredChanged;
@@ -529,6 +533,15 @@ async fn established(
                 // Label-only edit: keep the established bridge untouched.
             }
             _ = check.tick() => {},
+            _ = probe.tick() => {
+                if request_path_wedged(&source, timeout).await {
+                    rule.emit(
+                        "relay request-path probe timed out; closing the source SSH session so a fresh coordinator can rebuild the listener",
+                    );
+                    source_gone.cancel();
+                    break Outcome::Retry("source request-path probe timed out".into());
+                }
+            }
             error = lease_closed => {
                 // The control channel can no longer confirm a release. Keep its
                 // record and let the next dedicated session recover it.
@@ -636,6 +649,14 @@ where
                     );
                     tokio::select! {
                         _ = source_gone.cancelled() => return false,
+                        // The overall deadline bounds this retry delay too: a
+                        // fast-failing request must not defer it forever.
+                        _ = &mut deadline => {
+                            rule.emit(
+                                "source listener cancellation was not confirmed in time; the lease record keeps the leftover listener recoverable",
+                            );
+                            return false;
+                        }
                         _ = tokio::time::sleep(Duration::from_secs(2)) => {},
                     }
                 }

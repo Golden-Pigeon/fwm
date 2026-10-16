@@ -81,6 +81,8 @@ python3 tests/native_linux_recovery.py --ssh-config /path/to/fixture/ssh_config 
 
 2026-10-16 未确认监听取消卡死拆除修复：规则显式 restart 时 worker 拆除先摘除路由再等待 `cancel-tcpip-forward` 确认；`protocol_request` 超时后按"保留补偿"语义无限等待回复或断连，`cancel_listener` 出错也无限重试。当服务器对 cancel 请求不回复（真实环境中观察到 russh 全局请求回复路由中断，daemon 日志有 `Unable to receive CancelTcpIpForward result` 记录）而 SSH 传输本身仍存活（keepalive 正常、helper 通道打开）时，worker 永不结束：规则永远停在 "waiting for previous listener to close"，远端监听仍在接受 TCP（路由已摘、通道被拒），表现为"代理失效但状态显示已连接"。修复：remote 与 relay 两处 `cancel_listener` 增加整体截止（一个请求超时的时长）——到时后如实发出"取消未及时确认、租约记录保留"事件并退出，由下一次 fenced claim 按所有权证据回收残留会话与监听器。回归：测试夹具 `Behaviour` 新增 `cancel_gate`（伪造服务器吞掉 cancel 回复），新增测试断言拆除在截止内完成、诚实事件发出且无修复时 8 秒超时失败（stash 对照验证）。真实验证：修复后重启 daemon，被卡 20 分钟的规则在新会话上恢复 established，经远端代理请求返回 204。
 
+2026-10-16 请求路径探针：进一步溯源确认 russh 0.63.3 客户端把全局请求回复按到达顺序与 open_global_requests FIFO 配对，而 Session::send_keepalive 无条件登记条目、不看 want_reply；一旦出现一条登记而无回复的条目（真实 OpenSSH 对 want_reply=0 的请求不回复），配对永久错位一位——后续 keepalive 回复持续清零存活计数（KeepaliveTimeout 永不触发），真实请求的回复被错位条目静默吞掉（无任何日志），会话表现为已连接但请求路径已死（正是 away 规则状态 connected、代理失效、cancel 无回复的机制；进程内测试服务器因对未知全局请求无条件回复而无法复现该错位）。缓解：established 的 remote 与 relay 规则周期性（3x 连接超时，截断到 5-30 秒）发送一次无副作用的 cancel-tcpip-forward 127.0.0.1:0 探针——任何确定性回复（成功或 RequestDenied）证明队列活着；限时无回复即断开本会话，由 verified 回收在新会话上重建监听器；cancel 截止同时约束重试间隔（biased select 下快速失败的请求否则会永远推迟截止分支）。回归：探针辅助函数健康/gate 两态单测；gate 场景下 established 规则在探针周期+截止内退役并发出如实事件。
+
 真实 SSH 测试仅使用临时密钥、临时配置和回环监听。要求 Unix、sshd 和 ssh-keygen；macOS 的嵌套沙箱可能阻止 sshd 初始化，需在允许该测试的环境执行。测试清理其创建的后台和 SSH 服务，不读取或更改默认 fwm 配置。
 
 Linux CI 另以 `sudo python3 tests/ipc_auth.py target/debug/fwm` 执行三项真实跨 UID IPC 回归。脚本只将子进程切换到未使用的临时数字 UID，不创建系统账户，所有配置和 socket 均属于独占测试目录；非 Linux 或非 root 运行会明确跳过。Windows 的管道所有者/DACL 回归由 Windows Rust 测试执行；交叉编译只验证类型和平台 API，不能替代原生测试。
