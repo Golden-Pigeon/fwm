@@ -239,3 +239,121 @@ fn restarting_one_profile_does_not_replace_another_daemon() {
     assert_eq!(second.config(), second_config);
     assert_eq!(second.persisted(), second_persisted);
 }
+
+/// A daemon one protocol generation behind refuses the newer protocol, but its
+/// Shutdown encoding is unchanged; replacement must retire it over v1 instead
+/// of failing the whole upgrade.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn restart_replaces_a_daemon_one_protocol_generation_behind() {
+    use fwm_api::codec::{read_frame, write_frame};
+    use fwm_api::protocol::{ApiError, Command, Request, Response};
+    use serde_json::json;
+
+    let cli = Cli::new();
+    let state = cli.directory.path().join("state");
+    fs::create_dir_all(&state).unwrap();
+    let socket = state.join("daemon.sock");
+    let listener = tokio::net::UnixListener::bind(&socket).unwrap();
+    let socket_path = socket.clone();
+
+    let legacy = tokio::spawn(async move {
+        // Presence probes connect without sending; any v2 request — Ping or
+        // Shutdown — gets the coherent refusal a v0.1 daemon really sends.
+        loop {
+            let (mut stream, _) = listener.accept().await.unwrap();
+            let Some(request): Option<Request> = read_frame(&mut stream).await.unwrap() else {
+                continue;
+            };
+            if request.api_version == 2 {
+                write_frame(
+                    &mut stream,
+                    &Response {
+                        api_version: 1,
+                        request_id: request.request_id.clone(),
+                        ok: false,
+                        data: serde_json::Value::Null,
+                        error: Some(ApiError {
+                            code: "version_mismatch".into(),
+                            message: "supported API version is 1".into(),
+                        }),
+                    },
+                )
+                .await
+                .unwrap();
+                continue;
+            }
+            assert_eq!(request.api_version, 1, "only Shutdown is downgraded");
+            assert!(matches!(request.command, Command::Shutdown));
+            write_frame(
+                &mut stream,
+                &Response {
+                    api_version: 1,
+                    request_id: request.request_id.clone(),
+                    ok: true,
+                    data: json!({}),
+                    error: None,
+                },
+            )
+            .await
+            .unwrap();
+            break;
+        }
+        drop(listener);
+        // Like a real daemon, retire together with the socket.
+        let _ = fs::remove_file(&socket_path);
+    });
+
+    cli.restart();
+    legacy.await.unwrap();
+    let response = cli.success(&["status"]);
+    assert_eq!(response["daemon_running"], true, "{response}");
+}
+
+/// A coherent daemon from a newer protocol is named as such and is never
+/// replaced; no second daemon may be started over its socket.
+#[tokio::test(flavor = "multi_thread", worker_threads = 2)]
+async fn restart_refuses_to_replace_a_newer_protocol_daemon() {
+    use fwm_api::codec::{read_frame, write_frame};
+    use fwm_api::protocol::{ApiError, Request, Response};
+
+    let cli = Cli::new();
+    let state = cli.directory.path().join("state");
+    fs::create_dir_all(&state).unwrap();
+    let socket = state.join("daemon.sock");
+    let listener = tokio::net::UnixListener::bind(&socket).unwrap();
+
+    let newer = tokio::spawn(async move {
+        loop {
+            let Ok((mut stream, _)) = listener.accept().await else {
+                continue;
+            };
+            let Some(request): Option<Request> = read_frame(&mut stream).await.unwrap() else {
+                continue;
+            };
+            write_frame(
+                &mut stream,
+                &Response {
+                    api_version: 3,
+                    request_id: request.request_id.clone(),
+                    ok: false,
+                    data: serde_json::Value::Null,
+                    error: Some(ApiError {
+                        code: "version_mismatch".into(),
+                        message: "supported API version is 3".into(),
+                    }),
+                },
+            )
+            .await
+            .unwrap();
+        }
+    });
+
+    let output = cli.output(&["daemon", "restart"]);
+    assert!(!output.status.success());
+    let stderr = String::from_utf8_lossy(&output.stderr);
+    assert!(stderr.contains("daemon_api_unsupported"), "{stderr}");
+    assert!(stderr.contains("upgrade fwm on this machine"), "{stderr}");
+    // The unreplaceable owner keeps its socket; no second daemon started.
+    assert!(socket.exists());
+    newer.abort();
+}

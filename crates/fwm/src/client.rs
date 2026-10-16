@@ -2,7 +2,7 @@
 use crate::platform::{background, ipc, service};
 use anyhow::{Context, Result, anyhow};
 use fwm_api::client::Client;
-use fwm_api::protocol::{Command, Request, Response};
+use fwm_api::protocol::{API_VERSION, Command, Request, Response};
 use fwm_core::{model::RemoteCleanup, paths::Paths};
 use serde::de::DeserializeOwned;
 use std::time::Duration;
@@ -92,6 +92,69 @@ pub async fn send(paths: &Paths, command: Command, revision: Option<u64>) -> Res
         )?;
     }
     exchange(paths, &request).await
+}
+
+/// Stop the daemon that owns this profile.
+///
+/// A daemon from the previous protocol generation cannot serve this client,
+/// but its Shutdown request is encoded exactly like ours, so replacement
+/// retires it over that one command instead of leaving it running. Every
+/// other request keeps hard version negotiation with its actionable
+/// upgrade error.
+pub async fn shutdown(paths: &Paths) -> Result<()> {
+    let request = Request::new(uuid::Uuid::new_v4().to_string(), Command::Shutdown);
+    let reply = shutdown_exchange(paths, &request).await?;
+    if reply.api_version == API_VERSION {
+        return confirmed(reply);
+    }
+    if reply.api_version != 1 {
+        return Err(ClientError {
+            code: "daemon_api_unsupported".into(),
+            message: format!(
+                "the running daemon speaks IPC API v{}, which this client can neither query nor replace; {}",
+                reply.api_version,
+                if reply.api_version > API_VERSION {
+                    "upgrade fwm on this machine".to_string()
+                } else {
+                    format!(
+                        "end that process manually, then run {}",
+                        crate::ssh_actions::command_line(paths, &["daemon", "start"])
+                    )
+                },
+            ),
+        }
+        .into());
+    }
+    // The daemon answered coherently on the previous generation; retire it
+    // over v1, whose Shutdown encoding is identical.
+    let mut legacy = request.clone();
+    legacy.api_version = 1;
+    confirmed(shutdown_exchange(paths, &legacy).await?)
+}
+
+async fn shutdown_exchange(paths: &Paths, request: &Request) -> Result<Response> {
+    let stream = ipc::connect(paths).await.context(
+        "daemon is not running or its private socket is unavailable; run `fwm daemon start`",
+    )?;
+    Client::new(stream)
+        .exchange(request)
+        .await
+        .context("exchanging daemon request")?
+        .context("daemon closed without a response")
+}
+
+fn confirmed(reply: Response) -> Result<()> {
+    if reply.ok {
+        return Ok(());
+    }
+    let error = reply
+        .error
+        .ok_or_else(|| anyhow!("daemon returned an error without details"))?;
+    Err(ClientError {
+        code: error.code,
+        message: error.message,
+    }
+    .into())
 }
 
 fn require_capability(response: &Response, paths: &Paths, capability: &str) -> Result<()> {

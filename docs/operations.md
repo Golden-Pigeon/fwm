@@ -86,7 +86,12 @@ leave rules in `needs attention`.
 
 After upgrading or moving the executable, run `fwm daemon restart`. It preserves
 saved running/stopped settings and refreshes managed service paths, keeping the
-existing login-enabled setting. It starts the daemon if it was stopped.
+existing login-enabled setting. It starts the daemon if it was stopped. A daemon
+from the previous IPC protocol generation is retired gracefully: its Shutdown
+request is encoded exactly like the current one, so `daemon stop` and
+`daemon restart` replace it without manual steps. A daemon reporting a newer,
+unknown protocol is never replaced or killed automatically; the error names the
+version and asks you to upgrade fwm first.
 
 `service uninstall` stops this instance's daemon and tunnels, then removes its
 login registration. It preserves saved rules and their requested states. They

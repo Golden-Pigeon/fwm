@@ -4,7 +4,6 @@ use crate::{
     platform::{background, service},
 };
 use anyhow::{Context, Result};
-use fwm_api::protocol::Command;
 use fwm_core::paths::Paths;
 use std::time::Duration;
 
@@ -70,7 +69,9 @@ impl Control for Native<'_> {
         client::presence(self.paths).await
     }
     async fn shutdown(&mut self) -> Result<()> {
-        tokio::time::timeout(Duration::from_secs(2), client::request(self.paths, Command::Shutdown))
+        // Bridges the previous protocol generation's Shutdown so upgrades can
+        // replace a running older daemon; see client::shutdown.
+        tokio::time::timeout(Duration::from_secs(2), client::shutdown(self.paths))
             .await.map_err(|_| client::ClientError { code:"daemon_unresponsive".into(), message:"the existing daemon did not acknowledge Shutdown; it may still process that request".into() })??;
         Ok(())
     }
