@@ -109,6 +109,7 @@ struct Behaviour {
     listen: Arc<Mutex<std::collections::VecDeque<bool>>>,
     listen_gate: Option<Arc<Notify>>,
     cancel: Arc<Mutex<std::collections::VecDeque<bool>>>,
+    cancel_gate: Option<Arc<Notify>>,
     listens: Arc<std::sync::atomic::AtomicUsize>,
     cancels: Arc<std::sync::atomic::AtomicUsize>,
 }
@@ -221,6 +222,9 @@ impl server::Handler for TestServer {
         self.behaviour
             .cancels
             .fetch_add(1, std::sync::atomic::Ordering::SeqCst);
+        if let Some(gate) = &self.behaviour.cancel_gate {
+            gate.notified().await;
+        }
         Ok(self
             .behaviour
             .cancel

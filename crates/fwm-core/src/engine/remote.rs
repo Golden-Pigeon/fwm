@@ -254,31 +254,44 @@ async fn cancel_listener(
     session: &SessionControl,
     timeout: Duration,
 ) -> bool {
-    // Retain every global request until its reply arrives or SSH is closed.
+    // A confirmation that never arrives must not wedge teardown. Bound the
+    // whole compensation, including protocol_request's retained future: the
+    // fenced lease record keeps an unconfirmed cancellation recoverable, and
+    // the next claim retires a leftover session by ownership proof.
+    let deadline = tokio::time::sleep(timeout);
+    tokio::pin!(deadline);
     loop {
-        match protocol_request(
-            handle.cancel_tcpip_forward(address.to_owned(), port),
-            rule,
-            cancel,
-            &session.disconnected,
-            timeout,
-            "cancelling remote listener",
-        )
-        .await
-        {
-            None => return false,
-            Some(Ok(())) => return true,
-            Some(Err(error)) => {
-                rule.update(
-                    RuntimeState::Stopping,
-                    Some(format!("remote cancellation not confirmed: {error}")),
-                    0,
-                    None,
-                );
-                tokio::select! {
-                    _ = session.disconnected.cancelled() => return false,
-                    _ = tokio::time::sleep(Duration::from_secs(2)) => {},
+        tokio::select! {
+            biased;
+            _ = session.disconnected.cancelled() => return false,
+            confirmed = protocol_request(
+                handle.cancel_tcpip_forward(address.to_owned(), port),
+                rule,
+                cancel,
+                &session.disconnected,
+                timeout,
+                "cancelling remote listener",
+            ) => match confirmed {
+                None => return false,
+                Some(Ok(())) => return true,
+                Some(Err(error)) => {
+                    rule.update(
+                        RuntimeState::Stopping,
+                        Some(format!("remote cancellation not confirmed: {error}")),
+                        0,
+                        None,
+                    );
+                    tokio::select! {
+                        _ = session.disconnected.cancelled() => return false,
+                        _ = tokio::time::sleep(Duration::from_secs(2)) => {},
+                    }
                 }
+            },
+            _ = &mut deadline => {
+                rule.emit(
+                    "remote listener cancellation was not confirmed in time; the lease record keeps the leftover listener recoverable",
+                );
+                return false;
             }
         }
     }

@@ -79,6 +79,8 @@ python3 tests/native_linux_recovery.py --ssh-config /path/to/fixture/ssh_config 
 
 2026-10-16 跨版本 daemon 替换修复：v0.2.0 CLI 无法停止运行中的 v0.1.x 后台 daemon——旧 daemon 对 v2 请求回复结构良好的 `version_mismatch` 失败，但客户端在 `Client::call` 把该回复当作"版本或请求 ID 不匹配"丢弃，停止流程放弃且建议的重试不可能成功（install.sh 升级路径因此失败）。先用 v0.1.1 真实二进制 + 临时 profile 完整复现，再修复：fwm-api `Client` 新增不钉扎版本的 `exchange`（仍校验 request_id），`client::shutdown` 据此识别旧代协议并仅对 Shutdown 走 v1 桥接（两代编码相同），其余命令保持硬协商与可操作的升级错误；未知更新版本明确报 `daemon_api_unsupported` 并拒绝自动替换。回归：`daemon_restart.rs` 新增两个集成测试（伪 v1 daemon 被按 v1 Shutdown 优雅替换且新 daemon 就绪；报 v3 的 daemon 被点名并保持不动）；全部 workspace 测试、fmt、clippy 通过；并用 v0.1.1 真实 daemon 验证修复后 restart/stop/start 循环干净。
 
+2026-10-16 未确认监听取消卡死拆除修复：规则显式 restart 时 worker 拆除先摘除路由再等待 `cancel-tcpip-forward` 确认；`protocol_request` 超时后按"保留补偿"语义无限等待回复或断连，`cancel_listener` 出错也无限重试。当服务器对 cancel 请求不回复（真实环境中观察到 russh 全局请求回复路由中断，daemon 日志有 `Unable to receive CancelTcpIpForward result` 记录）而 SSH 传输本身仍存活（keepalive 正常、helper 通道打开）时，worker 永不结束：规则永远停在 "waiting for previous listener to close"，远端监听仍在接受 TCP（路由已摘、通道被拒），表现为"代理失效但状态显示已连接"。修复：remote 与 relay 两处 `cancel_listener` 增加整体截止（一个请求超时的时长）——到时后如实发出"取消未及时确认、租约记录保留"事件并退出，由下一次 fenced claim 按所有权证据回收残留会话与监听器。回归：测试夹具 `Behaviour` 新增 `cancel_gate`（伪造服务器吞掉 cancel 回复），新增测试断言拆除在截止内完成、诚实事件发出且无修复时 8 秒超时失败（stash 对照验证）。真实验证：修复后重启 daemon，被卡 20 分钟的规则在新会话上恢复 established，经远端代理请求返回 204。
+
 真实 SSH 测试仅使用临时密钥、临时配置和回环监听。要求 Unix、sshd 和 ssh-keygen；macOS 的嵌套沙箱可能阻止 sshd 初始化，需在允许该测试的环境执行。测试清理其创建的后台和 SSH 服务，不读取或更改默认 fwm 配置。
 
 Linux CI 另以 `sudo python3 tests/ipc_auth.py target/debug/fwm` 执行三项真实跨 UID IPC 回归。脚本只将子进程切换到未使用的临时数字 UID，不创建系统账户，所有配置和 socket 均属于独占测试目录；非 Linux 或非 root 运行会明确跳过。Windows 的管道所有者/DACL 回归由 Windows Rust 测试执行；交叉编译只验证类型和平台 API，不能替代原生测试。

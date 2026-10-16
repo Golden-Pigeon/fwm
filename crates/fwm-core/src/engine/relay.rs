@@ -607,32 +607,44 @@ async fn cancel_listener<H>(
 where
     H: client::Handler,
 {
+    // A confirmation that never arrives must not wedge teardown; see the
+    // matching bound in remote.rs cancel_listener.
+    let deadline = tokio::time::sleep(timeout);
+    tokio::pin!(deadline);
     loop {
-        match protocol_request(
-            handle.cancel_tcpip_forward(address.to_owned(), port),
-            rule,
-            cancel,
-            source_gone,
-            timeout,
-            "cancelling source listener",
-        )
-        .await
-        {
-            None => return false,
-            Some(Ok(())) => return true,
-            Some(Err(error)) => {
-                rule.update(
-                    RuntimeState::Stopping,
-                    Some(format!(
-                        "source listener cancellation not confirmed: {error}"
-                    )),
-                    0,
-                    None,
-                );
-                tokio::select! {
-                    _ = source_gone.cancelled() => return false,
-                    _ = tokio::time::sleep(Duration::from_secs(2)) => {},
+        tokio::select! {
+            biased;
+            _ = source_gone.cancelled() => return false,
+            confirmed = protocol_request(
+                handle.cancel_tcpip_forward(address.to_owned(), port),
+                rule,
+                cancel,
+                source_gone,
+                timeout,
+                "cancelling source listener",
+            ) => match confirmed {
+                None => return false,
+                Some(Ok(())) => return true,
+                Some(Err(error)) => {
+                    rule.update(
+                        RuntimeState::Stopping,
+                        Some(format!(
+                            "source listener cancellation not confirmed: {error}"
+                        )),
+                        0,
+                        None,
+                    );
+                    tokio::select! {
+                        _ = source_gone.cancelled() => return false,
+                        _ = tokio::time::sleep(Duration::from_secs(2)) => {},
+                    }
                 }
+            },
+            _ = &mut deadline => {
+                rule.emit(
+                    "source listener cancellation was not confirmed in time; the lease record keeps the leftover listener recoverable",
+                );
+                return false;
             }
         }
     }

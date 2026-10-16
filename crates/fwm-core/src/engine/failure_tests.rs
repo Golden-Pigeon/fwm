@@ -563,3 +563,70 @@ async fn unexpected_idle_helper_output_is_a_protocol_failure() {
         CleanupError::Protocol(_)
     ));
 }
+
+#[tokio::test]
+async fn unconfirmed_listener_cancellation_finishes_teardown_within_its_deadline() {
+    // A server that never answers cancel-tcpip-forward must not wedge the
+    // worker forever: the bounded compensation leaves the lease record in
+    // place and lets the next fenced claim recover the leftover listener.
+    let behaviour = Behaviour {
+        cancel_gate: Some(Arc::new(Notify::new())),
+        ..Default::default()
+    };
+    let cancels = behaviour.cancels.clone();
+    let mut fixture = Fixture::with_behaviour(behaviour).await;
+    let mut rule = test_rule();
+    rule.spec = lease_spec();
+    let policy = RetryPolicy {
+        connect_timeout_secs: 2,
+        ..Default::default()
+    };
+    let (session, _failures) = SessionControl::new(Some(cleanup(&fixture)));
+    let cancel = CancellationToken::new();
+    let mut events = rule.events.subscribe();
+    let worker = tokio::spawn(forward::run(
+        rule.clone(),
+        fixture.handle.clone(),
+        fixture.routes.clone(),
+        policy,
+        cancel.clone(),
+        session.clone(),
+    ));
+    let channel = fixture.session_channels.recv().await.unwrap();
+    let mut io = BufReader::new(channel.into_stream());
+    let mut line = String::new();
+    io.read_line(&mut line).await.unwrap();
+    let claim: Value = serde_json::from_str(&line).unwrap();
+    assert_eq!(claim["op"], "claim");
+    io.get_mut()
+        .write_all(format!("{}\n", claim_reply(&claim)).as_bytes())
+        .await
+        .unwrap();
+    line.clear();
+    io.read_line(&mut line).await.unwrap();
+    let confirm: Value = serde_json::from_str(&line).unwrap();
+    assert_eq!(confirm["op"], "confirm");
+    io.get_mut()
+        .write_all(format!("{}\n", json!({"protocol":1,"op":"confirm","ok":true})).as_bytes())
+        .await
+        .unwrap();
+    wait_state(&rule, RuntimeState::Established).await;
+
+    cancel.cancel();
+    tokio::time::timeout(Duration::from_secs(8), worker)
+        .await
+        .expect("teardown must finish even without a cancellation reply")
+        .unwrap();
+    assert!(cancels.load(std::sync::atomic::Ordering::SeqCst) >= 1);
+    let mut saw_unconfirmed = false;
+    while let Ok(event) = events.try_recv() {
+        if event.message.contains("was not confirmed in time") {
+            saw_unconfirmed = true;
+        }
+    }
+    assert!(
+        saw_unconfirmed,
+        "the unconfirmed cancellation must be reported honestly"
+    );
+    assert!(fixture.routes.lock().unwrap().is_empty());
+}
