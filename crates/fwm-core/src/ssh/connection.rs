@@ -27,12 +27,11 @@ where
 {
     let server = resolve(profile)?;
     let seconds = policy.connect_timeout_secs.max(1);
-    let authenticating = Arc::new(AtomicBool::new(false));
+    let waiting_for_agent = AtomicBool::new(false);
     tokio::time::timeout(Duration::from_secs(seconds), async {
-        let stream = build_transport(profile, &server, policy, &authenticating).await?;
+        let stream = build_transport(profile, &server, policy, &waiting_for_agent).await?;
         let mut handle = client::connect_stream(client_config(policy), stream, handler).await?;
-        authenticating.store(true, Ordering::Relaxed);
-        if let Err(error) = authenticate(&mut handle, &server).await {
+        if let Err(error) = authenticate(&mut handle, &server, &waiting_for_agent).await {
             let _ = handle
                 .disconnect(
                     russh::Disconnect::ByApplication,
@@ -45,7 +44,7 @@ where
         Ok(handle)
     })
     .await
-    .map_err(|_| timeout_error(seconds, &authenticating))?
+    .map_err(|_| timeout_error(seconds, &waiting_for_agent))?
 }
 
 /// Verify trust and authentication without opening forwarding listeners.
@@ -101,9 +100,9 @@ async fn inspect_key_at(
         server
     };
     let seconds = policy.connect_timeout_secs.max(1);
-    let authenticating = Arc::new(AtomicBool::new(false));
+    let waiting_for_agent = AtomicBool::new(false);
     tokio::time::timeout(Duration::from_secs(seconds), async {
-        let stream = transport_through(profile, &hops, &server, policy, &authenticating).await?;
+        let stream = transport_through(profile, &hops, &server, policy, &waiting_for_agent).await?;
         let key = Arc::new(Mutex::new(None));
         let handler = InspectHandler {
             server,
@@ -125,13 +124,13 @@ async fn inspect_key_at(
         Ok(info)
     })
     .await
-    .map_err(|_| timeout_error(seconds, &authenticating))?
+    .map_err(|_| timeout_error(seconds, &waiting_for_agent))?
 }
 
-fn timeout_error(seconds: u64, authenticating: &AtomicBool) -> SshError {
-    if authenticating.load(Ordering::Relaxed) {
+fn timeout_error(seconds: u64, waiting_for_agent: &AtomicBool) -> SshError {
+    if waiting_for_agent.load(Ordering::Relaxed) {
         SshError::Authentication(format!(
-            "authentication/agent did not finish within {seconds}s; unlock or authorize the key before retrying"
+            "SSH agent did not finish within {seconds}s; unlock or authorize the key before retrying"
         ))
     } else {
         SshError::Timeout(seconds)
@@ -156,11 +155,11 @@ async fn build_transport(
     profile: &ServerProfile,
     target: &ResolvedServer,
     policy: &RetryPolicy,
-    authenticating: &AtomicBool,
+    waiting_for_agent: &AtomicBool,
 ) -> Result<BoxTransport, SshError> {
     let mut hops = Vec::new();
     expand_hops(profile, target, &mut Vec::new(), &mut hops)?;
-    transport_through(profile, &hops, target, policy, authenticating).await
+    transport_through(profile, &hops, target, policy, waiting_for_agent).await
 }
 
 async fn transport_through(
@@ -168,7 +167,7 @@ async fn transport_through(
     hops: &[ResolvedServer],
     target: &ResolvedServer,
     policy: &RetryPolicy,
-    authenticating: &AtomicBool,
+    waiting_for_agent: &AtomicBool,
 ) -> Result<BoxTransport, SshError> {
     if hops.is_empty() {
         return tcp(&target.host, target.port).await;
@@ -186,11 +185,9 @@ async fn transport_through(
         )
         .await
         .map_err(|error| hop_error(profile, index, hop, error))?;
-        authenticating.store(true, Ordering::Relaxed);
-        authenticate(&mut handle, hop)
+        authenticate(&mut handle, hop, waiting_for_agent)
             .await
             .map_err(|error| hop_error(profile, index, hop, error))?;
-        authenticating.store(false, Ordering::Relaxed);
         let next = hops.get(index + 1).unwrap_or(target);
         let channel = handle
             .channel_open_direct_tcpip(&next.host, u32::from(next.port), "127.0.0.1", 0)

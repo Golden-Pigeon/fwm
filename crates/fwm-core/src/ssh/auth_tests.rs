@@ -420,6 +420,32 @@ mod unix {
     }
 
     #[tokio::test]
+    async fn stalled_agent_signature_still_requires_attention() {
+        let key = ed25519();
+        let server = Fixture::new(vec![key.public_key().clone()], None, None).await;
+        let agent = Agent::new(
+            server.directory.path(),
+            vec![Identity {
+                behavior: Behavior::Stall,
+                ..Identity::key(key)
+            }],
+            false,
+        )
+        .await;
+        server.configure(Some(&agent.path), false);
+        let policy = crate::model::RetryPolicy {
+            connect_timeout_secs: 1,
+            ..Default::default()
+        };
+        let error = crate::ssh::check_connection(&server.profile, &policy)
+            .await
+            .unwrap_err();
+        attention(error, "SSH agent did not finish");
+        assert_eq!(agent.signed.lock().unwrap().len(), 1);
+        assert!(server.observations.lock().unwrap().authenticated.is_empty());
+    }
+
+    #[tokio::test]
     async fn agent_signing_failure_malformed_response_and_disconnect_report_attention() {
         for behavior in [Behavior::Refuse, Behavior::Malformed, Behavior::Disconnect] {
             let key = ed25519();

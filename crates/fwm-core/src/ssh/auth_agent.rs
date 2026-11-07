@@ -21,6 +21,7 @@ pub enum Behavior {
     Malformed,
     Corrupt,
     Disconnect,
+    Stall,
 }
 
 #[derive(Clone)]
@@ -135,6 +136,7 @@ async fn serve(
                         response.push(5)
                     }
                     Behavior::Disconnect => return Ok(()),
+                    Behavior::Stall => std::future::pending::<()>().await,
                     Behavior::Malformed => response.extend_from_slice(&[14, 0, 0, 0, 1, 0]),
                     Behavior::Sign | Behavior::Corrupt | Behavior::RefuseOnce => {
                         let hash = match flags {

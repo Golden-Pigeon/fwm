@@ -1,5 +1,5 @@
-//! Local certificate signing with the server's negotiated RSA hash algorithm.
-use std::sync::Arc;
+//! Certificate signing with negotiated RSA hashes and local-agent activity tracking.
+use std::sync::{Arc, atomic::AtomicBool};
 
 use russh::keys::{
     agent::AgentIdentity,
@@ -8,6 +8,28 @@ use russh::keys::{
 };
 
 pub(super) struct LocalSigner(pub Arc<PrivateKey>);
+
+pub(super) struct AgentSigner<'a> {
+    pub agent: &'a mut super::DynamicAgent,
+    pub pending: &'a AtomicBool,
+}
+
+impl russh::Signer for AgentSigner<'_> {
+    type Error = russh::AgentAuthError;
+
+    async fn auth_sign(
+        &mut self,
+        identity: &AgentIdentity,
+        hash: Option<HashAlg>,
+        message: Vec<u8>,
+    ) -> Result<Vec<u8>, Self::Error> {
+        super::agent_request(
+            self.pending,
+            russh::Signer::auth_sign(self.agent, identity, hash, message),
+        )
+        .await
+    }
+}
 
 impl russh::Signer for LocalSigner {
     type Error = russh::AgentAuthError;

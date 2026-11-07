@@ -1,4 +1,11 @@
-use std::{path::PathBuf, sync::Arc};
+use std::{
+    future::Future,
+    path::PathBuf,
+    sync::{
+        Arc,
+        atomic::{AtomicBool, Ordering},
+    },
+};
 
 use russh::{
     client,
@@ -28,6 +35,7 @@ mod tests;
 pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
     handle: &mut client::Handle<H>,
     server: &ResolvedServer,
+    waiting_for_agent: &AtomicBool,
 ) -> Result<(), SshError> {
     let mut explanations = Vec::new();
     let mut permitted_agent_keys = Vec::new();
@@ -91,9 +99,8 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
                     &mut signer::LocalSigner(key.clone()),
                 )
                 .await
-                .map_err(|error| {
-                    SshError::Authentication(format!("certificate signing failed: {error}"))
-                })?;
+                .map_err(|error| signing_error("certificate", error))?;
+            check_transport(handle, &result)?;
             if result.success() {
                 return Ok(());
             }
@@ -112,6 +119,7 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
         let result = handle
             .authenticate_publickey(&server.user, PrivateKeyWithHashAlg::new(key, hash))
             .await?;
+        check_transport(handle, &result)?;
         if result.success() {
             return Ok(());
         }
@@ -120,9 +128,9 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
             result,
         ));
     }
-    match open_agent(server).await {
+    match agent_request(waiting_for_agent, open_agent(server)).await {
         Ok(Some(mut agent)) => {
-            let identities = match agent.request_identities().await {
+            let identities = match agent_request(waiting_for_agent, agent.request_identities()).await {
                 Ok(identities) => {
                     if identities.is_empty() {
                         explanations.push("SSH agent returned no identities".into());
@@ -163,10 +171,14 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
                 if matches!(identity, AgentIdentity::PublicKey { .. }) {
                     attempted.push(public_key);
                 }
+                let mut signer = signer::AgentSigner {
+                    agent: &mut agent,
+                    pending: waiting_for_agent,
+                };
                 let result = match identity {
                     AgentIdentity::PublicKey { key, .. } => {
                         handle
-                            .authenticate_publickey_with(&server.user, key, hash, &mut agent)
+                            .authenticate_publickey_with(&server.user, key, hash, &mut signer)
                             .await
                     }
                     AgentIdentity::Certificate { certificate, .. } => {
@@ -175,22 +187,15 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
                                 &server.user,
                                 certificate,
                                 hash,
-                                &mut agent,
+                                &mut signer,
                             )
                             .await
                     }
                 };
-                match result {
-                    Ok(result) if result.success() => return Ok(()),
-                    Ok(_) => {}
-                    // Russh is still waiting for the requested signature after
-                    // signer failure. Reusing this session for another key
-                    // would hang; let the caller discard it with this reason.
-                    Err(e) => {
-                        return Err(SshError::Authentication(format!(
-                            "agent signing failed: {e}; unlock or authorize the key before retrying"
-                        )));
-                    }
+                let result = result.map_err(|error| signing_error("agent", error))?;
+                check_transport(handle, &result)?;
+                if result.success() {
+                    return Ok(());
                 }
             }
         }
@@ -206,6 +211,44 @@ pub(super) async fn authenticate<H: client::Handler<Error = SshError>>(
         server.host,
         explanations.join("; ")
     )))
+}
+
+// Track only local agent I/O, not the surrounding wait for an SSH server reply.
+// On cancellation the flag deliberately stays set so the outer timeout can
+// distinguish a stalled agent from an interrupted network authentication.
+async fn agent_request<T>(pending: &AtomicBool, request: impl Future<Output = T>) -> T {
+    pending.store(true, Ordering::Relaxed);
+    let result = request.await;
+    pending.store(false, Ordering::Relaxed);
+    result
+}
+
+fn check_transport<H: client::Handler>(
+    handle: &client::Handle<H>,
+    result: &client::AuthResult,
+) -> Result<(), SshError> {
+    // Russh represents a closed authentication reply channel as AuthFailure
+    // with no remaining methods. That is not a server rejection of our key.
+    if matches!(result, client::AuthResult::Failure {
+        remaining_methods,
+        partial_success: false,
+    } if remaining_methods.is_empty())
+        && handle.is_closed()
+    {
+        return Err(russh::Error::Disconnect.into());
+    }
+    Ok(())
+}
+
+fn signing_error(source: &str, error: russh::AgentAuthError) -> SshError {
+    match error {
+        russh::AgentAuthError::Send(_) => russh::Error::SendError.into(),
+        // A failed signer leaves russh waiting for a signature. Discard the
+        // session rather than attempting another key on the incomplete request.
+        russh::AgentAuthError::Key(error) => SshError::Authentication(format!(
+            "{source} signing failed: {error}; unlock or authorize the key before retrying"
+        )),
+    }
 }
 
 fn identity_failure(identity: &str, result: client::AuthResult) -> String {

@@ -1,9 +1,12 @@
 use super::{CleanupContext, CleanupError, context::Claim};
 use crate::model::ForwardSpec;
-use russh::{Channel, ChannelMsg, ChannelStream, client};
+use russh::{Channel, ChannelMsg, client};
 use serde_json::{Value, json};
 use std::{sync::Arc, time::Duration};
-use tokio::io::{AsyncBufReadExt, AsyncWriteExt, BufReader};
+
+#[path = "helper_channel.rs"]
+mod helper_channel;
+use helper_channel::HelperChannel;
 
 // Native helper artifacts are uploaded over the dedicated SSH connection.
 // Keeping the bytes in the client means the server needs no Python, compiler,
@@ -17,7 +20,7 @@ const MAX_REPLY: usize = 32 * 1024;
 /// Dropping it deliberately does not remove ownership: an interrupted close may
 /// leave sshd holding the port, and the next fenced claim must still find it.
 pub struct RemoteLease {
-    io: BufReader<ChannelStream<client::Msg>>,
+    channel: HelperChannel,
     claim: Claim,
     timeout: Duration,
     reclaimed: bool,
@@ -37,10 +40,8 @@ impl RemoteLease {
     {
         let claim = context.reserve(spec)?;
         let channel = open_session(handle, &claim, timeout).await?;
-        let mut owned = OwnedChannel(Some(channel));
-        let stream = owned.take().into_stream();
         let mut lease = Self {
-            io: BufReader::new(stream),
+            channel,
             claim,
             timeout,
             reclaimed: false,
@@ -88,14 +89,7 @@ impl RemoteLease {
     /// unexpected helper exit must not leave an apparently healthy unmanaged
     /// session waiting until the next unrelated network failure.
     pub async fn wait_closed(&mut self) -> CleanupError {
-        match self.io.fill_buf().await {
-            Ok([]) => CleanupError::Remote {
-                code: "helper_disconnected".into(),
-                message: "registered recovery helper exited unexpectedly".into(),
-            },
-            Ok(_) => CleanupError::Protocol("unexpected recovery helper output while idle".into()),
-            Err(error) => CleanupError::Io(error),
-        }
+        self.channel.wait_closed(self.timeout).await
     }
 
     pub async fn release(&mut self) -> Result<(), CleanupError> {
@@ -104,7 +98,7 @@ impl RemoteLease {
         }
         self.request(self.command("release"), "release").await?;
         self.released = true;
-        let _ = self.io.get_mut().shutdown().await;
+        let _ = self.channel.eof().await;
         Ok(())
     }
 
@@ -115,35 +109,46 @@ impl RemoteLease {
 
     async fn request(&mut self, request: Value, op: &'static str) -> Result<Value, CleanupError> {
         let timeout = self.timeout;
-        tokio::time::timeout(timeout, async {
-            let mut line = serde_json::to_vec(&request).map_err(|e| CleanupError::Protocol(e.to_string()))?;
+        let result = tokio::time::timeout(timeout, async {
+            let mut line =
+                serde_json::to_vec(&request).map_err(|e| CleanupError::Protocol(e.to_string()))?;
             line.push(b'\n');
-            self.io.get_mut().write_all(&line).await?;
-            self.io.get_mut().flush().await?;
-            let mut reply = Vec::new();
-            loop {
-                let available = self.io.fill_buf().await?;
-                if available.is_empty() {
-                    return Err(CleanupError::Remote { code:"helper_unavailable".into(), message:"native recovery helper ended without a result; verify command execution and native process-inspection permissions on the server".into() });
-                }
-                let count = available.iter().position(|b| *b == b'\n').map_or(available.len(), |pos| pos+1);
-                if reply.len()+count > MAX_REPLY { return Err(CleanupError::Protocol("helper response exceeds 32 KiB".into())); }
-                reply.extend_from_slice(&available[..count]);
-                self.io.consume(count);
-                if reply.last() == Some(&b'\n') { break; }
+            if let Err(error) = self.channel.send(line).await {
+                let failure = self.channel.wait_closed(timeout).await;
+                return Err(if failure.needs_attention() {
+                    failure
+                } else {
+                    error
+                });
             }
-            let value: Value = serde_json::from_slice(&reply).map_err(|e| CleanupError::Protocol(format!("invalid helper JSON: {e}")))?;
-            if value.get("protocol").and_then(Value::as_u64) != Some(1) || value.get("op").and_then(Value::as_str) != Some(op) {
-                return Err(CleanupError::Protocol("unexpected helper protocol/operation".into()));
+            let reply = self.channel.read_reply(op).await?;
+            let value: Value = serde_json::from_slice(&reply)
+                .map_err(|e| CleanupError::Protocol(format!("invalid helper JSON: {e}")))?;
+            if value.get("protocol").and_then(Value::as_u64) != Some(1)
+                || value.get("op").and_then(Value::as_str) != Some(op)
+            {
+                return Err(CleanupError::Protocol(
+                    "unexpected helper protocol/operation".into(),
+                ));
             }
             if value.get("ok").and_then(Value::as_bool) != Some(true) {
                 return Err(CleanupError::Remote {
-                    code:value.get("code").and_then(Value::as_str).unwrap_or("unknown").into(),
-                    message:value.get("message").and_then(Value::as_str).unwrap_or("helper rejected operation").into(),
+                    code: value
+                        .get("code")
+                        .and_then(Value::as_str)
+                        .unwrap_or("unknown")
+                        .into(),
+                    message: value
+                        .get("message")
+                        .and_then(Value::as_str)
+                        .unwrap_or("helper rejected operation")
+                        .into(),
                 });
             }
             Ok(value)
-        }).await.map_err(|_| CleanupError::Timeout { operation:op })?
+        })
+        .await;
+        result.unwrap_or_else(|_| Err(self.channel.timeout_error(op)))
     }
 }
 
@@ -187,8 +192,9 @@ async fn command_result(
     channel: &mut OwnedChannel,
     timeout: Duration,
     operation: &'static str,
+    startup_failure: &mut Option<CleanupError>,
 ) -> Result<CommandResult, CleanupError> {
-    tokio::time::timeout(timeout, async {
+    let result = tokio::time::timeout(timeout, async {
         let mut stdout = Vec::new();
         let mut stderr = Vec::new();
         let mut exit_status = None;
@@ -231,10 +237,9 @@ async fn command_result(
                     return Ok(CommandResult {
                         stdout,
                         stderr,
-                        exit_status: exit_status.ok_or_else(|| {
-                            CleanupError::Protocol(format!(
-                                "{operation} closed without an exit status"
-                            ))
+                        exit_status: exit_status.ok_or_else(|| CleanupError::Remote {
+                            code: "helper_disconnected".into(),
+                            message: format!("{operation} closed without an exit status"),
                         })?,
                     });
                 }
@@ -243,31 +248,47 @@ async fn command_result(
                 Some(ChannelMsg::Eof) => {}
                 _ => {}
             }
+            if let Some(status) = exit_status.filter(|status| *status != 0) {
+                // Keep evidence outside this future: the overall startup
+                // deadline can cancel us while we collect late stderr/close.
+                *startup_failure = Some(CleanupError::Remote {
+                    code: "helper_unavailable".into(),
+                    message: format!(
+                        "{operation} exited with status {status}: {}",
+                        String::from_utf8_lossy(&stderr).trim()
+                    ),
+                });
+            }
         }
     })
-    .await
-    .map_err(|_| CleanupError::Timeout { operation })?
+    .await;
+    result.unwrap_or_else(|_| {
+        Err(startup_failure
+            .take()
+            .unwrap_or(CleanupError::Timeout { operation }))
+    })
 }
 
 async fn probe_remote_command<H>(
     handle: Arc<client::Handle<H>>,
     command: &str,
     timeout: Duration,
+    startup_failure: &mut Option<CleanupError>,
 ) -> Result<(bool, String), CleanupError>
 where
     H: client::Handler + Send + 'static,
 {
     let channel = open_session_raw(handle, timeout).await?;
     let mut owned = OwnedChannel(Some(channel));
-    owned
-        .channel()
-        .exec(true, command)
-        .await
-        .map_err(|_| CleanupError::Remote {
-            code: "exec_denied".into(),
-            message: "SSH server rejected remote platform detection".into(),
-        })?;
-    let result = command_result(&mut owned, timeout, "remote platform detection").await?;
+    owned.channel().exec(true, command).await?;
+    let result = command_result(
+        &mut owned,
+        timeout,
+        "remote platform detection",
+        startup_failure,
+    )
+    .await?;
+    *startup_failure = None;
     Ok((
         result.exit_status == 0,
         String::from_utf8_lossy(&result.stdout).into_owned(),
@@ -277,11 +298,13 @@ where
 async fn detect_remote_platform<H>(
     handle: Arc<client::Handle<H>>,
     timeout: Duration,
+    startup_failure: &mut Option<CleanupError>,
 ) -> Result<RemotePlatform, CleanupError>
 where
     H: client::Handler + Send + 'static,
 {
-    let (ok, uname) = probe_remote_command(handle.clone(), "uname -s -m", timeout).await?;
+    let (ok, uname) =
+        probe_remote_command(handle.clone(), "uname -s -m", timeout, startup_failure).await?;
     let uname = uname.trim();
     if ok && uname.starts_with("Linux ") {
         if uname.split_whitespace().nth(1) == Some("x86_64") {
@@ -297,8 +320,13 @@ where
     if ok && uname.starts_with("Darwin ") {
         return Ok(RemotePlatform::Macos);
     }
-    let (ok, windows) =
-        probe_remote_command(handle, "echo %OS% %PROCESSOR_ARCHITECTURE%", timeout).await?;
+    let (ok, windows) = probe_remote_command(
+        handle,
+        "echo %OS% %PROCESSOR_ARCHITECTURE%",
+        timeout,
+        startup_failure,
+    )
+    .await?;
     let windows = windows.trim();
     if ok && windows.starts_with("Windows_NT ") && windows.ends_with("AMD64") {
         return Ok(RemotePlatform::Windows);
@@ -315,26 +343,33 @@ async fn open_session<H>(
     handle: Arc<client::Handle<H>>,
     claim: &Claim,
     timeout: Duration,
-) -> Result<Channel<client::Msg>, CleanupError>
+) -> Result<HelperChannel, CleanupError>
 where
     H: client::Handler + Send + 'static,
 {
-    tokio::time::timeout(timeout, open_session_unbounded(handle, claim, timeout))
-        .await
-        .map_err(|_| CleanupError::Timeout {
+    let mut startup_failure = None;
+    let result = tokio::time::timeout(
+        timeout,
+        open_session_unbounded(handle, claim, timeout, &mut startup_failure),
+    )
+    .await;
+    result.unwrap_or_else(|_| {
+        Err(startup_failure.unwrap_or(CleanupError::Timeout {
             operation: "helper startup",
-        })?
+        }))
+    })
 }
 
 async fn open_session_unbounded<H>(
     handle: Arc<client::Handle<H>>,
     claim: &Claim,
     timeout: Duration,
-) -> Result<Channel<client::Msg>, CleanupError>
+    startup_failure: &mut Option<CleanupError>,
+) -> Result<HelperChannel, CleanupError>
 where
     H: client::Handler + Send + 'static,
 {
-    let platform = detect_remote_platform(handle.clone(), timeout).await?;
+    let platform = detect_remote_platform(handle.clone(), timeout, startup_failure).await?;
     let helper_name = format!("fwm-remote-helper-{}", claim.session_id);
     let (helper_bytes, upload_command, exec_command) = match platform {
         RemotePlatform::Linux => (
@@ -368,14 +403,7 @@ where
     };
     let upload = open_session_raw(handle.clone(), timeout).await?;
     let mut upload = OwnedChannel(Some(upload));
-    upload
-        .channel()
-        .exec(true, upload_command)
-        .await
-        .map_err(|_| CleanupError::Remote {
-            code: "exec_denied".into(),
-            message: "SSH server rejected the native helper upload command".into(),
-        })?;
+    upload.channel().exec(true, upload_command).await?;
     let mut startup_stderr = Vec::new();
     loop {
         match upload.channel_mut().wait().await {
@@ -403,9 +431,21 @@ where
                     ),
                 });
             }
-            Some(ChannelMsg::Close) | None => {
+            Some(ChannelMsg::ExitSignal {
+                signal_name,
+                error_message,
+                ..
+            }) => {
                 return Err(CleanupError::Remote {
                     code: "helper_upload_failed".into(),
+                    message: format!(
+                        "helper upload terminated by signal {signal_name:?}: {error_message}"
+                    ),
+                });
+            }
+            Some(ChannelMsg::Close) | None => {
+                return Err(CleanupError::Remote {
+                    code: "helper_disconnected".into(),
                     message: format!(
                         "helper upload channel closed before exec confirmation: {}",
                         String::from_utf8_lossy(&startup_stderr).trim()
@@ -418,7 +458,8 @@ where
     }
     upload.channel().data_bytes(helper_bytes.to_vec()).await?;
     upload.channel().eof().await?;
-    let result = command_result(&mut upload, timeout, "helper upload").await?;
+    let result = command_result(&mut upload, timeout, "helper upload", startup_failure).await?;
+    *startup_failure = None;
     if result.exit_status != 0 {
         return Err(CleanupError::Remote {
             code: "helper_upload_failed".into(),
@@ -433,18 +474,11 @@ where
 
     let channel = open_session_raw(handle, timeout).await?;
     let mut owned = OwnedChannel(Some(channel));
-    owned
-        .channel()
-        .exec(true, exec_command)
-        .await
-        .map_err(|_| CleanupError::Remote {
-            code: "exec_denied".into(),
-            message: "SSH server rejected the native recovery helper".into(),
-        })?;
+    owned.channel().exec(true, exec_command).await?;
     let mut stderr = Vec::new();
     loop {
         match owned.channel_mut().wait().await {
-            Some(ChannelMsg::Success) => return Ok(owned.take()),
+            Some(ChannelMsg::Success) => return Ok(HelperChannel::new(owned.take(), stderr)),
             Some(ChannelMsg::Failure) => return Err(CleanupError::Remote { code: "exec_denied".into(), message: "SSH server rejected the native recovery helper; allow command execution for verified recovery".into() }),
             Some(ChannelMsg::ExtendedData { data, .. }) => {
                 if stderr.len() + data.len() > MAX_REPLY {
@@ -453,7 +487,8 @@ where
                 stderr.extend_from_slice(&data);
             }
             Some(ChannelMsg::ExitStatus { exit_status }) => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: format!("native recovery helper exited with status {exit_status}: {}", String::from_utf8_lossy(&stderr).trim()) }),
-            Some(ChannelMsg::Close) | None => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: format!("native recovery helper channel closed before startup: {}", String::from_utf8_lossy(&stderr).trim()) }),
+            Some(ChannelMsg::ExitSignal { signal_name, error_message, .. }) => return Err(CleanupError::Remote { code: "helper_unavailable".into(), message: format!("native recovery helper terminated by signal {signal_name:?}: {error_message}") }),
+            Some(ChannelMsg::Close) | None => return Err(CleanupError::Remote { code: "helper_disconnected".into(), message: format!("native recovery helper channel closed before startup: {}", String::from_utf8_lossy(&stderr).trim()) }),
             Some(ChannelMsg::Eof) => {},
             _ => {}
         }

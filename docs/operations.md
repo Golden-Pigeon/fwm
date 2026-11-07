@@ -118,6 +118,16 @@ application affects that data connection; loss of a shared SSH connection affect
 all rules using it. Local and local SOCKS rules normally share a server
 connection; reverse rules normally have dedicated connections.
 
+Server timeouts and connections dropped during authentication retry automatically,
+as do recovery-helper channels that close without an exit result. Such a closure
+is inconclusive: a persistent server problem can also keep retrying, with its
+latest error shown in status.
+An unresponsive local SSH agent, a refused signature, an explicit authentication
+rejection, or a trust/configuration error still requires attention.
+An unexpected helper exit status or signal also requires attention, with its
+stderr preserved, even after SSH accepted the execution request or stdout EOF
+arrived before the process result.
+
 For trust or authentication errors, fix the cause and run
 `fwm retry --server dev`. For changed SSH endpoints, key files, or agent settings,
 use `fwm restart --server dev` to force a fresh connection.

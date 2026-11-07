@@ -51,6 +51,40 @@ async fn ready(engine: &Engine) {
 }
 
 #[tokio::test]
+async fn supervisor_retries_interrupted_authentication_without_manual_retry() {
+    for failure in [AuthFailure::Stall, AuthFailure::Disconnect] {
+        let fixture = Fixture::start().await;
+        fixture.trust().await;
+        *fixture.auth_failure.lock().unwrap() = Some(failure);
+        let mut config = Config {
+            servers: vec![fixture.profile.clone()],
+            forwards: vec![rule(&fixture.profile, "retry", 9)],
+            ..Config::default()
+        };
+        config.defaults.retry.connect_timeout_secs = 1;
+        let mut engine = Engine::new();
+        let mut events = engine.subscribe();
+        engine.reconcile(&config).await.unwrap();
+        ready(&engine).await;
+        assert_eq!(fixture.auth_count.load(Ordering::Relaxed), 2);
+        let messages: Vec<_> = std::iter::from_fn(|| events.try_recv().ok())
+            .map(|event| event.message)
+            .collect();
+        assert!(
+            messages
+                .iter()
+                .any(|message| message.starts_with("Backoff"))
+        );
+        assert!(
+            !messages
+                .iter()
+                .any(|message| message.starts_with("NeedsAttention"))
+        );
+        engine.shutdown().await;
+    }
+}
+
+#[tokio::test]
 async fn server_restart_and_config_reload_refresh_aliases_without_disrupting_other_servers() {
     let old = Fixture::start().await;
     let replacement = Fixture::start().await;

@@ -665,6 +665,9 @@ mod native_startup_tests;
 #[path = "remote_dynamic_tests.rs"]
 mod remote_dynamic_tests;
 
+#[path = "cleanup_exit_tests.rs"]
+mod cleanup_exit_tests;
+
 fn remote_rule(id: &str, listen: &str) -> Rule {
     let mut rule = test_rule();
     rule.spec.id = id.into();

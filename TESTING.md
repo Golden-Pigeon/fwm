@@ -15,11 +15,11 @@
 | 配置和诊断 | `tests/doctor_config.rs`、`tests/handwritten_config.rs`、`store/identity.rs` | 坏草稿输出失败、有效草稿提示、缺省 ID 稳定、只读不写文件 |
 | 离线和并发操作 | `tests/offline_mutations.rs`、`offline/tests.rs`、`configuration/tests.rs` | 不唤醒后台、失败无变更、无操作不增版本、实例锁、并发写 revision 冲突、离线 reload 先保存 |
 | 配置事务和迁移 | `store/`、`daemon/mutation_tests.rs`、`tests/control_workflows.rs` | 草稿字节保护、删除不复活、原子批量、幂等请求、版本迁移与备份 |
-| 生命周期与弱网 | `engine/`、`tests/smoke.py`、`tests/ux_live.py` | 重连、黑洞、远端取消迟到、共享连接隔离、规则/组重启、退避上限 |
+| 生命周期与弱网 | `engine/`、`ssh/tests.rs`、`ssh/reload_tests.rs`、`tests/smoke.py`、`tests/ux_live.py` | 重连、黑洞、认证阶段超时/断开后自动恢复、agent 卡住仍需人工处理、helper 启动中断后重连、远端取消迟到、共享连接隔离、规则/组重启、退避上限 |
 | 远端残留回收 | `cleanup/test_*.py`、`tests/remote_recovery.py` | 身份与代次核验、PID 复用、陌生进程保护、helper 崩溃、取消竞争 |
 | 数据通道和 SOCKS | `engine/channel_tests.rs`、`engine/failure_tests.rs`、`engine/socks_protocol_tests.rs` | 本地端口占用后恢复/取消、目标通道拒绝和超时回复、拒绝和取消、容量释放、IPv4/IPv6/DNS、协议错误回复、分片、截断、双向半关闭 |
 | 反向动态 SOCKS5 | `tests/remote_dynamic.py`、`tests/smoke.py` | 真实 sshd 远端监听和身份租约、IPv4/域名 CONNECT、大流量半关闭、目标拒绝回复、停止释放监听与租约、规则重启隔离、黑洞重连及后台重启恢复 |
-| helper 客户端与远端失败 | `engine/failure_tests.rs` | exec 拒绝、Python 不可用、断开/超时、超长/错误 JSON/版本/操作/身份/PID；确认失败补偿取消、释放失败、三次监听拒绝、迟到通道关闭、空闲异常输出 |
+| helper 客户端与远端失败 | `engine/failure_tests.rs`、`engine/cleanup_exit_tests.rs`、`engine/native_startup_tests.rs` | exec 拒绝、执行确认后退出码/信号与 stderr 保留、EOF 后迟到退出码、缺失 close 或启动超时不掩盖明确失败、平台探测回退后不沿用旧错误、无退出信息的断开/超时重试、空闲监测截止不因取消重置、超长/错误 JSON/版本/操作/身份/PID；确认失败补偿取消、释放失败、三次监听拒绝、迟到通道关闭、空闲异常输出 |
 | 管理 API | `fwm-api/tests/` | 帧边界、截断、坏 JSON/UTF-8、版本与请求 ID、写失败不污染流、命令版本保护分类 |
 | 输出与输入契约 | `cli/contracts_tests.rs`、`tests/cli_contracts.rs`、`tests/ux_commands.rs` | JSON 最终结果、退出码、时间单位与溢出、帮助零副作用、保存和就绪区分 |
 | 持续查询 | `tests/cli_streaming.rs` | 真实 CLI watch/follow 子进程、规则/服务器重命名和删除、空组与新增成员、后台启停、轮转后旧名关联、警告去重、草稿修复、Ctrl-C |

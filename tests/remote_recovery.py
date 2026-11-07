@@ -25,6 +25,11 @@ def record_for(directory, port):
     return next(((path, value) for path, value in records(directory) if value["listen_port"] == port), None)
 
 
+def process_pid(record, kind):
+    key = f"{kind}_pid"
+    return record[key] if key in record else record[kind]["pid"]
+
+
 async def check_remote_recovery(cli, rpc, echo_test, status, eventually, directory,
                                 held_peers, remote_port, local_port, sshd, config_dir,
                                 binary, server_port, proxy_port, user, identity, known_hosts, target_port,
@@ -32,8 +37,8 @@ async def check_remote_recovery(cli, rpc, echo_test, status, eventually, directo
     entry = record_for(directory, remote_port)
     assert entry, "remote listener must have a confirmed identity lease"
     _, previous = entry
-    old_pid = previous["session"]["pid"]
-    peer = previous["transport"][1]
+    old_pid = process_pid(previous, "session")
+    peer = previous["transport_client_port"] if "transport_client_port" in previous else previous["transport"][1]
     stable_reader, stable_writer = await asyncio.open_connection("127.0.0.1", local_port)
 
     async def stable_ping():
@@ -92,7 +97,7 @@ async def check_remote_recovery(cli, rpc, echo_test, status, eventually, directo
         async def reclaimed():
             current = record_for(directory, remote_port)
             return (current and current[1]["generation"] > previous["generation"]
-                    and current[1]["session"]["pid"] != old_pid
+                    and process_pid(current[1], "session") != old_pid
                     and (await status())["remote"]["state"] == "established")
 
         await eventually(reclaimed, timeout=30, description="verified cleanup and remote rebind")
@@ -120,10 +125,18 @@ async def check_remote_recovery(cli, rpc, echo_test, status, eventually, directo
     await echo_test(remote_port)
     print("PASS normal stop releases ownership and up establishes a new verified session", flush=True)
 
-    # A helper crash must be noticed while the transport is still healthy, not
-    # turn the next network interruption into an unrecoverable stale lease.
+    # A confirmed helper crash requires attention while the transport is still
+    # healthy. An explicit retry must safely replace its recorded session.
     _, current = record_for(directory, remote_port)
-    os.kill(current["helper"]["pid"], signal.SIGKILL)
+    os.kill(process_pid(current, "helper"), signal.SIGKILL)
+
+    async def helper_failed():
+        row = (await status())["remote"]
+        return row if row["state"] == "needs_attention" else None
+
+    failed = await eventually(helper_failed, timeout=30, description="confirmed helper crash requires attention")
+    assert "helper_unavailable" in failed["last_error"], failed
+    await cli("retry", "remote")
 
     async def helper_replaced():
         replacement = record_for(directory, remote_port)
@@ -132,7 +145,7 @@ async def check_remote_recovery(cli, rpc, echo_test, status, eventually, directo
 
     await eventually(helper_replaced, timeout=30, description="helper crash recovery")
     await echo_test(remote_port)
-    print("PASS unexpected helper death causes supervised session recovery", flush=True)
+    print("PASS confirmed helper death requires attention and explicit retry safely recovers", flush=True)
 
     async def unrelated(reader, writer):
         writer.write(b"unrelated")

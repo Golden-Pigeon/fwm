@@ -91,14 +91,15 @@ async fn unmanaged_port_conflict_keeps_retrying_without_requesting_a_listener() 
 
 #[tokio::test]
 async fn helper_startup_denial_exit_disconnect_and_timeout_are_actionable() {
-    for (mode, needle) in [
-        (ExecMode::Reject, "exec_denied"),
+    for (mode, needle, needs_attention) in [
+        (ExecMode::Reject, "exec_denied", true),
         (
             ExecMode::Exit,
             "native recovery helper exited with status 127",
+            true,
         ),
-        (ExecMode::Close, "helper_unavailable"),
-        (ExecMode::Silent, "helper startup"),
+        (ExecMode::Close, "helper_disconnected", false),
+        (ExecMode::Silent, "helper startup", false),
     ] {
         let fixture = Fixture::with_behaviour(Behaviour {
             exec: mode,
@@ -117,11 +118,46 @@ async fn helper_startup_denial_exit_disconnect_and_timeout_are_actionable() {
             Err(error) => error,
         };
         assert!(error.to_string().contains(needle), "{error}");
+        assert_eq!(error.needs_attention(), needs_attention, "{error}");
         assert!(
             !fixture.handle.is_closed(),
             "a failed channel must not kill SSH transport"
         );
     }
+}
+
+#[tokio::test]
+async fn helper_startup_disconnect_requests_a_fresh_session_instead_of_attention() {
+    let behaviour = Behaviour {
+        exec: ExecMode::Close,
+        ..Default::default()
+    };
+    let listens = behaviour.listens.clone();
+    let fixture = Fixture::with_behaviour(behaviour).await;
+    let mut rule = test_rule();
+    rule.spec = lease_spec();
+    let (session, mut failures) = SessionControl::new(Some(cleanup(&fixture)));
+    let cancel = CancellationToken::new();
+    let worker = tokio::spawn(forward::run(
+        rule.clone(),
+        fixture.handle.clone(),
+        fixture.routes.clone(),
+        RetryPolicy::default(),
+        cancel.clone(),
+        session.clone(),
+    ));
+    let failure = tokio::time::timeout(Duration::from_secs(2), failures.recv())
+        .await
+        .unwrap()
+        .unwrap();
+    assert!(!failure.needs_attention);
+    assert!(failure.message.contains("helper_disconnected"));
+    assert!(session.blocked.lock().unwrap().is_none());
+    wait_state(&rule, RuntimeState::Backoff).await;
+    assert!(fixture.routes.lock().unwrap().is_empty());
+    assert_eq!(listens.load(std::sync::atomic::Ordering::SeqCst), 0);
+    session.disconnected.cancel();
+    worker.await.unwrap();
 }
 
 #[tokio::test]
@@ -159,6 +195,7 @@ async fn helper_replies_validate_json_size_protocol_identity_pid_and_error_code(
             }
             "eof" => {
                 io.get_mut().shutdown().await.unwrap();
+                drop(io);
             }
             "timeout" => {}
             other => {
@@ -192,7 +229,10 @@ async fn helper_replies_validate_json_size_protocol_identity_pid_and_error_code(
         match case {
             "timeout" => assert!(matches!(error, CleanupError::Timeout { .. })),
             "remote" => assert!(error.needs_attention()),
-            "eof" => assert!(error.to_string().contains("helper_unavailable")),
+            "eof" => {
+                assert!(error.to_string().contains("helper_disconnected"));
+                assert!(!error.needs_attention(), "{error}");
+            }
             _ => assert!(
                 matches!(error, CleanupError::Protocol(_)),
                 "{case}: {error}"

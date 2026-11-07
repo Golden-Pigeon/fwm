@@ -157,15 +157,65 @@ async fn upload_nonzero_exit_after_eof_prevents_helper_execution() {
 }
 
 #[tokio::test]
-async fn probe_close_without_exit_status_is_a_protocol_failure() {
+async fn startup_timeout_does_not_hide_a_confirmed_probe_or_upload_failure() {
+    for upload in [false, true] {
+        let mut behaviour = Behaviour::default();
+        let reply = if upload {
+            &mut behaviour.native.upload
+        } else {
+            &mut behaviour.native.uname
+        };
+        reply.status = Some(126);
+        reply.stderr = b"Permission denied".to_vec();
+        reply.close = false;
+        let fixture = Fixture::with_behaviour(behaviour).await;
+        let error = startup_error(&fixture).await;
+        assert!(error.needs_attention(), "upload {upload}: {error}");
+        assert!(error.to_string().contains("status 126"), "{error}");
+        assert!(error.to_string().contains("Permission denied"), "{error}");
+    }
+}
+
+#[tokio::test]
+async fn completed_failed_probe_does_not_make_the_next_probe_timeout_permanent() {
     let mut behaviour = Behaviour::default();
-    behaviour.native.uname.status = None;
+    behaviour.native.uname.status = Some(1);
+    behaviour.native.windows.status = None;
+    behaviour.native.windows.close = false;
     let native = behaviour.native.clone();
     let fixture = Fixture::with_behaviour(behaviour).await;
     let error = startup_error(&fixture).await;
-    assert!(matches!(error, CleanupError::Protocol(_)), "{error}");
-    assert_eq!(native.commands.lock().unwrap().len(), 1);
-    assert!(!fixture.handle.is_closed());
+    assert!(matches!(error, CleanupError::Timeout { .. }), "{error}");
+    assert!(!error.needs_attention(), "{error}");
+    assert_eq!(
+        native.commands.lock().unwrap().as_slice(),
+        ["uname -s -m", "echo %OS% %PROCESSOR_ARCHITECTURE%"]
+    );
+}
+
+#[tokio::test]
+async fn probe_or_upload_close_without_exit_status_is_retryable() {
+    for upload in [false, true] {
+        let mut behaviour = Behaviour::default();
+        if upload {
+            behaviour.native.upload.status = None;
+        } else {
+            behaviour.native.uname.status = None;
+        }
+        let native = behaviour.native.clone();
+        let fixture = Fixture::with_behaviour(behaviour).await;
+        let error = startup_error(&fixture).await;
+        assert!(
+            matches!(&error, CleanupError::Remote { code, .. } if code == "helper_disconnected"),
+            "{error}"
+        );
+        assert!(!error.needs_attention(), "{error}");
+        assert_eq!(
+            native.commands.lock().unwrap().len(),
+            if upload { 2 } else { 1 }
+        );
+        assert!(!fixture.handle.is_closed());
+    }
 }
 
 #[tokio::test]

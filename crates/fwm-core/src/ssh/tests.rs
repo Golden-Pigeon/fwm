@@ -1,6 +1,6 @@
 //! Protocol-level trust/authentication regressions, independent of a system sshd.
 use std::sync::{
-    Arc,
+    Arc, Mutex,
     atomic::{AtomicUsize, Ordering},
 };
 
@@ -26,6 +26,7 @@ struct Fixture {
     _directory: tempfile::TempDir,
     profile: ServerProfile,
     auth_count: Arc<AtomicUsize>,
+    auth_failure: Arc<Mutex<Option<AuthFailure>>>,
     task: JoinHandle<()>,
 }
 
@@ -48,9 +49,11 @@ impl Fixture {
             ..Default::default()
         });
         let auth_count = Arc::new(AtomicUsize::new(0));
+        let auth_failure = Arc::new(Mutex::new(None));
         let listener = TcpListener::bind("127.0.0.1:0").await.unwrap();
         let port = listener.local_addr().unwrap().port();
         let auth_count_clone = auth_count.clone();
+        let auth_failure_clone = auth_failure.clone();
         let allowed = identity.public_key().clone();
         let task = tokio::spawn(async move {
             while let Ok((socket, _)) = listener.accept().await {
@@ -58,6 +61,7 @@ impl Fixture {
                 let handler = TestServer {
                     allowed: allowed.clone(),
                     auth_count: auth_count_clone.clone(),
+                    auth_failure: auth_failure_clone.clone(),
                 };
                 tokio::spawn(async move {
                     if let Ok(session) = server::run_stream(config, socket, handler).await {
@@ -87,6 +91,7 @@ impl Fixture {
             _directory: directory,
             profile,
             auth_count,
+            auth_failure,
             task,
         }
     }
@@ -99,9 +104,16 @@ impl Fixture {
     }
 }
 
+#[derive(Clone, Copy, Debug)]
+enum AuthFailure {
+    Stall,
+    Disconnect,
+}
+
 struct TestServer {
     allowed: PublicKey,
     auth_count: Arc<AtomicUsize>,
+    auth_failure: Arc<Mutex<Option<AuthFailure>>>,
 }
 
 impl server::Handler for TestServer {
@@ -112,6 +124,12 @@ impl server::Handler for TestServer {
         key: &PublicKey,
     ) -> Result<server::Auth, Self::Error> {
         self.auth_count.fetch_add(1, Ordering::Relaxed);
+        let failure = self.auth_failure.lock().unwrap().take();
+        match failure {
+            Some(AuthFailure::Stall) => std::future::pending::<()>().await,
+            Some(AuthFailure::Disconnect) => return Err(russh::Error::Disconnect),
+            None => {}
+        }
         Ok(
             if user == "developer" && key.key_data() == self.allowed.key_data() {
                 server::Auth::Accept
@@ -140,6 +158,25 @@ impl server::Handler for TestServer {
             let _ = tokio::io::copy_bidirectional(&mut channel.into_stream(), &mut socket).await;
         });
         Ok(())
+    }
+}
+
+#[tokio::test]
+async fn interrupted_server_authentication_is_retryable_and_a_fresh_connection_recovers() {
+    for failure in [AuthFailure::Stall, AuthFailure::Disconnect] {
+        let fixture = Fixture::start().await;
+        fixture.trust().await;
+        *fixture.auth_failure.lock().unwrap() = Some(failure);
+        let policy = RetryPolicy {
+            connect_timeout_secs: 1,
+            ..Default::default()
+        };
+        let error = check_connection(&fixture.profile, &policy)
+            .await
+            .unwrap_err();
+        assert!(!error.needs_attention(), "{failure:?}: {error:?}");
+        check_connection(&fixture.profile, &policy).await.unwrap();
+        assert_eq!(fixture.auth_count.load(Ordering::Relaxed), 2);
     }
 }
 
@@ -208,6 +245,25 @@ async fn native_proxy_jump_authenticates_and_verifies_every_hop() {
         .unwrap();
     assert_eq!(jump.auth_count.load(Ordering::Relaxed), 1);
     assert_eq!(target.auth_count.load(Ordering::Relaxed), 1);
+    let policy = RetryPolicy {
+        connect_timeout_secs: 1,
+        ..Default::default()
+    };
+    for failure in [AuthFailure::Stall, AuthFailure::Disconnect] {
+        *jump.auth_failure.lock().unwrap() = Some(failure);
+        let error = check_connection(&target.profile, &policy)
+            .await
+            .unwrap_err();
+        assert!(!error.needs_attention(), "jump {failure:?}: {error:?}");
+        check_connection(&target.profile, &policy).await.unwrap();
+    }
+    *jump.auth_failure.lock().unwrap() = Some(AuthFailure::Stall);
+    let error = inspect_host_key(&target.profile, &policy)
+        .await
+        .unwrap_err();
+    assert!(!error.needs_attention(), "jump inspection: {error:?}");
+    inspect_host_key(&target.profile, &policy).await.unwrap();
+    let jump_auth_count = jump.auth_count.load(Ordering::Relaxed);
     // Removing only the jump trust entry must prevent credentials reaching it.
     let keys = std::fs::read_to_string(target.profile.known_hosts.as_ref().unwrap()).unwrap();
     let target_entry = keys
@@ -223,7 +279,7 @@ async fn native_proxy_jump_authenticates_and_verifies_every_hop() {
         .await
         .unwrap_err();
     assert!(matches!(error, SshError::Hop { .. }));
-    assert_eq!(jump.auth_count.load(Ordering::Relaxed), 1);
+    assert_eq!(jump.auth_count.load(Ordering::Relaxed), jump_auth_count);
 }
 
 #[tokio::test]
