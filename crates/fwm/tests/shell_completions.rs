@@ -293,6 +293,23 @@ fn persisted_ids_with_control_characters_cannot_inject_completion_lines() {
 }
 
 #[test]
+fn bash_omits_substitution_candidates_but_keeps_safe_selectors() {
+    let mut fixture = Fixture::new();
+    fixture.config.forwards[0].id = "rule-$(command)".into();
+    fixture.config.forwards[1].id = "rule-`command`".into();
+    fixture.config.servers[0].id = "server-$USER".into();
+    for rule in &mut fixture.config.forwards {
+        rule.server_id = "server-$USER".into();
+    }
+    fixture.save();
+    assert!(fixture.complete(&["up", "rule-$"]).is_empty());
+    assert!(fixture.complete(&["up", "rule-`"]).is_empty());
+    assert!(fixture.complete(&["up", "--server", "server-$"]).is_empty());
+    assert_eq!(fixture.complete(&["up", "we"]), ["web"]);
+    assert_eq!(fixture.complete(&["up", "--server", "de"]), ["dev"]);
+}
+
+#[test]
 fn unapplied_or_broken_candidate_does_not_replace_committed_selectors() {
     let mut fixture = Fixture::new();
     fixture.config.forwards[0].name = "pending-web".into();

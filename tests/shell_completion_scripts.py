@@ -44,7 +44,9 @@ host = "127.0.0.1"
 '''
     records = [(name, "rule-" + str(index)) for index, name in enumerate(names)]
     records += [("colon-id", "prefix:path"),
-                ("special-id", "literal$(touch SHOULD_NOT_EXIST);`touch SHOULD_NOT_EXIST`")]
+                ("special-id", "literal$(touch SHOULD_NOT_EXIST);`touch SHOULD_NOT_EXIST`"),
+                ("safe-dollar", "dollar$(touch SHOULD_NOT_EXIST)"),
+                ("safe-backtick", "backtick`touch SHOULD_NOT_EXIST`")]
     for index, (name, identity) in enumerate(records):
         text += f'''
 [[forwards]]
@@ -286,12 +288,18 @@ class CompletionScripts(unittest.TestCase):
 
     def test_shell_metacharacters_do_not_execute(self):
         def check(shell):
-            _, result = shell.complete("fwm --config-dir profile status literal", allow_bash_syntax_error=True)
-            self.assertFalse((shell.directory / "SHOULD_NOT_EXIST").exists(),
-                             "completion candidate was executed as shell code")
-            if result is not None:
+            for prefix, candidate in [
+                ("literal", "literal$(touch SHOULD_NOT_EXIST);`touch SHOULD_NOT_EXIST`"),
+                ("dollar", "dollar$(touch SHOULD_NOT_EXIST)"),
+                ("backtick", "backtick`touch SHOULD_NOT_EXIST`"),
+            ]:
+                _, result = shell.complete("fwm --config-dir profile status " + prefix)
+                self.assertFalse((shell.directory / "SHOULD_NOT_EXIST").exists(),
+                                 "completion candidate was executed as shell code")
                 self.assertEqual(result, ["--config-dir", "profile", "status",
-                                         "literal$(touch SHOULD_NOT_EXIST);`touch SHOULD_NOT_EXIST`"])
+                                         prefix if shell.kind == "bash" else candidate])
+            _, result = shell.complete("fwm --config-dir profile status special")
+            self.assertEqual(result, ["--config-dir", "profile", "status", "special-id"])
         self.shells(check)
 
     def test_completion_before_remaining_arguments(self):

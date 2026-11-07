@@ -141,8 +141,9 @@ eval "$(fwm completions bash)"
 
 With the pinned completion engine (including Bash 3.2 and 5.2), prefer `--server NAME` over `--server=NAME` and complete at the end of
 the word. Colon-containing IDs and completion in the middle of a word have
-upstream limitations. Shell metacharacters in a candidate can also cause Bash
-to reject the completed command; enter such IDs as a quoted argument manually.
+upstream limitations. Bash completion omits saved names and IDs containing `$`
+or backticks because Bash 5.3 may expand them while quoting candidates. Enter
+such values as single-quoted arguments manually, or use a safe name or ID.
 If a quoted path does not complete in Bash or Zsh, start
 with an unquoted prefix and let the shell quote the result. On older Bash, a
 candidate matching a local directory can be treated as a directory.

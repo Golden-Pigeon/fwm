@@ -21,13 +21,15 @@ const COMPLETION_ENV: &str = "FWM_COMPLETE";
 /// Called while main is still single-threaded, before parsing or Tokio startup.
 pub(crate) fn complete() {
     let args: Vec<_> = std::env::args_os().collect();
+    // CompleteEnv removes this variable before calling the command factory.
+    let bash = std::env::var_os(COMPLETION_ENV).is_some_and(|shell| shell == "bash");
     CompleteEnv::with_factory(|| {
         let words = args
             .iter()
             .position(|arg| arg == "--")
             .map_or(&[][..], |index| &args[index + 1..]);
         let config = saved_config(words);
-        add_candidates(Cli::command(), &[], &config)
+        add_candidates(Cli::command(), &[], &config, bash)
     })
     .var(COMPLETION_ENV)
     .shells(Shells(&[&Bash, &Zsh]))
@@ -86,7 +88,7 @@ fn saved_config(words: &[OsString]) -> Config {
         .unwrap_or_default()
 }
 
-fn add_candidates(mut command: Command, parent: &[&str], config: &Config) -> Command {
+fn add_candidates(mut command: Command, parent: &[&str], config: &Config, bash: bool) -> Command {
     let name = command.get_name().to_owned();
     let mut route = parent.to_vec();
     route.push(&name);
@@ -147,7 +149,14 @@ fn add_candidates(mut command: Command, parent: &[&str], config: &Config) -> Com
         if let Some(values) = values {
             let values: Vec<_> = values
                 .into_iter()
-                .filter(|value| !value.chars().any(char::is_control))
+                .filter(|value| {
+                    // Bash 5.3 can expand substitution syntax while quoting a
+                    // non-file candidate, even with fullquote. Supply only safe
+                    // saved values; clap_complete still owns parsing/quoting.
+                    !value.chars().any(|character| {
+                        character.is_control() || (bash && matches!(character, '$' | '`'))
+                    })
+                })
                 .collect::<BTreeSet<_>>()
                 .into_iter()
                 .collect();
@@ -168,7 +177,7 @@ fn add_candidates(mut command: Command, parent: &[&str], config: &Config) -> Com
         arg.value_hint(hint)
     });
     for child in command.get_subcommands_mut() {
-        *child = add_candidates(child.clone(), &route, config);
+        *child = add_candidates(child.clone(), &route, config, bash);
     }
     command
 }
