@@ -27,6 +27,9 @@ struct Machine {
     calls: Vec<Vec<String>>,
     fail: VecDeque<String>,
     unavailable: bool,
+    bootout_code: Option<i32>,
+    bootout_delay: usize,
+    removing: BTreeMap<String, usize>,
 }
 struct FakeExecutor {
     platform: Platform,
@@ -149,6 +152,9 @@ impl CommandExecutor for FakeExecutor {
                         "string",
                     )
                     .unwrap();
+                    if machine.tasks.contains_key(&name) {
+                        return Ok(failure(5, "Bootstrap failed: 5: Input/output error"));
+                    }
                     let mut record = self.record(&name, body);
                     record.running = true;
                     record.enabled = !machine.disabled.contains(&name);
@@ -158,6 +164,14 @@ impl CommandExecutor for FakeExecutor {
                     let name = args[1].rsplit('/').next().unwrap();
                     match action {
                         "print" => {
+                            if let Some(remaining) = machine.removing.get_mut(name) {
+                                if *remaining == 0 {
+                                    machine.removing.remove(name);
+                                    machine.tasks.remove(name);
+                                } else {
+                                    *remaining -= 1;
+                                }
+                            }
                             return Ok(match machine.tasks.get(name) {
                                 Some(task) => success(format!(
                                     "program = {}\narguments = {{\n{}\n--config-dir\n{}\ndaemon\nrun\n}}\n{}",
@@ -170,7 +184,25 @@ impl CommandExecutor for FakeExecutor {
                             });
                         }
                         "bootout" => {
-                            machine.tasks.remove(name);
+                            let code = machine.bootout_code.take().unwrap_or(0);
+                            if code == 0 || code == 3 {
+                                let delay = std::mem::take(&mut machine.bootout_delay);
+                                if delay == 0 {
+                                    machine.tasks.remove(name);
+                                } else {
+                                    machine.removing.insert(name.into(), delay);
+                                }
+                            }
+                            if code != 0 {
+                                return Ok(failure(
+                                    code,
+                                    if code == 3 {
+                                        "Boot-out failed: 3: No such process"
+                                    } else {
+                                        "Boot-out failed: Operation not permitted"
+                                    },
+                                ));
+                            }
                         }
                         "enable" => {
                             machine.disabled.remove(name);
@@ -385,6 +417,176 @@ fn changed_executable_refreshes_the_registered_definition_and_preserves_enableme
                 .all(|task| task.program == "/new/fwm")
         );
     }
+}
+
+#[test]
+fn macos_upgrade_waits_for_async_bootout_before_registering_the_new_executable() {
+    for stop_first in [false, true] {
+        for code in [0, 3] {
+            for delay in [0, 2] {
+                let f = Fixture::new(Platform::Macos);
+                f.adapter("/old/fwm").install(&mut f.executor()).unwrap();
+                let mut operation = f.operation("/new/fwm");
+                let checkpoint = operation.checkpoint().unwrap();
+                {
+                    let mut machine = f.machine.lock().unwrap();
+                    machine.bootout_code = Some(code);
+                    machine.bootout_delay = delay;
+                }
+                if stop_first {
+                    operation.stop().unwrap();
+                    assert!(f.machine.lock().unwrap().tasks.is_empty());
+                }
+                operation.refresh(&checkpoint).unwrap();
+                assert!(operation.status().unwrap().running);
+                let machine = f.machine.lock().unwrap();
+                assert!(
+                    machine
+                        .tasks
+                        .values()
+                        .all(|task| task.program == "/new/fwm")
+                );
+                assert_eq!(
+                    machine
+                        .calls
+                        .iter()
+                        .filter(|call| call[1] == "bootout")
+                        .count(),
+                    1,
+                    "a pending removal must not cause a second bootout"
+                );
+            }
+        }
+    }
+}
+
+#[test]
+fn macos_bootout_permission_errors_do_not_start_a_replacement() {
+    for code in [1, 5] {
+        let f = Fixture::new(Platform::Macos);
+        let old = f.adapter("/old/fwm");
+        old.install(&mut f.executor()).unwrap();
+        let original = fs::read(old.definition_path()).unwrap();
+        f.machine.lock().unwrap().bootout_code = Some(code);
+        let error = f
+            .adapter("/new/fwm")
+            .install(&mut f.executor())
+            .unwrap_err();
+        assert_eq!(
+            error.downcast_ref::<ServiceError>().unwrap().code,
+            "service_command_failed"
+        );
+        assert_eq!(fs::read(old.definition_path()).unwrap(), original);
+        let machine = f.machine.lock().unwrap();
+        assert!(
+            machine
+                .tasks
+                .values()
+                .all(|task| task.program == "/old/fwm")
+        );
+        assert_eq!(
+            machine
+                .calls
+                .iter()
+                .filter(|call| call[1] == "bootstrap")
+                .count(),
+            1
+        );
+    }
+}
+
+fn assert_macos_unconfirmed_removal_blocks_replacement(code: i32, error_code: &str) {
+    let f = Fixture::new(Platform::Macos);
+    let old = f.adapter("/old/fwm");
+    old.install(&mut f.executor()).unwrap();
+    let original = fs::read(old.definition_path()).unwrap();
+    {
+        let mut machine = f.machine.lock().unwrap();
+        machine.bootout_code = Some(code);
+        machine.bootout_delay = usize::MAX;
+    }
+    let before = std::time::Instant::now();
+    let error = f
+        .adapter("/new/fwm")
+        .install(&mut f.executor())
+        .unwrap_err();
+    assert!(before.elapsed() < std::time::Duration::from_secs(20));
+    assert_eq!(
+        error.downcast_ref::<ServiceError>().unwrap().code,
+        error_code
+    );
+    assert_eq!(fs::read(old.definition_path()).unwrap(), original);
+    let machine = f.machine.lock().unwrap();
+    assert!(
+        machine
+            .tasks
+            .values()
+            .all(|task| task.program == "/old/fwm")
+    );
+    assert_eq!(
+        machine
+            .calls
+            .iter()
+            .filter(|call| call[1] == "bootstrap")
+            .count(),
+        1
+    );
+}
+
+#[test]
+fn macos_no_such_process_is_not_success_while_the_job_remains_registered() {
+    assert_macos_unconfirmed_removal_blocks_replacement(3, "service_command_failed");
+}
+
+#[test]
+fn macos_successful_bootout_is_not_confirmation_that_the_job_is_gone() {
+    assert_macos_unconfirmed_removal_blocks_replacement(0, "service_stop_timeout");
+}
+
+#[test]
+fn macos_removal_query_errors_do_not_start_a_replacement() {
+    struct FailConfirmation(FakeExecutor);
+    impl CommandExecutor for FailConfirmation {
+        fn execute(&mut self, command: &mut Command) -> Result<CommandResult> {
+            let result = self.0.execute(command)?;
+            if command
+                .get_args()
+                .next()
+                .is_some_and(|arg| arg == "bootout")
+            {
+                self.0
+                    .machine
+                    .lock()
+                    .unwrap()
+                    .fail
+                    .push_back("print".into());
+            }
+            Ok(result)
+        }
+    }
+    let f = Fixture::new(Platform::Macos);
+    let old = f.adapter("/old/fwm");
+    old.install(&mut f.executor()).unwrap();
+    let original = fs::read(old.definition_path()).unwrap();
+    let error = f
+        .adapter("/new/fwm")
+        .install(&mut FailConfirmation(f.executor()))
+        .unwrap_err();
+    assert_eq!(
+        error.downcast_ref::<ServiceError>().unwrap().code,
+        "service_query_failed"
+    );
+    assert_eq!(fs::read(old.definition_path()).unwrap(), original);
+    assert_eq!(
+        f.machine
+            .lock()
+            .unwrap()
+            .calls
+            .iter()
+            .filter(|call| call[1] == "bootstrap")
+            .count(),
+        1
+    );
 }
 
 #[test]

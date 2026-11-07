@@ -33,7 +33,7 @@
 | 分组与身份歧义回归 | `tests/audited_cli.rs`、`tests/port_group_regressions.rs`、`model.rs`、`store/migration_tests.rs` | 组改名保留成员名、拒绝隐式合并、显式入组退组、UUID 名称冲突、随机短名称与批次组不冲突、旧分组迁移不制造 ID 冲突 |
 | SSH 路径、认证与刷新回归 | `ssh/path_options.rs`、`ssh/config_override_tests.rs`、`ssh/auth_tests.rs`、`tests/ssh_refresh.py` | 相对路径基准、配置符号链接切换、OpenSSH 布尔值、公钥选择 agent 身份、显式缺失私钥；CLI 服务器重启和 reload 读取新端点，同时保留其他服务器长连接 |
 | 信任上下文和诊断回归 | `tests/trust_recovery.py`、`ssh_actions.rs`、`ssh/tests.rs`、`tests/ssh_path_ux.rs` | 已信任密钥无交互幂等、目标 known_hosts 内的 hop 信任、记录日志失败不否认已提交信任、实际认证进程/agent 来源、POSIX 和 PowerShell 恢复命令引用 |
-| 服务事务与故障回归 | `platform/service_tests.rs`、`platform/service_windows_tests.rs`、`platform/service_definition.rs`、`platform/service_command.rs`、`cli/service_lifecycle_tests.rs` | 状态化三平台假服务管理器；旧定义与 OS 注册独立恢复、部分写失败、原子替换、回滚所有权、整个事务互斥、命令超时、旧路径发现、失配 marker、禁用任务、升级后可执行文件刷新、失败退出码 |
+| 服务事务与故障回归 | `platform/service_tests.rs`、`platform/service_windows_tests.rs`、`platform/service_definition.rs`、`platform/service_command.rs`、`cli/service_lifecycle_tests.rs`、`tests/macos_service_upgrade.py` | 状态化三平台假服务管理器；旧定义与 OS 注册独立恢复、部分写失败、原子替换、回滚所有权、整个事务互斥、命令超时、旧路径发现、失配 marker、禁用任务、升级后可执行文件刷新、launchd 异步移除与 ESRCH 竞态、失败退出码；macOS 原生测试另行显式执行 |
 | 无响应后台与显式恢复 | `tests/daemon_presence_audit.rs`、`tests/audit_state_workflows.rs`、`store/recovery_tests.rs` | 持锁但无响应不误判停止、不另启实例、仍发送 shutdown；watch 失联后恢复；恢复前校验、独立备份、保留可读停删意图、损坏意图须显式放弃、全部规则停止 |
 | 历史选择与服务器事件回归 | `history/selection_audit_tests.rs`、`cli/query_selection_tests.rs`、`tests/audit_state_workflows.rs` | 当前对象优先历史别名、组简写和显式组筛选等价、follow 固定规则/服务器 ID、删除重建不跳转、服务器配置/信任/连接事件保留归属 |
 | 双服务器 relay 转发 | `model_forward.rs`、`model.rs`、`engine/mod.rs`、`engine/relay.rs`、`add_relay_tests.rs`、`forwards_tests.rs`、`configuration/tests.rs`、`fwm-api/tests/protocol_contract.rs` | relay wire 契约（缺 `target_server_id`/外借字段/显式 shared 拒绝）、双端引用校验与源端监听冲突、同一 profile 双角色、schema 3→4 迁移、引擎按规则派生协调器与代次重启、编辑单侧补丁且拒绝类型转换、`--server X` 任一端选择与历史双端筛选、两个新 alias 与规则同事务提交 |
@@ -62,6 +62,14 @@ When a native helper changes, regenerate the checked-in artifacts with
 `./scripts/build-native-remote-helper-macos.sh`, and
 `./scripts/build-native-remote-helper-windows.sh`; these require Zig and the
 corresponding SDK/target support.
+
+在已登录 GUI 会话的 macOS 上，运行原生升级回归：
+
+```sh
+python3 tests/macos_service_upgrade.py target/debug/fwm --old-binary /path/to/previous/fwm
+```
+
+`--old-binary` 可省略。脚本仅注册并清理临时 profile 对应的独立 LaunchAgent，验证原子替换二进制、重复重启，以及旧 daemon 释放实例锁后 launchd 任务延迟退出的升级路径；它不读取或重启默认 profile。2026-11-07 在 macOS 27 arm64 上，新旧对照确认 v0.2.2 在延迟退出场景失败于 `Bootstrap failed: 5: Input/output error`，修复后从 v0.2.2 升级及完整清理均成功。模拟测试另覆盖 `bootout` 返回 3 且已移除/延迟移除/始终未移除、成功返回但仍未移除、权限错误、确认查询失败，未确认停止时不注册替代服务。
 
 `tests/native_helper.py` 编译并测试实际 Linux C helper 的 TCP 表解析、进程身份、旧版 lease 和归属证据，避免只测试保留的 Python 实现。`tests/native_linux_recovery.py` 则用实际 fwm 二进制验证 Linux 原生 helper；必须显式提供隔离虚拟机的 SSH 配置和别名，且目标只能是回环地址：
 

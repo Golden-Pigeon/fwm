@@ -243,6 +243,10 @@ fn manager_unavailable(error: &anyhow::Error) -> bool {
 
 fn run(executor: &mut dyn CommandExecutor, command: &mut Command) -> Result<()> {
     let result = executor.execute(command)?;
+    check_result(command, &result)
+}
+
+fn check_result(command: &Command, result: &CommandResult) -> Result<()> {
     if !result.success {
         return Err(ServiceError::new(
             "service_command_failed",

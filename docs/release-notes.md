@@ -1,21 +1,14 @@
-fwm v0.2.2 improves automatic recovery when an SSH connection is interrupted.
+fwm v0.2.3 fixes macOS managed-service restarts during installation and upgrades.
 
-- Server timeouts and disconnects during authentication now retry automatically,
-  including through ProxyJump, instead of incorrectly stopping at `needs attention`.
-  Local SSH agent stalls, refused signatures, explicit authentication rejection,
-  and trust/configuration errors still require attention.
-- Recovery-helper channels that close without an exit result retry with backoff.
-  Such a closure is inconclusive: a persistent server problem may also keep
-  retrying, with the latest error visible in status.
-- Confirmed unexpected helper exit statuses and signals still require attention.
-  Exit results and stderr are preserved after execution acknowledgement and EOF;
-  startup or reply timeouts no longer hide a confirmed execution failure.
-- Established reverse and relay listeners probe the SSH request path to detect
-  a stalled connection. Unconfirmed listener cancellation is bounded during
-  teardown so recovery can proceed while retaining the cancellation warning.
-- Bash completion omits saved candidates containing `$` or backticks to avoid
-  Bash 5.3 interpreting substitution syntax while quoting them. Such values
-  remain usable as manually single-quoted arguments or through safe names/IDs.
+- Wait for launchd to finish removing the old service before registering its
+  replacement. A daemon releasing its instance lock does not mean its launchd
+  job has disappeared yet; restarting too early could fail with `No such process`
+  or `Bootstrap failed: 5: Input/output error`.
+- Accept `bootout`'s `No such process` result only when a subsequent service query
+  confirms the job is absent. Permission failures, query errors, and unconfirmed
+  removal still fail explicitly and retain the existing rollback behavior.
+- The fix applies to both installers and direct `fwm daemon restart` commands.
+  The automatic SSH recovery improvements from v0.2.2 are included.
 
 Prebuilt packages are available for macOS Intel/ARM64, Linux x86_64/ARM64 (musl),
 and Windows x64. Each package includes license notices and the source of its

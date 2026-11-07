@@ -1,12 +1,13 @@
 use super::{
-    CommandExecutor, Definition, Registration, ServiceAdapter, ServiceError, discovery, identifier,
-    registration_failed, run, xml_escape,
+    CommandExecutor, Definition, Registration, ServiceAdapter, ServiceError, check_result,
+    discovery, identifier, registration_failed, run, xml_escape,
 };
 use anyhow::{Context, Result};
 use fwm_core::paths::Paths;
 use std::{
     path::{Path, PathBuf},
     process::Command,
+    time::{Duration, Instant},
 };
 
 pub(super) struct Service {
@@ -50,47 +51,30 @@ impl Service {
         path: &Path,
         executor: &mut dyn CommandExecutor,
     ) -> Result<Registration> {
-        let result = executor
-            .execute(Command::new("launchctl").args(["print", &self.service_name(label)]))?;
+        let loaded = self.loaded(label, executor)?;
         let previous =
             super::definition::read_optional(path)?.and_then(|bytes| String::from_utf8(bytes).ok());
-        if !result.success {
-            if result.stderr.contains("Could not find service")
-                || result.stdout.contains("Could not find service")
-            {
-                let enabled = path.exists() && !self.disabled(label, executor)?;
-                return Ok(Registration {
-                    enabled,
-                    definition: previous,
-                    ..Registration::default()
-                });
-            }
-            let unavailable = result.stderr.contains("Could not find domain")
-                || result.stderr.contains("not supported");
-            return Err(ServiceError::new(
-                if unavailable {
-                    "service_manager_unavailable"
-                } else {
-                    "service_query_failed"
-                },
-                format!("cannot query launchd service: {}", result.details),
-            )
-            .into());
-        }
+        let Some(loaded) = loaded else {
+            let enabled = path.exists() && !self.disabled(label, executor)?;
+            return Ok(Registration {
+                enabled,
+                definition: previous,
+                ..Registration::default()
+            });
+        };
         // launchd's loaded program can differ from the plist on disk. Only
         // checkpoint a known FWM definition that agrees with the loaded job;
         // otherwise replacement must stop before touching the running service.
-        let loaded = result
-            .stdout
+        let definition = loaded
             .lines()
             .find_map(|line| line.trim().strip_prefix("program = "))
             .filter(|_| {
-                discovery::launch_profile(&result.stdout)
+                discovery::launch_profile(&loaded)
                     .is_some_and(|path| discovery::same_profile(&path, &self.paths))
             })
             .map(|program| definition(&self.paths, program.trim_matches('"'), label));
         let previous = previous.filter(|disk| {
-            loaded.as_ref().is_some_and(|loaded| {
+            definition.as_ref().is_some_and(|loaded| {
                 disk == loaded
                     || *disk
                         == loaded.replace(
@@ -104,7 +88,7 @@ impl Service {
         });
         Ok(Registration {
             registered: true,
-            running: result.stdout.lines().any(|line| {
+            running: loaded.lines().any(|line| {
                 line.trim()
                     .strip_prefix("pid = ")
                     .is_some_and(|pid| pid.parse::<u32>().is_ok_and(|pid| pid > 0))
@@ -112,6 +96,60 @@ impl Service {
             enabled: path.exists() && !self.disabled(label, executor)?,
             definition: previous,
         })
+    }
+    fn loaded(&self, label: &str, executor: &mut dyn CommandExecutor) -> Result<Option<String>> {
+        let result = executor
+            .execute(Command::new("launchctl").args(["print", &self.service_name(label)]))?;
+        if !result.success {
+            if result.stderr.contains("Could not find service")
+                || result.stdout.contains("Could not find service")
+            {
+                return Ok(None);
+            }
+            let unavailable = result.stderr.contains("Could not find domain")
+                || result.stderr.contains("not supported");
+            return Err(ServiceError::new(
+                if unavailable {
+                    "service_manager_unavailable"
+                } else {
+                    "service_query_failed"
+                },
+                format!("cannot query launchd service: {}", result.details),
+            )
+            .into());
+        }
+        Ok(Some(result.stdout))
+    }
+    fn bootout(&self, label: &str, executor: &mut dyn CommandExecutor) -> Result<()> {
+        let mut command = Command::new("launchctl");
+        command.args(["bootout", &self.service_name(label)]);
+        let result = executor.execute(&mut command)?;
+        // ESRCH can race with launchd removing the job. It is only success if
+        // a subsequent query confirms absence; other command failures stay errors.
+        if result.code != Some(3) {
+            check_result(&command, &result)?;
+        }
+        // bootout can return before a SIGTERMed job finishes exiting. Waiting
+        // for the daemon's instance lock alone does not make bootstrap safe.
+        let deadline = Instant::now() + Duration::from_secs(15);
+        loop {
+            if self.loaded(label, executor)?.is_none() {
+                return Ok(());
+            }
+            if Instant::now() >= deadline {
+                check_result(&command, &result)
+                    .context("launchd service removal remains unconfirmed")?;
+                return Err(ServiceError::new(
+                    "service_stop_timeout",
+                    format!(
+                        "launchd service {} is still registered after bootout; replacement was not started",
+                        self.service_name(label)
+                    ),
+                )
+                .into());
+            }
+            std::thread::sleep(Duration::from_millis(50));
+        }
     }
     fn disabled(&self, label: &str, executor: &mut dyn CommandExecutor) -> Result<bool> {
         let result =
@@ -319,10 +357,7 @@ impl ServiceAdapter for Service {
         let before = self.inspect(label, target, executor)?;
         let definition = Definition::stage(target, &self.render()?)?;
         if before.registered {
-            run(
-                executor,
-                Command::new("launchctl").args(["bootout", &self.service_name(label)]),
-            )?;
+            self.bootout(label, executor)?;
         }
         self.set_enabled(executor, true)?;
         if let Err(error) = self.bootstrap(label, target, executor) {
@@ -361,10 +396,7 @@ impl ServiceAdapter for Service {
     fn stop(&self, executor: &mut dyn CommandExecutor) -> Result<()> {
         for (label, target) in &self.targets {
             if self.inspect(label, target, executor)?.registered {
-                run(
-                    executor,
-                    Command::new("launchctl").args(["bootout", &self.service_name(label)]),
-                )?;
+                self.bootout(label, executor)?;
             }
         }
         Ok(())
